@@ -1,0 +1,27 @@
+{
+  "name": "fsdp_grp33_new",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TanTzeWei/FSDP_GRP33_New.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TanTzeWei/FSDP_GRP33_New/issues"
+  },
+  "homepage": "https://github.com/TanTzeWei/FSDP_GRP33_New#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mssql": "^12.0.0"
+  }
+}
