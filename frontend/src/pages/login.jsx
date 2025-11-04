@@ -15,7 +15,8 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("/api/users/login", { email, password });
+  // DEV: post directly to backend server. Use env var or proxy in production/dev proxy.
+  const res = await axios.post("http://localhost:3000/login", { email, password });
       const token = res.data?.token;
       if (token) {
         // store token locally for authenticated requests

@@ -8,11 +8,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 class UserController {
     static async signup(req, res) {
         try {
+            console.log('Signup payload:', req.body);
             const { name, email, password } = req.body;
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'All fields are required' });
             }
 
+            // Pass `name` to match DB column `name`
             const result = await UserModel.createUser({ name, email, password });
             if (!result.success) {
                 return res.status(400).json({ success: false, message: result.message });
@@ -28,8 +30,9 @@ class UserController {
                 token
             });
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ success: false, message: 'Server error during signup' });
+            // Log full error and return stack/message in response for local debugging
+            console.error(error && error.stack ? error.stack : error);
+            res.status(500).json({ success: false, message: 'Server error during signup', error: error?.message, stack: error?.stack });
         }
     }
 

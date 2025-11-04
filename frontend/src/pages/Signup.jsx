@@ -16,7 +16,9 @@ function Signup() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("/api/users/signup", { name, email, password });
+      // DEV: post directly to backend server running on port 3000.
+      // In production use an env var (VITE_API_BASE) or a proxy instead.
+      const res = await axios.post("http://localhost:3000/signup", { name, email, password });
       setLoading(false);
       // show message briefly then redirect
       alert(res.data?.message || "Signup successful!");

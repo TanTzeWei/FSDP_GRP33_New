@@ -1,12 +1,12 @@
 const express = require('express');
 const dotenv = require('dotenv');
+// Load environment variables from .env (if present) BEFORE requiring files that use them
+dotenv.config();
 const sql = require('mssql');
 const path = require('path');
 const cors = require('cors');
 const UserController = require('./controllers/userController');
 const authMiddleware = require('./middlewares/authMiddleware');
-// Load environment variables from .env (if present)
-dotenv.config();
 
 // Create Express app
 const app = express();

@@ -5,7 +5,8 @@ module.exports = {
     database: process.env.DB_DATABASE,
     trustServerCertificate: true,
     options: {
-      port: parseInt(process.env.DB_PORT), // Default SQL Server port
+      // Use provided DB_PORT or default to 1433 (standard SQL Server port)
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 1433,
       connectionTimeout: 60000, // Connection timeout in milliseconds
     },
   };

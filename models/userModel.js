@@ -11,16 +11,16 @@ class UserModel {
             const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
             const query = `
-                INSERT INTO Users (username, email, password, role)
-                OUTPUT INSERTED.userId, INSERTED.username, INSERTED.email, INSERTED.role
-                VALUES (@username, @email, @password, @role)
+                INSERT INTO Users (name, email, password)
+                OUTPUT INSERTED.userId, INSERTED.name, INSERTED.email
+                VALUES (@name, @email, @password)
             `;
 
             const request = pool.request();
-            request.input("username", sql.NVarChar(100), userData.username);
+            request.input("name", sql.NVarChar(100), userData.name);
             request.input("email", sql.NVarChar(100), userData.email);
             request.input("password", sql.NVarChar(255), hashedPassword);
-            request.input("role", sql.NVarChar(50), userData.role || "customer");
+            // role column removed for now; set roles later via migrations or separate admin flow
 
             console.log("Executing query:", query);
             const result = await request.query(query);
@@ -40,7 +40,7 @@ class UserModel {
         try {
             const pool = await sql.connect(dbConfig);
             const query = `
-                SELECT userId, username, email, password, role
+                SELECT userId, name, email, password
                 FROM Users 
                 WHERE email = @Email
             `;
@@ -78,15 +78,15 @@ class UserModel {
             const pool = await sql.connect(dbConfig);
             const query = `
                 UPDATE Users
-                SET username = @username, role = @role
-                OUTPUT INSERTED.userId, INSERTED.username, INSERTED.email, INSERTED.role
+                SET name = @name
+                OUTPUT INSERTED.userId, INSERTED.name, INSERTED.email
                 WHERE userId = @userId
             `;
 
             const request = pool.request();
             request.input("userId", sql.Int, userId);
-            request.input("username", sql.NVarChar(100), updateData.username);
-            request.input("role", sql.NVarChar(50), updateData.role);
+            request.input("name", sql.NVarChar(100), updateData.name);
+            // role update omitted for now
 
             const result = await request.query(query);
             return { success: true, user: result.recordset[0] };
