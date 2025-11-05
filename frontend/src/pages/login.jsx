@@ -24,8 +24,7 @@ function Login() {
       const token = res.data?.token;
       const user = res.data?.user;
       if (token) {
-        // store token locally for authenticated requests
-        localStorage.setItem("authToken", token);
+        // token will be stored together with user by AuthContext.login
       }
   // store user+token in auth context/localStorage
   login({ user, token });
