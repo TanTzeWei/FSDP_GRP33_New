@@ -1,0 +1,25 @@
+.home-container{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;color:#222}
+.home-header{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#fff;border-bottom:1px solid #eee}
+.logo{font-weight:700;font-size:20px;color:#06b674}
+.home-header nav a{margin-left:12px;text-decoration:none;padding:8px 12px;border-radius:6px}
+.btn-outline{border:1px solid #06b674;color:#06b674}
+.btn-primary{background:#06b674;color:#fff}
+.hero{display:flex;gap:24px;padding:48px 32px;align-items:center}
+.hero-left{flex:1}
+.hero-left h1{font-size:34px;margin:0 0 8px}
+.hero-left p{color:#555;margin:0 0 16px}
+.search{display:flex;gap:8px}
+.search input{flex:1;padding:12px;border-radius:8px;border:1px solid #ddd}
+.search button{padding:12px 18px;border-radius:8px;background:#06b674;color:#fff;border:none}
+.hero-right{width:260px}
+.hero-card{background:#f8fdf9;border:1px solid #e6f5eb;padding:24px;border-radius:10px;text-align:center}
+.categories{padding:24px 32px}
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.cat{background:#fff;border:1px solid #eee;padding:18px;border-radius:8px;text-align:center}
+.featured{padding:24px 32px}
+.cards{display:flex;gap:16px}
+.card{flex:1;background:#fff;border:1px solid #eee;padding:18px;border-radius:8px;text-align:center}
+.home-footer{text-align:center;padding:20px;color:#888}
+.profile{display:flex;gap:8px;align-items:center}
+.profile-name{font-weight:600;margin-right:6px}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#06b674;color:#fff;font-weight:700}

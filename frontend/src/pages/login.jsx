@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import "../auth.css";
+import { AuthContext } from "../context/AuthContext";
+import { ToastContext } from "../context/ToastContext";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +11,8 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const { showToast } = useContext(ToastContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,16 +20,19 @@ function Login() {
     setLoading(true);
     try {
   // DEV: post directly to backend server. Use env var or proxy in production/dev proxy.
-  const res = await axios.post("http://localhost:3000/login", { email, password });
+      const res = await axios.post("http://localhost:3000/login", { email, password });
       const token = res.data?.token;
+      const user = res.data?.user;
       if (token) {
         // store token locally for authenticated requests
         localStorage.setItem("authToken", token);
       }
-      setLoading(false);
-      // optional success message
-      // navigate to home or dashboard (adjust as needed)
-      navigate("/");
+  // store user+token in auth context/localStorage
+  login({ user, token });
+  setLoading(false);
+  // show success toast and navigate home
+  showToast(res.data?.message || "Login successful!", { type: "success", duration: 2500 });
+  navigate("/");
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Login failed");

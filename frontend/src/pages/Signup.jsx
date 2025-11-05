@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import "../auth.css";
+import { AuthContext } from "../context/AuthContext";
+import { ToastContext } from "../context/ToastContext";
 
 function Signup() {
   const [name, setName] = useState("");
@@ -10,6 +12,8 @@ function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const { showToast } = useContext(ToastContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,9 +24,15 @@ function Signup() {
       // In production use an env var (VITE_API_BASE) or a proxy instead.
       const res = await axios.post("http://localhost:3000/signup", { name, email, password });
       setLoading(false);
-      // show message briefly then redirect
-      alert(res.data?.message || "Signup successful!");
-      navigate("/login");
+      // auto-login user and navigate home
+      const token = res.data?.token;
+      const user = res.data?.user;
+      if (token) {
+        localStorage.setItem("authToken", token);
+      }
+      login({ user, token });
+      showToast(res.data?.message || "Signup successful!", { type: "success" });
+      navigate("/");
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Signup failed");

@@ -1,0 +1,6 @@
+.toast{background:#fff;border-radius:8px;padding:10px 14px;box-shadow:0 6px 18px rgba(0,0,0,0.08);display:flex;align-items:center;gap:10px;min-width:220px;margin-bottom:10px;border-left:4px solid #06b674}
+.toast.info{border-left-color:#06b674}
+.toast.success{border-left-color:#06b674}
+.toast.error{border-left-color:#e23b3b}
+.toast-message{flex:1;color:#111}
+.toast-close{background:transparent;border:0;font-size:18px;line-height:1;cursor:pointer;color:#666}
