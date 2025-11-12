@@ -1,10 +1,4 @@
-CREATE TABLE users (
-    userId INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+
 
 -- Hawker Hub Database Schema (SQL Server Version)
 -- Initialize database for hawker centre locations and user management
@@ -13,15 +7,12 @@ CREATE TABLE users (
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')
 BEGIN
     CREATE TABLE users (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        email NVARCHAR(255) UNIQUE NOT NULL,
-        password_hash NVARCHAR(255) NOT NULL,
-        first_name NVARCHAR(100),
-        last_name NVARCHAR(100),
-        phone NVARCHAR(20),
-        created_at DATETIME2 DEFAULT GETDATE(),
-        updated_at DATETIME2 DEFAULT GETDATE()
-    );
+    userId INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 END;
 
 -- Hawker centres table with location and details
