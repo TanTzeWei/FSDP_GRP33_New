@@ -1,11 +1,3 @@
-CREATE TABLE users (
-    userId INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Hawker Hub Database Schema (SQL Server Version)
 -- Initialize database for hawker centre locations and user management
 
@@ -21,6 +13,19 @@ BEGIN
         phone NVARCHAR(20),
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE()
+    );
+END;
+
+-- Cuisine types table
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'cuisine_types')
+BEGIN
+    CREATE TABLE cuisine_types (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(100) NOT NULL UNIQUE,
+        description NVARCHAR(MAX),
+        icon NVARCHAR(10), -- emoji or icon identifier
+        color NVARCHAR(7), -- hex color code
+        created_at DATETIME2 DEFAULT GETDATE()
     );
 END;
 
@@ -50,23 +55,10 @@ BEGIN
         updated_at DATETIME2 DEFAULT GETDATE()
     );
     
-    -- Create indexes separately
+    -- Create indexes
     CREATE INDEX idx_coordinates ON hawker_centres (latitude, longitude);
     CREATE INDEX idx_name ON hawker_centres (name);
     CREATE INDEX idx_status ON hawker_centres (status);
-END;
-
--- Cuisine types table
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'cuisine_types')
-BEGIN
-    CREATE TABLE cuisine_types (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        name NVARCHAR(100) NOT NULL UNIQUE,
-        description NVARCHAR(MAX),
-        icon NVARCHAR(10), -- emoji or icon identifier
-        color NVARCHAR(7), -- hex color code
-        created_at DATETIME2 DEFAULT GETDATE()
-    );
 END;
 
 -- Stalls within hawker centres
@@ -91,11 +83,11 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE(),
         
-        FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE CASCADE,
-        FOREIGN KEY (cuisine_type_id) REFERENCES cuisine_types(id) ON DELETE SET NULL
+        CONSTRAINT FK_stalls_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE CASCADE,
+        CONSTRAINT FK_stalls_cuisine_type FOREIGN KEY (cuisine_type_id) REFERENCES cuisine_types(id) ON DELETE SET NULL
     );
     
-    -- Create indexes separately
+    -- Create indexes
     CREATE INDEX idx_hawker_centre ON stalls (hawker_centre_id);
     CREATE INDEX idx_cuisine ON stalls (cuisine_type_id);
     CREATE INDEX idx_rating ON stalls (rating);
@@ -146,9 +138,9 @@ BEGIN
         updated_at DATETIME2 DEFAULT GETDATE(),
         
         CONSTRAINT FK_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-        CONSTRAINT FK_reviews_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION,
-        CONSTRAINT FK_reviews_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
-        CONSTRAINT FK_reviews_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE NO ACTION
+        CONSTRAINT FK_reviews_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE CASCADE,
+        CONSTRAINT FK_reviews_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE CASCADE,
+        CONSTRAINT FK_reviews_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE CASCADE
     );
     
     -- Create indexes
@@ -176,7 +168,7 @@ BEGIN
         updated_at DATETIME2 DEFAULT GETDATE(),
         
         CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-        CONSTRAINT FK_orders_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION
+        CONSTRAINT FK_orders_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE CASCADE
     );
     
     -- Create indexes
@@ -201,8 +193,8 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         
         CONSTRAINT FK_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        CONSTRAINT FK_order_items_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
-        CONSTRAINT FK_order_items_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE NO ACTION
+        CONSTRAINT FK_order_items_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE CASCADE,
+        CONSTRAINT FK_order_items_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE CASCADE
     );
     
     -- Create indexes
@@ -238,41 +230,7 @@ BEGIN
     
     ('Tekka Centre', 'Vibrant Little India hawker centre with authentic Indian cuisine', '665 Buffalo Road', '210665', 1.3067, 103.8526, '06:00', '22:00', 'Monday-Sunday', 175, 4.0, 1876, '["Cultural Hub", "Wet Market", "Indian Cuisine"]', '+65 6297 1059', 'HDB'),
     
-    ('Tiong Bahru Market', 'Trendy heritage hawker centre in hip Tiong Bahru district', '30 Seng Poh Road', '160030', 1.2853, 103.8267, '06:00', '15:00', 'Monday-Sunday', 50, 4.4, 987, '["Heritage", "Hipster Area", "Morning Market"]', '+65 6270 7611', 'HDB'),
-    
-    ('Old Airport Road Food Centre', 'Large hawker centre near former Kallang Airport with famous local dishes', '51 Old Airport Road', '390051', 1.3000, 103.8735, '06:00', '02:00', 'Monday-Sunday', 180, 4.1, 2156, '["Famous Hokkien Mee", "Large Parking", "Local Favorite"]', '+65 6748 0292', 'NEA'),
-    
-    ('Amoy Street Food Centre', 'Business district hawker centre popular with office workers', '7 Maxwell Road', '069111', 1.2794, 103.8447, '07:00', '20:00', 'Monday-Saturday', 45, 4.0, 765, '["Business District", "Lunch Crowd", "Air Conditioning"]', '+65 6224 4563', 'NEA'),
-    
-    ('East Coast Lagoon Food Village', 'Seaside hawker centre with sea breeze and sunset views', '1220 East Coast Parkway', '468960', 1.3015, 103.9067, '17:00', '02:00', 'Monday-Sunday', 35, 3.8, 1243, '["Seaside", "Sunset Views", "BBQ Seafood"]', '+65 6448 5672', 'NEA'),
-    
-    ('Chomp Chomp Food Centre', 'Popular evening and night hawker centre in Serangoon Gardens', '20 Kensington Park Road', '557269', 1.3665, 103.8651, '17:00', '02:00', 'Monday-Sunday', 28, 4.2, 892, '["Evening Only", "Local Neighborhood", "Famous Satay"]', '+65 6280 8712', 'NEA');
-END;
-
--- Create additional indexes for better performance (only if they don't exist)
-IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'idx_hawker_location' AND object_id = OBJECT_ID('hawker_centres'))
-    CREATE INDEX idx_hawker_location ON hawker_centres(latitude, longitude);
-
-IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'idx_hawker_rating' AND object_id = OBJECT_ID('hawker_centres'))
-    CREATE INDEX idx_hawker_rating ON hawker_centres(rating DESC);
-
-IF NOT EXISTS (SELECT name FROM sys.indexes WHERE name = 'idx_stall_hawker_cuisine' AND object_id = OBJECT_ID('stalls'))
-    CREATE INDEX idx_stall_hawker_cuisine ON stalls(hawker_centre_id, cuisine_type_id);
-
--- Create a view for hawker centre summary with stall counts by cuisine (SQL Server version)
-IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'hawker_centre_summary')
-BEGIN
-    EXEC('CREATE VIEW hawker_centre_summary AS
-    SELECT 
-        hc.*,
-        COUNT(DISTINCT s.id) as active_stalls,
-        STRING_AGG(ct.name, '', '') as available_cuisines,
-        AVG(CAST(s.rating as FLOAT)) as average_stall_rating
-    FROM hawker_centres hc
-    LEFT JOIN stalls s ON hc.id = s.hawker_centre_id AND s.status = ''Active''
-    LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-    WHERE hc.status = ''Active''
-    GROUP BY hc.id, hc.name, hc.description, hc.address, hc.postal_code, hc.latitude, hc.longitude, hc.opening_hours, hc.closing_hours, hc.operating_days, hc.total_stalls, hc.rating, hc.total_reviews, hc.image_url, hc.facilities, hc.contact_phone, hc.managed_by, hc.status, hc.created_at, hc.updated_at');
+    ('Tiong Bahru Market', 'Trendy heritage hawker centre in hip Tiong Bahru district', '30 Seng Poh Road', '160030', 1.2853, 103.8267, '06:00', '15:00', 'Monday-Sunday', 50, 4.4, 987, '["Heritage", "Hipster Area", "Morning Market"]', '+65 6270 7611', 'HDB');
 END;
 
 PRINT 'Hawker Hub database schema created successfully!';

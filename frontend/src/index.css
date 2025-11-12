@@ -71,3 +71,25 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f8f8f8;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+.main-content {
+  padding-top: 120px; /* Account for fixed header */
+  min-height: calc(100vh - 120px);
+}

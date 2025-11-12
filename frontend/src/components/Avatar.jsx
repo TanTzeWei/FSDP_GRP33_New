@@ -1,18 +1,35 @@
-import React from "react";
-import "./Avatar.css";
+import React from 'react';
+import './Avatar.css';
 
-function initials(name) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+const Avatar = ({ name, size = 40, src, onClick }) => {
+  const initials = name
+    ? name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '??';
 
-export default function Avatar({ name, size = 36 }) {
-  const text = initials(name);
+  const style = {
+    width: size,
+    height: size,
+    fontSize: size * 0.4,
+  };
+
+  if (src) {
+    return (
+      <div className="avatar" style={style} onClick={onClick}>
+        <img src={src} alt={name} className="avatar-image" />
+      </div>
+    );
+  }
+
   return (
-    <div className="avatar" style={{ width: size, height: size, fontSize: Math.round(size / 2.5) }}>
-      {text}
+    <div className="avatar avatar-initials" style={style} onClick={onClick}>
+      {initials}
     </div>
   );
-}
+};
+
+export default Avatar;

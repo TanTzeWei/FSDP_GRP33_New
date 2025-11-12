@@ -1,0 +1,146 @@
+.promo-banner {
+  background: #ffffff;
+  padding: 32px 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.promo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.promo-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.location-highlight {
+  color: #00b14f;
+}
+
+.promo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.promo-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.promo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.promo-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #00b14f;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.promo-image {
+  height: 160px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  position: relative;
+}
+
+.promo-content {
+  padding: 16px;
+}
+
+.promo-content h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.promo-category {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.promo-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.rating {
+  color: #ff6b35;
+  font-weight: 500;
+}
+
+.delivery-time,
+.distance {
+  color: #666;
+}
+
+.promo-offer {
+  background: #00b14f;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.see-all-btn {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 2px solid #00b14f;
+  color: #00b14f;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.see-all-btn:hover {
+  background: #00b14f;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .promo-title {
+    font-size: 24px;
+  }
+  
+  .promo-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+  }
+  
+  .promo-image {
+    height: 140px;
+    font-size: 50px;
+  }
+}
