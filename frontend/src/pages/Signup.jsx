@@ -27,9 +27,7 @@ function Signup() {
       // auto-login user and navigate home
       const token = res.data?.token;
       const user = res.data?.user;
-      if (token) {
-        localStorage.setItem("authToken", token);
-      }
+      // Token will be stored by AuthContext.login
       login({ user, token });
       showToast(res.data?.message || "Signup successful!", { type: "success" });
       navigate("/");
@@ -37,6 +35,21 @@ function Signup() {
       setLoading(false);
       setError(err.response?.data?.message || "Signup failed");
     }
+  };
+
+  const handleGuestLogin = () => {
+    // Create a guest user object
+    const guestUser = {
+      userId: 'guest',
+      name: 'Guest User',
+      email: 'guest@hawkerhub.com',
+      isGuest: true
+    };
+    
+    // Login as guest (no token needed)
+    login({ user: guestUser, token: null });
+    showToast("Welcome, Guest! Browse our menu.", { type: "success", duration: 2500 });
+    navigate("/");
   };
 
   return (
@@ -88,6 +101,14 @@ function Signup() {
             {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
+
+        <div className="divider">
+          <span>OR</span>
+        </div>
+
+        <button className="guest-btn" onClick={handleGuestLogin}>
+          👤 Continue as Guest
+        </button>
 
         <p className="form-footer">
           Already have an account? <Link to="/login">Login here</Link>

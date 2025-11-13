@@ -110,6 +110,27 @@ class UserModel {
             throw error;
         }
     }
+
+    // Update password
+    static async updatePassword(userId, hashedPassword) {
+        try {
+            const pool = await sql.connect(dbConfig);
+            const query = `
+                UPDATE Users
+                SET password = @password
+                WHERE userId = @userId
+            `;
+
+            const request = pool.request();
+            request.input("userId", sql.Int, userId);
+            request.input("password", sql.NVarChar(255), hashedPassword);
+
+            await request.query(query);
+            return { success: true };
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = UserModel;

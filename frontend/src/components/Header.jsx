@@ -1,8 +1,13 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import Avatar from './Avatar';
 import './Header.css';
 
 const Header = ({ activeSection, setActiveSection, onCartClick }) => {
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
   const navItems = [
     { key: 'menu', label: 'Food' },
     { key: 'deals', label: 'Upload' },
@@ -48,11 +53,41 @@ const Header = ({ activeSection, setActiveSection, onCartClick }) => {
             <span className="bag-icon">🛍️</span>
           </button>
           
-          <div className="auth-buttons">
-            <Link to="/login" className="auth-link">Login</Link>
-            <span className="separator">/</span>
-            <Link to="/signup" className="auth-link">Sign up</Link>
-          </div>
+          {user ? (
+            <div className="user-profile" onClick={() => {
+              // Only navigate to profile if not a guest
+              if (!user.isGuest) {
+                navigate('/profile');
+              }
+            }}>
+              <Avatar name={user.name} size={36} />
+              <div className="user-info">
+                <span className="user-name">{user.name}</span>
+                {user.isGuest ? (
+                  <Link to="/login" className="upgrade-link" onClick={(e) => e.stopPropagation()}>
+                    Sign up to save
+                  </Link>
+                ) : (
+                  <button 
+                    className="logout-btn" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      logout();
+                      navigate('/');
+                    }}
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="auth-buttons">
+              <Link to="/login" className="auth-link">Login</Link>
+              <span className="separator">/</span>
+              <Link to="/signup" className="auth-link">Sign up</Link>
+            </div>
+          )}
         </div>
       </div>
     </header>

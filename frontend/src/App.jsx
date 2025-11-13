@@ -4,6 +4,7 @@ import './App.css';
 import Home from "./pages/Home";
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
+import ProfilePage from "./pages/ProfilePage";
 import Header from './components/Header';
 import Menu from './components/Menu';
 import Deals from './components/Deals';
@@ -72,6 +73,7 @@ function App() {
         <Route path="/main" element={<MainApp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );

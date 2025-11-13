@@ -54,6 +54,9 @@ if (UserController && authMiddleware) {
     app.post('/signup', UserController.signup);
     app.post('/login', UserController.login);
     app.get('/profile', authMiddleware, UserController.getProfile);
+    app.put('/profile', authMiddleware, UserController.updateProfile);
+    app.put('/change-password', authMiddleware, UserController.changePassword);
+    app.delete('/profile', authMiddleware, UserController.deleteAccount);
     console.log('✅ User routes configured');
 } else {
     console.log('⚠️  User routes disabled (missing UserController or authMiddleware)');

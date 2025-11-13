@@ -75,6 +75,91 @@ class UserController {
             res.status(500).json({ success: false, message: 'Failed to fetch user profile' });
         }
     }
+
+    static async updateProfile(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { name } = req.body;
+
+            if (!name) {
+                return res.status(400).json({ success: false, message: 'Name is required' });
+            }
+
+            const result = await UserModel.updateUser(userId, { name });
+            
+            if (!result.success) {
+                return res.status(400).json({ success: false, message: 'Failed to update profile' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Profile updated successfully',
+                user: result.user
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Server error during profile update' });
+        }
+    }
+
+    static async changePassword(req, res) {
+        try {
+            const userId = req.user.userId;
+            const { currentPassword, newPassword } = req.body;
+
+            if (!currentPassword || !newPassword) {
+                return res.status(400).json({ success: false, message: 'Current and new passwords are required' });
+            }
+
+            // Validate current password
+            const user = await UserModel.findUserByEmail(req.user.email);
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+
+            const bcrypt = require('bcrypt');
+            const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+            if (!isValidPassword) {
+                return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+            }
+
+            // Update password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const result = await UserModel.updatePassword(userId, hashedPassword);
+
+            if (!result.success) {
+                return res.status(400).json({ success: false, message: 'Failed to change password' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Password changed successfully'
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Server error during password change' });
+        }
+    }
+
+    static async deleteAccount(req, res) {
+        try {
+            const userId = req.user.userId;
+
+            const result = await UserModel.deleteUser(userId);
+
+            if (!result.success) {
+                return res.status(400).json({ success: false, message: 'Failed to delete account' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Account deleted successfully'
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Server error during account deletion' });
+        }
+    }
 }
 
 module.exports = UserController;

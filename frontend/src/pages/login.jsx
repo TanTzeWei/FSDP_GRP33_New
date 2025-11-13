@@ -29,13 +29,28 @@ function Login() {
   // store user+token in auth context/localStorage
   login({ user, token });
   setLoading(false);
-  // show success toast and navigate home
+  // show success toast and navigate to main menu page
   showToast(res.data?.message || "Login successful!", { type: "success", duration: 2500 });
   navigate("/");
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Login failed");
     }
+  };
+
+  const handleGuestLogin = () => {
+    // Create a guest user object
+    const guestUser = {
+      userId: 'guest',
+      name: 'Guest User',
+      email: 'guest@hawkerhub.com',
+      isGuest: true
+    };
+    
+    // Login as guest (no token needed)
+    login({ user: guestUser, token: null });
+    showToast("Welcome, Guest! Browse our menu.", { type: "success", duration: 2500 });
+    navigate("/");
   };
 
   return (
@@ -75,6 +90,14 @@ function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <div className="divider">
+          <span>OR</span>
+        </div>
+
+        <button className="guest-btn" onClick={handleGuestLogin}>
+          👤 Continue as Guest
+        </button>
 
         <p className="form-footer">
           Don't have an account? <Link to="/signup">Sign up here</Link>
