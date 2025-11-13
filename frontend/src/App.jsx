@@ -7,6 +7,8 @@ import Signup from "./pages/Signup";
 import ProfilePage from "./pages/ProfilePage";
 import Header from './components/Header';
 import Menu from './components/Menu';
+import MenuPage from './pages/menupage';
+import Cart from './pages/CartPage';
 import Deals from './components/Deals';
 import Rewards from './components/Rewards';
 import Profile from './components/Profile';
@@ -71,6 +73,8 @@ function App() {
         <Route path="/" element={<MainApp />} />
         <Route path="/home" element={<Home />} />
         <Route path="/main" element={<MainApp />} />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/profile" element={<ProfilePage />} />

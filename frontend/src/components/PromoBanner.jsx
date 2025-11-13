@@ -1,14 +1,25 @@
 import React from 'react';
 import './PromoBanner.css';
+import { useNavigate } from "react-router-dom";
 
 const PromoBanner = () => {
+  const navigate = useNavigate(); // <-- ACTIVATE navigation
+
   return (
     <section className="promo-banner">
       <div className="promo-container">
-        <h1 className="promo-title">Hawker Hub Promo in <span className="location-highlight">Singapore</span></h1>
-        
+        <h1 className="promo-title">
+          Hawker Hub Promo in <span className="location-highlight">Singapore</span>
+        </h1>
+
         <div className="promo-grid">
-          <div className="promo-card">
+
+          {/* Stall 1 */}
+          <div 
+            className="promo-card"
+            onClick={() => navigate('/menu')}
+            style={{ cursor: "pointer" }}
+          >
             <div className="promo-badge">Promo</div>
             <div className="promo-image">🏪</div>
             <div className="promo-content">
@@ -22,8 +33,13 @@ const PromoBanner = () => {
               <div className="promo-offer">Free Delivery</div>
             </div>
           </div>
-          
-          <div className="promo-card">
+
+          {/* Stall 2 */}
+          <div 
+            className="promo-card"
+            onClick={() => navigate('/menu')}
+            style={{ cursor: "pointer" }}
+          >
             <div className="promo-badge">Promo</div>
             <div className="promo-image">🍜</div>
             <div className="promo-content">
@@ -37,8 +53,13 @@ const PromoBanner = () => {
               <div className="promo-offer">20% Off</div>
             </div>
           </div>
-          
-          <div className="promo-card">
+
+          {/* Stall 3 */}
+          <div 
+            className="promo-card"
+            onClick={() => navigate('/menu')}
+            style={{ cursor: "pointer" }}
+          >
             <div className="promo-badge">Promo</div>
             <div className="promo-image">🍛</div>
             <div className="promo-content">
@@ -52,8 +73,13 @@ const PromoBanner = () => {
               <div className="promo-offer">Buy 1 Get 1</div>
             </div>
           </div>
-          
-          <div className="promo-card">
+
+          {/* Stall 4 */}
+          <div 
+            className="promo-card"
+            onClick={() => navigate('/menu')}
+            style={{ cursor: "pointer" }}
+          >
             <div className="promo-badge">Promo</div>
             <div className="promo-image">🥤</div>
             <div className="promo-content">
@@ -67,8 +93,9 @@ const PromoBanner = () => {
               <div className="promo-offer">15% Off</div>
             </div>
           </div>
+
         </div>
-        
+
         <button className="see-all-btn">See all promotions</button>
       </div>
     </section>
