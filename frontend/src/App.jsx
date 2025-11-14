@@ -10,7 +10,7 @@ import Menu from './components/Menu';
 import MenuPage from './pages/menupage';
 import Cart from './pages/CartPage';
 import Deals from './components/Deals';
-import Rewards from './components/Rewards';
+import PointsSystem from './pages/PointsSystem';
 import Profile from './components/Profile';
 import LocationMap from './components/LocationMap';
 import OrderHistory from './components/OrderHistory';
@@ -28,7 +28,7 @@ function MainApp() {
       case 'deals':
         return <Deals />;
       case 'rewards':
-        return <Rewards />;
+        return <PointsSystem />;
       case 'profile':
         return <OrderHistory />;
       case 'location':
@@ -65,7 +65,6 @@ function MainApp() {
     </div>
   );
 }
-import PointsSystem from "./pages/PointsSystem";
 
 function App() {
   return (
