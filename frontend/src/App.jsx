@@ -65,6 +65,7 @@ function MainApp() {
     </div>
   );
 }
+import PointsSystem from "./pages/PointsSystem";
 
 function App() {
   return (
@@ -77,7 +78,7 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/points" element={<PointsSystem />} />
       </Routes>
     </BrowserRouter>
   );

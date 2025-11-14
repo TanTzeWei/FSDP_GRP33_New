@@ -1,0 +1,871 @@
+/* ===========================
+   HAWKER POINTS SYSTEM STYLES
+   =========================== */
+
+.hawker-points-system {
+  width: 100%;
+}
+
+/* ===========================
+   POINTS DASHBOARD
+   =========================== */
+
+.points-container {
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.points-header {
+  background-color: #16a34a;
+  color: white;
+  padding: 2rem 1.5rem;
+}
+
+.points-header-content {
+  max-width: 1536px;
+  margin: 0 auto;
+}
+
+.points-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.points-card {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem 2rem;
+  margin-top: 1rem;
+  max-width: 28rem;
+}
+
+.points-display {
+  text-align: center;
+}
+
+.points-amount {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.points-label {
+  color: #dcfce7;
+  font-size: 0.875rem;
+}
+
+.points-content {
+  padding: 1.5rem 1.5rem 2.5rem;
+}
+
+.points-content-inner {
+  max-width: 1536px;
+  margin: 0 auto;
+}
+
+.points-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+/* Earn Points Grid */
+.points-earn-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.points-earn-card {
+  background-color: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.points-earn-card:hover {
+  border-color: #4ade80;
+}
+
+.points-earn-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.points-earn-icon {
+  background-color: #16a34a;
+  border-radius: 50%;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.points-earn-icon .icon-size {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
+}
+
+.points-earn-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.points-earn-value {
+  font-size: 0.875rem;
+  color: #15803d;
+}
+
+.chevron-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #16a34a;
+}
+
+/* Recent Activity */
+.points-activity-container {
+  max-width: 48rem;
+}
+
+.points-activity-list {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.points-activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.points-activity-item:last-child {
+  border-bottom: none;
+}
+
+.points-activity-item:hover {
+  background-color: #f9fafb;
+}
+
+.points-activity-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.activity-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #16a34a;
+}
+
+.activity-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.activity-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.activity-points {
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Redeem Button */
+.points-redeem-container {
+  max-width: 28rem;
+  margin-top: 2rem;
+}
+
+.points-redeem-btn {
+  width: 100%;
+  background-color: #16a34a;
+  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.points-redeem-btn:hover {
+  background-color: #15803d;
+}
+
+.btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* ===========================
+   REWARDS CATALOG
+   =========================== */
+
+.rewards-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.rewards-header {
+  background-color: #16a34a;
+  color: white;
+  padding: 1.5rem 1.5rem;
+}
+
+.rewards-header-content {
+  max-width: 1536px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  color: white;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: gap 0.2s;
+  padding: 0;
+}
+
+.back-btn:hover {
+  gap: 0.75rem;
+}
+
+.rewards-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.rewards-points-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #dcfce7;
+  font-size: 0.875rem;
+}
+
+.trophy-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rewards-content {
+  padding: 1.5rem 1.5rem 2.5rem;
+}
+
+.rewards-content-inner {
+  max-width: 1536px;
+  margin: 0 auto;
+}
+
+/* Rewards Grid */
+.rewards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.voucher-card {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.voucher-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.voucher-content {
+  padding: 1.25rem 1.5rem;
+}
+
+.voucher-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.voucher-amount {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #16a34a;
+}
+
+.voucher-amount-drink {
+  font-size: 1.5rem;
+}
+
+.voucher-condition {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.voucher-cost {
+  background-color: #dcfce7;
+  color: #15803d;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.voucher-validity {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.voucher-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.voucher-btn-active {
+  background-color: #16a34a;
+  color: white;
+}
+
+.voucher-btn-active:hover {
+  background-color: #15803d;
+}
+
+.voucher-btn-disabled {
+  background-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ===========================
+   REDEMPTION SCREEN
+   =========================== */
+
+.redeem-container {
+  min-height: 100vh;
+  background-color: white;
+}
+
+.redeem-header {
+  background-color: #16a34a;
+  color: white;
+  padding: 1.5rem 1.5rem;
+}
+
+.redeem-header-content {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.redeem-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.redeem-content {
+  padding: 2rem 1.5rem 3rem;
+}
+
+.redeem-content-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.redeem-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* Voucher Preview */
+.voucher-preview {
+  background: linear-gradient(to bottom right, #f0fdf4, #dcfce7);
+  border: 2px solid #16a34a;
+  border-radius: 1rem;
+  padding: 2rem 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.voucher-preview-content {
+  text-align: center;
+}
+
+.voucher-preview-name {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #16a34a;
+  margin-bottom: 0.75rem;
+}
+
+.voucher-preview-condition {
+  font-size: 1rem;
+  color: #374151;
+}
+
+/* Terms */
+.terms-desktop {
+  display: none;
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+
+.terms-mobile {
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.terms-content {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.terms-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.terms-list {
+  list-style-type: disc;
+  list-style-position: inside;
+  font-size: 0.75rem;
+}
+
+.terms-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* Points Summary */
+.points-summary {
+  background-color: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.summary-label {
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.summary-value-negative {
+  font-weight: 600;
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+.summary-divider {
+  border-top: 1px solid #d1d5db;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.summary-row-total {
+  margin-bottom: 0;
+}
+
+.summary-label-bold {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.summary-value-remaining {
+  font-weight: bold;
+  color: #16a34a;
+  font-size: 1.25rem;
+}
+
+/* Confirm Button */
+.confirm-redeem-btn {
+  width: 100%;
+  background-color: #16a34a;
+  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.confirm-redeem-btn:hover {
+  background-color: #15803d;
+}
+
+/* ===========================
+   REDEMPTION SUCCESS SCREEN
+   =========================== */
+
+.redeem-success-container {
+  min-height: 100vh;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.redeem-success-content {
+  text-align: center;
+  max-width: 32rem;
+  width: 100%;
+}
+
+.success-icon-wrapper {
+  background-color: #dcfce7;
+  border-radius: 50%;
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+.success-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: #16a34a;
+}
+
+.success-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.success-subtitle {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+
+/* Voucher Display */
+.voucher-display {
+  background-color: #f0fdf4;
+  border: 2px solid #16a34a;
+  border-radius: 0.75rem;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.voucher-display-name {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #16a34a;
+  margin-bottom: 0.5rem;
+}
+
+.voucher-display-instruction {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.voucher-code {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem 1.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.voucher-expiry {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Redirect Info */
+.redirect-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* Back to Points Button */
+.back-to-points-btn {
+  width: 100%;
+  background-color: #16a34a;
+  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.back-to-points-btn:hover {
+  background-color: #15803d;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+   =========================== */
+
+@media (min-width: 640px) {
+  .points-header,
+  .rewards-header,
+  .redeem-header {
+    padding: 2rem 2rem;
+  }
+
+  .points-content,
+  .rewards-content {
+    padding: 2.5rem 2rem;
+  }
+
+  .redeem-content {
+    padding: 3rem 2rem;
+  }
+
+  .points-title,
+  .rewards-title,
+  .redeem-title {
+    font-size: 2.25rem;
+  }
+
+  .points-amount {
+    font-size: 3.75rem;
+  }
+
+  .points-section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .points-earn-icon .icon-size {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .points-earn-title {
+    font-size: 1.125rem;
+  }
+
+  .points-earn-value {
+    font-size: 1rem;
+  }
+
+  .activity-title {
+    font-size: 1rem;
+  }
+
+  .activity-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .activity-points {
+    font-size: 1.125rem;
+  }
+
+  .voucher-amount {
+    font-size: 2.25rem;
+  }
+
+  .voucher-amount-drink {
+    font-size: 1.875rem;
+  }
+
+  .voucher-condition {
+    font-size: 1rem;
+  }
+
+  .voucher-cost {
+    font-size: 1rem;
+  }
+
+  .voucher-validity {
+    font-size: 0.875rem;
+  }
+
+  .voucher-btn {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+  }
+
+  .success-icon-wrapper {
+    width: 7rem;
+    height: 7rem;
+  }
+
+  .success-icon {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .success-title {
+    font-size: 2.25rem;
+  }
+
+  .success-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .voucher-display-name {
+    font-size: 3rem;
+  }
+
+  .voucher-display-instruction {
+    font-size: 1rem;
+  }
+
+  .voucher-code {
+    font-size: 1.875rem;
+  }
+
+  .voucher-expiry {
+    font-size: 0.875rem;
+  }
+
+  .redirect-info {
+    font-size: 1rem;
+  }
+
+  .voucher-preview-name {
+    font-size: 3.75rem;
+  }
+
+  .voucher-preview-condition {
+    font-size: 1.125rem;
+  }
+
+  .terms-content {
+    font-size: 1rem;
+  }
+
+  .terms-list {
+    font-size: 0.875rem;
+  }
+
+  .summary-label,
+  .summary-value,
+  .summary-value-negative {
+    font-size: 1rem;
+  }
+
+  .summary-label-bold {
+    font-size: 1.125rem;
+  }
+
+  .summary-value-remaining {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .points-header,
+  .rewards-header,
+  .redeem-header {
+    padding: 3rem 3rem;
+  }
+
+  .points-content,
+  .rewards-content {
+    padding: 2.5rem 3rem;
+  }
+
+  .points-earn-grid,
+  .rewards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .terms-desktop {
+    display: block;
+  }
+
+  .terms-mobile {
+    display: none;
+  }
+
+  .redeem-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .points-header,
+  .rewards-header,
+  .redeem-header {
+    padding: 3rem 4rem;
+  }
+
+  .points-content,
+  .rewards-content {
+    padding: 2.5rem 4rem;
+  }
+
+  .rewards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
