@@ -7,7 +7,7 @@
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')
 BEGIN
     CREATE TABLE users (
-    userId INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
