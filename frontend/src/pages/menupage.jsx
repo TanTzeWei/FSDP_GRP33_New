@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Star, Clock, MapPin, Search } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import Header from '../components/Header';
 import './menupage.css';
 
 const MenuPage = () => {
@@ -54,24 +55,11 @@ const MenuPage = () => {
   return (
     <main className="menu-page">
 
-      {/* HEADER */}
-      <header className="header">
-        <nav className="nav-container">
-          <div className="nav-content">
-            <h1 className="app-title">HawkerHub</h1>
-
-            <button 
-              className="cart-button"
-              onClick={() => navigate('/cart')}
-            >
-              <ShoppingCart className="cart-icon" />
-              {getTotalItems() > 0 && (
-                <span className="cart-badge">{getTotalItems()}</span>
-              )}
-            </button>
-          </div>
-        </nav>
-      </header>
+      <Header
+        activeSection="menu"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
 
       {/* STALL HEADER */}
       <section className="stall-header">

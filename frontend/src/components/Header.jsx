@@ -18,7 +18,7 @@ const Header = ({ activeSection, setActiveSection, onCartClick }) => {
     <header className="header">
       <div className="header-container">
         <div className="header-left">
-          <div className="logo" onClick={() => setActiveSection('menu')}>
+          <div className="logo" onClick={() => navigate('/')}>
             <div className="hawker-logo">🏪</div>
             <span className="brand-name">Hawker Hub</span>
           </div>
