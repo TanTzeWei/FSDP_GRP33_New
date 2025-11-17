@@ -136,7 +136,7 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE(),
         
-        CONSTRAINT FK_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT FK_reviews_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE SET NULL,
         CONSTRAINT FK_reviews_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION,
         CONSTRAINT FK_reviews_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
         CONSTRAINT FK_reviews_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE NO ACTION
@@ -166,7 +166,7 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE(),
         
-        CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE SET NULL,
         CONSTRAINT FK_orders_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION
     );
     
