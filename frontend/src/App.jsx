@@ -15,6 +15,9 @@ import Profile from './components/Profile';
 import LocationMap from './components/LocationMap';
 import OrderHistory from './components/OrderHistory';
 import CartSidebar from './components/CartSidebar';
+import NetsQrSamplePage from "./pages/netsQrSamplePage"
+import TxnNetsSuccessStatusPage from "./pages/txnNetsSuccessStatusPage";
+import TxnNetsFailStatusPage from "./pages/txnNetsFailStatusPage";
 
 // Main App component with section navigation
 function MainApp() {
@@ -78,6 +81,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/points" element={<PointsSystem />} />
+        <Route path="/nets-qr" element={<NetsQrSamplePage />}/>
+        <Route path="/nets-qr/success" element={<TxnNetsSuccessStatusPage />} />
+        <Route path="/nets-qr/fail" element={<TxnNetsFailStatusPage />} />
       </Routes>
     </BrowserRouter>
   );
