@@ -4,6 +4,7 @@
 
 .hawker-points-system {
   width: 100%;
+  margin-top: -120px; /* Compensate for .main-content padding-top */
 }
 
 /* ===========================
@@ -229,7 +230,6 @@
    =========================== */
 
 .rewards-container {
-  min-height: 100vh;
   background-color: #f9fafb;
 }
 
