@@ -1,6 +1,6 @@
 import { Component } from "react";
 import Button from '@mui/material/Button';
-import txnSuccess from '../../assets/greenTick.png';
+import txnSuccess from '../assets/greenTick.png';
 export default class TxnNetsSuccessStatusLayout extends Component {
 
     render() {

@@ -1,6 +1,6 @@
 import { Component } from "react";
 import Button from '@mui/material/Button';
-import txnFail from '../../assets/redCross.png';
+import txnFail from '../assets/redCross.png';
 export default class TxnNetsFailStatusLayout extends Component {
 
     render() {

@@ -1,12 +1,11 @@
 import React, { Component } from "react";
 import Button from "@mui/material/Button";
-import netsQrInfo from "../../assets/netsQrInfo.png";
-import txnLoading from "../../assets/progressSpinner.gif";
-import netsQrLogo from "../../assets/netsQrLogo.png";
+import netsQrInfo from "../assets/netsQrInfo.png";
+import txnLoading from "../assets/progressSpinner.gif";
+import netsQrLogo from "../assets/netsQrLogo.png";
 import commonConfigs from "../../config";
 import axios from "axios";
 import { EventSourcePolyfill } from "event-source-polyfill";
-import { generateHmac } from "../../hmacUtil"; // hmac challenge
 
 class NetsQrSampleLayout extends Component {
   constructor(props) {
