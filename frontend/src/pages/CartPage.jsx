@@ -8,20 +8,8 @@ const CartPage = () => {
   const navigate = useNavigate();
   const { cartItems, updateQuantity, removeFromCart } = useContext(CartContext);
 
-  const demoItems = [
-    {
-      id: 1,
-      name: "Roasted Chicken Rice",
-      stallName: "Ah Seng Chicken Rice",
-      price: 4.5,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop",
-    }
-  ];
-
   const isDemo = !cartItems || cartItems.length === 0;
-  const itemsToRender = isDemo ? demoItems : cartItems;
+  const itemsToRender = cartItems;
 
   const getSubtotal = () =>
     (itemsToRender || []).reduce((sum, i) => sum + (parseFloat(i.price) || 0) * (i.quantity || 0), 0);
@@ -51,7 +39,23 @@ const CartPage = () => {
       </header>
 
       {/* EMPTY STATE */}
-      {/* MAIN CONTENT (uses demo items when cart is empty) */}
+      {isDemo && (
+        <section className="empty-cart-section">
+          <div className="empty-cart-message">
+            <ShoppingBag className="empty-cart-icon" />
+            <h2>Your cart is empty</h2>
+            <p>Add items from the menu to get started</p>
+            <button 
+              className="continue-shopping-button"
+              onClick={() => navigate('/')}
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* MAIN CONTENT */}
       {(itemsToRender && itemsToRender.length > 0) && (
         <section className="cart-content">
 
@@ -80,8 +84,7 @@ const CartPage = () => {
                         <button
                           className="remove-button"
                           onClick={() => removeFromCart(item.id)}
-                          disabled={isDemo}
-                          title={isDemo ? 'Demo item - add real items from menu' : 'Remove item'}
+                          title='Remove item'
                         >
                           <Trash2 className="remove-icon" />
                         </button>
@@ -91,7 +94,6 @@ const CartPage = () => {
                         <button
                           className="quantity-button"
                           onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
-                          disabled={isDemo}
                         >
                           <Minus className="quantity-icon" />
                         </button>
@@ -103,7 +105,6 @@ const CartPage = () => {
                         <button
                           className="quantity-button"
                           onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
-                          disabled={isDemo}
                         >
                           <Plus className="quantity-icon" />
                         </button>
@@ -156,8 +157,8 @@ const CartPage = () => {
                 </span>
               </div>
 
-              <button className="checkout-button" disabled={isDemo} onClick={() => !isDemo && alert('Proceeding to checkout...')}>
-                {isDemo ? 'Add items to checkout' : 'Proceed to Checkout'}
+              <button className="checkout-button" onClick={() => navigate('/netsqr')}>
+                Proceed to Checkout
               </button>
             </div>
           </aside>
