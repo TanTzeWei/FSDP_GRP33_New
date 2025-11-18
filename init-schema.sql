@@ -266,6 +266,105 @@ BEGIN
     GROUP BY hc.id, hc.name, hc.description, hc.address, hc.postal_code, hc.latitude, hc.longitude, hc.opening_hours, hc.closing_hours, hc.operating_days, hc.total_stalls, hc.rating, hc.total_reviews, hc.image_url, hc.facilities, hc.contact_phone, hc.managed_by, hc.status, hc.created_at, hc.updated_at');
 END;
 
+-- Points System Tables
+
+-- User points table to track current points balance
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'user_points')
+BEGIN
+    CREATE TABLE user_points (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        total_points INT DEFAULT 0,
+        created_at DATETIME2 DEFAULT GETDATE(),
+        updated_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_user_points_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE
+    );
+    
+    CREATE INDEX idx_user_points_user ON user_points(user_id);
+END;
+
+-- Points history to track all point transactions
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'points_history')
+BEGIN
+    CREATE TABLE points_history (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        transaction_type NVARCHAR(50) NOT NULL CHECK (transaction_type IN ('upload', 'upvote', 'redeem', 'adjust')),
+        points INT NOT NULL, -- Positive for earning, negative for spending
+        description NVARCHAR(MAX),
+        reference_type NVARCHAR(50), -- 'photo', 'review', 'voucher', etc.
+        reference_id INT, -- ID of the related entity
+        item_details NVARCHAR(MAX), -- JSON string with additional details
+        created_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_points_history_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE
+    );
+    
+    CREATE INDEX idx_points_history_user ON points_history(user_id);
+    CREATE INDEX idx_points_history_type ON points_history(transaction_type);
+    CREATE INDEX idx_points_history_date ON points_history(created_at DESC);
+END;
+
+-- Vouchers catalog
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'vouchers')
+BEGIN
+    CREATE TABLE vouchers (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(255) NOT NULL,
+        description NVARCHAR(MAX),
+        voucher_type NVARCHAR(50) NOT NULL CHECK (voucher_type IN ('discount', 'free_item', 'cashback')),
+        discount_value DECIMAL(10, 2), -- Discount amount in dollars
+        minimum_purchase DECIMAL(10, 2) DEFAULT 0, -- Minimum purchase requirement
+        points_required INT NOT NULL,
+        validity_days INT DEFAULT 30, -- Days until voucher expires after redemption
+        is_active BIT DEFAULT 1,
+        terms_conditions NVARCHAR(MAX), -- JSON string with T&C
+        created_at DATETIME2 DEFAULT GETDATE(),
+        updated_at DATETIME2 DEFAULT GETDATE()
+    );
+    
+    CREATE INDEX idx_vouchers_active ON vouchers(is_active);
+    CREATE INDEX idx_vouchers_points ON vouchers(points_required);
+END;
+
+-- Redeemed vouchers
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'redeemed_vouchers')
+BEGIN
+    CREATE TABLE redeemed_vouchers (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        voucher_id INT NOT NULL,
+        voucher_code NVARCHAR(20) NOT NULL UNIQUE,
+        redeemed_date DATETIME2 DEFAULT GETDATE(),
+        expiry_date DATETIME2 NOT NULL,
+        is_used BIT DEFAULT 0,
+        used_date DATETIME2,
+        order_id INT, -- Reference to order if used
+        created_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_redeemed_vouchers_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE,
+        CONSTRAINT FK_redeemed_vouchers_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE NO ACTION
+    );
+    
+    CREATE INDEX idx_redeemed_vouchers_user ON redeemed_vouchers(user_id);
+    CREATE INDEX idx_redeemed_vouchers_code ON redeemed_vouchers(voucher_code);
+    CREATE INDEX idx_redeemed_vouchers_used ON redeemed_vouchers(is_used);
+    CREATE INDEX idx_redeemed_vouchers_expiry ON redeemed_vouchers(expiry_date);
+END;
+
+-- Insert default vouchers
+IF NOT EXISTS (SELECT * FROM vouchers WHERE name = 'FREE DRINK')
+BEGIN
+    INSERT INTO vouchers (name, description, voucher_type, discount_value, minimum_purchase, points_required, validity_days, terms_conditions) VALUES
+    ('FREE DRINK', 'Any drink up to $2.50', 'free_item', 2.50, 0, 20, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]'),
+    ('$3 OFF', 'Get $3 off on any purchase above $10', 'discount', 3.00, 10.00, 30, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]'),
+    ('FREE SIDE DISH', 'Any side dish up to $3.50', 'free_item', 3.50, 0, 40, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]'),
+    ('$5 OFF', 'Get $5 off on any purchase above $15', 'discount', 5.00, 15.00, 50, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]'),
+    ('$10 OFF', 'Get $10 off on any purchase above $25', 'discount', 10.00, 25.00, 100, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]'),
+    ('$15 OFF', 'Get $15 off on any purchase above $40', 'discount', 15.00, 40.00, 150, 30, '["Voucher valid for 30 days after redemption","Cannot be combined with other offers","Non-refundable and non-transferable","Valid at all participating hawker stalls"]');
+END;
+
 PRINT 'Hawker Hub database schema created successfully!';
-PRINT 'Tables created: users, cuisine_types, hawker_centres, stalls, food_items, reviews, orders, order_items';
-PRINT 'Sample data inserted for cuisine types and hawker centres.';
+PRINT 'Tables created: users, cuisine_types, hawker_centres, stalls, food_items, reviews, orders, order_items, user_points, points_history, vouchers, redeemed_vouchers';
+PRINT 'Sample data inserted for cuisine types, hawker centres, and vouchers.';

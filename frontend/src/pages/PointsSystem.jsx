@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Trophy, Gift, Camera, ThumbsUp, ChevronRight, CheckCircle } from 'lucide-react';
 import { PointsContext } from '../context/PointsContext';
+import * as pointsService from '../services/pointsService';
 import './pointsSystem.css';
 
 const HawkerPointsSystem = () => {
@@ -8,7 +9,28 @@ const HawkerPointsSystem = () => {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [redeemed, setRedeemed] = useState(false);
   const [voucherDetails, setVoucherDetails] = useState(null);
+  const [availableVouchers, setAvailableVouchers] = useState([]);
+  const [loadingVouchers, setLoadingVouchers] = useState(false);
   const { userPoints, pointsHistory, redeemVoucher } = useContext(PointsContext);
+
+  // Fetch available vouchers on component mount
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
+
+  const fetchVouchers = async () => {
+    try {
+      setLoadingVouchers(true);
+      const result = await pointsService.getAllVouchers();
+      if (result.success) {
+        setAvailableVouchers(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching vouchers:', error);
+    } finally {
+      setLoadingVouchers(false);
+    }
+  };
 
   // Points Dashboard Screen
   const PointsDashboard = () => (
@@ -122,103 +144,46 @@ const HawkerPointsSystem = () => {
       {/* Vouchers List */}
       <div className="rewards-content">
         <div className="rewards-content-inner">
-          <div className="rewards-grid">
-            {/* $3 Voucher */}
-            <div className="voucher-card">
-              <div className="voucher-content">
-                <div className="voucher-header">
-                  <div>
-                    <div className="voucher-amount">$3 OFF</div>
-                    <div className="voucher-condition">Any purchase above $10</div>
+          {loadingVouchers ? (
+            <div className="loading-message">Loading vouchers...</div>
+          ) : availableVouchers.length === 0 ? (
+            <div className="no-vouchers-message">No vouchers available at the moment</div>
+          ) : (
+            <div className="rewards-grid">
+              {availableVouchers.map((voucher) => (
+                <div key={voucher.id} className="voucher-card">
+                  <div className="voucher-content">
+                    <div className="voucher-header">
+                      <div>
+                        <div className={`voucher-amount ${voucher.voucher_type === 'free_item' ? 'voucher-amount-drink' : ''}`}>
+                          {voucher.name}
+                        </div>
+                        <div className="voucher-condition">{voucher.description}</div>
+                      </div>
+                      <div className="voucher-cost">{voucher.points_required} pts</div>
+                    </div>
+                    <div className="voucher-validity">Valid for {voucher.validity_days} days after redemption</div>
+                    <button 
+                      onClick={() => {
+                        setSelectedVoucher({
+                          id: voucher.id,
+                          name: voucher.name,
+                          points: voucher.points_required,
+                          value: voucher.discount_value,
+                          minPurchase: voucher.minimum_purchase
+                        });
+                        setCurrentScreen('redeem');
+                      }}
+                      disabled={userPoints < voucher.points_required}
+                      className={`voucher-btn ${userPoints >= voucher.points_required ? 'voucher-btn-active' : 'voucher-btn-disabled'}`}
+                    >
+                      {userPoints >= voucher.points_required ? 'Redeem Now' : 'Not Enough Points'}
+                    </button>
                   </div>
-                  <div className="voucher-cost">30 pts</div>
                 </div>
-                <div className="voucher-validity">Valid for 30 days after redemption</div>
-                <button 
-                  onClick={() => {
-                    setSelectedVoucher({ name: '$3 OFF', points: 30, value: 3 });
-                    setCurrentScreen('redeem');
-                  }}
-                  disabled={userPoints < 30}
-                  className={`voucher-btn ${userPoints >= 30 ? 'voucher-btn-active' : 'voucher-btn-disabled'}`}
-                >
-                  {userPoints >= 30 ? 'Redeem Now' : 'Not Enough Points'}
-                </button>
-              </div>
+              ))}
             </div>
-
-            {/* $5 Voucher */}
-            <div className="voucher-card">
-              <div className="voucher-content">
-                <div className="voucher-header">
-                  <div>
-                    <div className="voucher-amount">$5 OFF</div>
-                    <div className="voucher-condition">Any purchase above $15</div>
-                  </div>
-                  <div className="voucher-cost">50 pts</div>
-                </div>
-                <div className="voucher-validity">Valid for 30 days after redemption</div>
-                <button 
-                  onClick={() => {
-                    setSelectedVoucher({ name: '$5 OFF', points: 50, value: 5 });
-                    setCurrentScreen('redeem');
-                  }}
-                  disabled={userPoints < 50}
-                  className={`voucher-btn ${userPoints >= 50 ? 'voucher-btn-active' : 'voucher-btn-disabled'}`}
-                >
-                  {userPoints >= 50 ? 'Redeem Now' : 'Not Enough Points'}
-                </button>
-              </div>
-            </div>
-
-            {/* $10 Voucher */}
-            <div className="voucher-card">
-              <div className="voucher-content">
-                <div className="voucher-header">
-                  <div>
-                    <div className="voucher-amount">$10 OFF</div>
-                    <div className="voucher-condition">Any purchase above $25</div>
-                  </div>
-                  <div className="voucher-cost">100 pts</div>
-                </div>
-                <div className="voucher-validity">Valid for 30 days after redemption</div>
-                <button 
-                  onClick={() => {
-                    setSelectedVoucher({ name: '$10 OFF', points: 100, value: 10 });
-                    setCurrentScreen('redeem');
-                  }}
-                  disabled={userPoints < 100}
-                  className={`voucher-btn ${userPoints >= 100 ? 'voucher-btn-active' : 'voucher-btn-disabled'}`}
-                >
-                  {userPoints >= 100 ? 'Redeem Now' : 'Not Enough Points'}
-                </button>
-              </div>
-            </div>
-
-            {/* Free Drink Voucher */}
-            <div className="voucher-card">
-              <div className="voucher-content">
-                <div className="voucher-header">
-                  <div>
-                    <div className="voucher-amount voucher-amount-drink">FREE DRINK</div>
-                    <div className="voucher-condition">Any drink up to $2.50</div>
-                  </div>
-                  <div className="voucher-cost">20 pts</div>
-                </div>
-                <div className="voucher-validity">Valid for 30 days after redemption</div>
-                <button 
-                  onClick={() => {
-                    setSelectedVoucher({ name: 'FREE DRINK', points: 20, value: 2.5 });
-                    setCurrentScreen('redeem');
-                  }}
-                  disabled={userPoints < 20}
-                  className={`voucher-btn ${userPoints >= 20 ? 'voucher-btn-active' : 'voucher-btn-disabled'}`}
-                >
-                  {userPoints >= 20 ? 'Redeem Now' : 'Not Enough Points'}
-                </button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -226,18 +191,33 @@ const HawkerPointsSystem = () => {
 
   // Redemption Confirmation Screen
   const RedemptionScreen = () => {
-    const handleRedeem = () => {
-      console.log('Redeem button clicked');
-      console.log('Selected voucher:', selectedVoucher);
-      console.log('User points:', userPoints);
-      const result = redeemVoucher(selectedVoucher);
-      console.log('Redeem result:', result);
-      if (result.success) {
-        setVoucherDetails(result.voucher);
-        setRedeemed(true);
-        console.log('Redeemed set to true');
-      } else {
-        console.log('Redemption failed:', result.message);
+    const [redeeming, setRedeeming] = useState(false);
+    const [redemptionError, setRedemptionError] = useState(null);
+
+    const handleRedeem = async () => {
+      try {
+        setRedeeming(true);
+        setRedemptionError(null);
+        console.log('Redeem button clicked');
+        console.log('Selected voucher:', selectedVoucher);
+        console.log('User points:', userPoints);
+        
+        const result = await redeemVoucher(selectedVoucher);
+        console.log('Redeem result:', result);
+        
+        if (result.success) {
+          setVoucherDetails(result.voucher);
+          setRedeemed(true);
+          console.log('Redeemed set to true');
+        } else {
+          console.log('Redemption failed:', result.message);
+          setRedemptionError(result.message || 'Failed to redeem voucher');
+        }
+      } catch (error) {
+        console.error('Redemption error:', error);
+        setRedemptionError('An error occurred while redeeming the voucher');
+      } finally {
+        setRedeeming(false);
       }
     };
 
@@ -306,7 +286,9 @@ const HawkerPointsSystem = () => {
                   <div className="voucher-preview-content">
                     <div className="voucher-preview-name">{selectedVoucher.name}</div>
                     <div className="voucher-preview-condition">
-                      Any purchase above ${selectedVoucher.value === 2.5 ? '0' : (selectedVoucher.value * 2.5).toFixed(0)}
+                      {selectedVoucher.minPurchase > 0 
+                        ? `Any purchase above $${selectedVoucher.minPurchase.toFixed(2)}`
+                        : 'No minimum purchase required'}
                     </div>
                   </div>
                 </div>
@@ -358,11 +340,17 @@ const HawkerPointsSystem = () => {
                 </div>
 
                 {/* Confirm Button */}
+                {redemptionError && (
+                  <div className="error-message" style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>
+                    {redemptionError}
+                  </div>
+                )}
                 <button 
                   onClick={handleRedeem}
+                  disabled={redeeming}
                   className="confirm-redeem-btn"
                 >
-                  Confirm Redemption
+                  {redeeming ? 'Redeeming...' : 'Confirm Redemption'}
                 </button>
               </div>
             </div>

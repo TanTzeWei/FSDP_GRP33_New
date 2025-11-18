@@ -18,7 +18,7 @@ const path = require('path');
 const cors = require('cors');
 
 // Import controllers with error handling
-let UserController, HawkerCentreController, authMiddleware;
+let UserController, HawkerCentreController, PointsController, authMiddleware;
 
 try {
     UserController = require('./controllers/userController');
@@ -32,6 +32,13 @@ try {
     console.log('✅ HawkerCentreController loaded');
 } catch (error) {
     console.error('❌ Error loading HawkerCentreController:', error.message);
+}
+
+try {
+    PointsController = require('./controllers/pointsController');
+    console.log('✅ PointsController loaded');
+} catch (error) {
+    console.error('❌ Error loading PointsController:', error.message);
 }
 
 try {
@@ -74,6 +81,32 @@ if (HawkerCentreController) {
     console.log('✅ Hawker centre routes configured');
 } else {
     console.log('⚠️  Hawker centre routes disabled (missing HawkerCentreController)');
+}
+
+// Points System Routes (only if controller loaded successfully)
+if (PointsController && authMiddleware) {
+    // User points and dashboard
+    app.get('/api/points', authMiddleware, PointsController.getUserPoints);
+    app.get('/api/points/dashboard', authMiddleware, PointsController.getPointsDashboard);
+    app.get('/api/points/history', authMiddleware, PointsController.getPointsHistory);
+    
+    // Earning points
+    app.post('/api/points/photo-upload', authMiddleware, PointsController.addPhotoUploadPoints);
+    app.post('/api/points/upvote', authMiddleware, PointsController.addUpvotePoints);
+    
+    // Vouchers
+    app.get('/api/vouchers', PointsController.getAllVouchers);
+    app.post('/api/vouchers/redeem', authMiddleware, PointsController.redeemVoucher);
+    app.get('/api/vouchers/redeemed', authMiddleware, PointsController.getRedeemedVouchers);
+    app.post('/api/vouchers/use', authMiddleware, PointsController.useVoucher);
+    app.get('/api/vouchers/code/:voucherCode', PointsController.getVoucherByCode);
+    
+    // Admin route (consider adding admin middleware)
+    app.post('/api/points/adjust', authMiddleware, PointsController.adjustPoints);
+    
+    console.log('✅ Points system routes configured');
+} else {
+    console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
 }
 // Simple health route
 app.get('/', (req, res) => {
