@@ -18,10 +18,10 @@ const Header = ({ activeSection, setActiveSection, onCartClick }) => {
     <header className="header">
       <div className="header-container">
         <div className="header-left">
-          <div className="logo" onClick={() => navigate('/')}>
+          <Link to="/" className="logo" onClick={() => setActiveSection && setActiveSection('menu')}>
             <div className="hawker-logo">🏪</div>
             <span className="brand-name">Hawker Hub</span>
-          </div>
+          </Link>
           
           <nav className="main-nav">
             {navItems.map((item) => (

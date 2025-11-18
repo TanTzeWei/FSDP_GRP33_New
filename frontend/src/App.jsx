@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import './App.css';
-import Home from "./pages/Home";
+// Home removed: MainApp (default `/`) provides the main UI
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import ProfilePage from "./pages/ProfilePage";
@@ -71,7 +71,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainApp />} />
-        <Route path="/home" element={<Home />} />
+        {/* /home route removed. Main app is available at / and /main */}
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
