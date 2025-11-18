@@ -1,5 +1,6 @@
 // components/Menu.js
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import './Menu.css';
 
@@ -189,7 +190,11 @@ const Menu = () => {
 
       <div className="stalls-grid">
         {filteredStalls.map(stall => (
-          <div key={stall.id} className="stall-card">
+          <Link
+            key={stall.id}
+            to={`/menu?stall=${stall.id}`}
+            className="stall-card"
+          >
             <div className="stall-image">
               <img src={stall.image} alt={stall.name} />
               <div className="stall-icon">{stall.stallIcon}</div>
@@ -202,9 +207,9 @@ const Menu = () => {
                 <span className="delivery-time">🕐 {stall.deliveryTime}</span>
                 <span className="distance">📍 {stall.distance}</span>
               </div>
-              <button className="view-menu-btn">View Menu</button>
+              <div className="view-menu-btn">View Menu</div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       </div>
