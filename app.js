@@ -19,6 +19,8 @@ const cors = require('cors');
 
 // Import controllers with error handling
 let UserController, HawkerCentreController, PointsController, authMiddleware;
+let DishController;
+let StallController;
 
 try {
     UserController = require('./controllers/userController');
@@ -46,6 +48,20 @@ try {
     console.log('✅ AuthMiddleware loaded');
 } catch (error) {
     console.error('❌ Error loading AuthMiddleware:', error.message);
+}
+
+try {
+    DishController = require('./controllers/dishController');
+    console.log('✅ DishController loaded');
+} catch (error) {
+    console.error('❌ Error loading DishController:', error.message);
+}
+
+try {
+    StallController = require('./controllers/stallController');
+    console.log('✅ StallController loaded');
+} catch (error) {
+    console.error('❌ Error loading StallController:', error.message);
 }
 
 // Create Express app
@@ -81,6 +97,35 @@ if (HawkerCentreController) {
     console.log('✅ Hawker centre routes configured');
 } else {
     console.log('⚠️  Hawker centre routes disabled (missing HawkerCentreController)');
+}
+
+// Dish routes (food_items CRUD)
+if (DishController) {
+    // Public: list dishes for a stall
+    app.get('/api/stalls/:stallId/dishes', DishController.listByStall);
+    // Public: get single dish
+    app.get('/api/dishes/:id', DishController.getDish);
+
+    // Protected routes: create/update/delete dishes (requires auth)
+    if (authMiddleware) {
+        app.post('/api/dishes', authMiddleware, DishController.createDish);
+        app.put('/api/dishes/:id', authMiddleware, DishController.updateDish);
+        app.delete('/api/dishes/:id', authMiddleware, DishController.deleteDish);
+    } else {
+        console.log('⚠️  Dish write routes disabled (missing authMiddleware)');
+    }
+
+    console.log('✅ Dish routes configured');
+} else {
+    console.log('⚠️  Dish routes disabled (missing DishController)');
+}
+
+// Stall route: get stall details
+if (StallController) {
+    app.get('/api/stalls/:id', StallController.getStallById);
+    console.log('✅ Stall route configured');
+} else {
+    console.log('⚠️  Stall routes disabled (missing StallController)');
 }
 
 // Points System Routes (only if controller loaded successfully)

@@ -100,6 +100,12 @@ const LocationMap = () => {
       distance: '0.8 km',
       priceRange: '$',
       popularDishes: ['Hainanese Chicken Rice', 'Char Kway Teow', 'Laksa'],
+      // Manually entered sample menu for display on stall cards
+      menu: [
+        { name: 'Hainanese Chicken Rice', price: 5.00 },
+        { name: 'Char Kway Teow', price: 4.50 },
+        { name: 'Laksa (Regular)', price: 4.00 }
+      ],
       phoneNumber: '+65 6225 8359'
     },
     {
@@ -119,6 +125,10 @@ const LocationMap = () => {
       distance: '1.2 km',
       priceRange: '$$',
       popularDishes: ['Satay', 'Bak Kut Teh', 'Carrot Cake'],
+      menu: [
+        { name: 'Chicken Satay (5pcs)', price: 6.50 },
+        { name: 'Bak Kut Teh (Small)', price: 5.50 }
+      ],
       phoneNumber: '+65 6220 2138'
     },
     {
@@ -138,6 +148,10 @@ const LocationMap = () => {
       distance: '2.1 km',
       priceRange: '$$',
       popularDishes: ['BBQ Seafood', 'Satay', 'Oyster Omelette'],
+      menu: [
+        { name: 'BBQ Prawns', price: 12.00 },
+        { name: 'Oyster Omelette', price: 7.50 }
+      ],
       phoneNumber: '+65 6235 1471'
     },
     {
@@ -157,6 +171,10 @@ const LocationMap = () => {
       distance: '0.5 km',
       priceRange: '$',
       popularDishes: ['Soya Sauce Chicken', 'Fish Ball Noodles', 'Rojak'],
+      menu: [
+        { name: 'Soya Sauce Chicken Rice', price: 4.50 },
+        { name: 'Fish Ball Noodles', price: 3.50 }
+      ],
       phoneNumber: '+65 6534 6984'
     },
     {
@@ -176,6 +194,10 @@ const LocationMap = () => {
       distance: '1.8 km',
       priceRange: '$',
       popularDishes: ['Biryani', 'Roti Prata', 'Fish Head Curry'],
+      menu: [
+        { name: 'Fish Head Curry', price: 8.50 },
+        { name: 'Roti Prata', price: 2.50 }
+      ],
       phoneNumber: '+65 6297 1059'
     },
     {
@@ -195,6 +217,10 @@ const LocationMap = () => {
       distance: '1.5 km',
       priceRange: '$$',
       popularDishes: ['Lor Mee', 'Chwee Kueh', 'Kaya Toast'],
+      menu: [
+        { name: 'Lor Mee', price: 4.00 },
+        { name: 'Chwee Kueh (3pcs)', price: 2.50 }
+      ],
       phoneNumber: '+65 6270 7611'
     }
   ];
@@ -363,6 +389,18 @@ const LocationMap = () => {
                             <span className="cuisine-more">+{hawker.cuisines.length - 3} more</span>
                           )}
                         </div>
+
+                        {/* Manually-entered menu preview shown on the bottom of the stall card */}
+                        {hawker.menu && hawker.menu.length > 0 && (
+                          <div className="hawker-menu">
+                            {hawker.menu.slice(0,3).map((m, idx) => (
+                              <div key={idx} className="menu-item-chip">
+                                <span className="menu-item-name">{m.name}</span>
+                                <span className="menu-item-price">${m.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         <button 
                           className="hawker-details-btn"

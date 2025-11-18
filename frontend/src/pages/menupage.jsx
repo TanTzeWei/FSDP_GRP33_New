@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Clock, MapPin, Search } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
 import './menupage.css';
 
@@ -9,18 +10,22 @@ const MenuPage = () => {
 
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const stall = {
-    name: "Ah Seng Chicken Rice",
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { stallId } = useParams();
+  const [stall, setStall] = useState({
+    name: 'Ah Seng Chicken Rice',
     rating: 4.5,
     reviews: 328,
-    deliveryTime: "20–30 min",
-    distance: "1.2 km",
-    image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&auto=format&fit=crop",
-    categories: ["Chicken Rice", "Local Delights", "Halal"]
-  };
+    deliveryTime: '20–30 min',
+    distance: '1.2 km',
+    image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&auto=format&fit=crop',
+    categories: ['Chicken Rice','Local Delights','Halal']
+  });
 
-  const menuItems = [
+  // Sample fallback menu (used until API returns)
+  const sampleMenu = [
     { id: 1, name: "Roasted Chicken Rice", description: "Tender roasted chicken served with fragrant rice.", price: 4.50, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop", category: "Main Dishes", popular: true },
     { id: 2, name: "Steamed Chicken Rice", description: "Succulent steamed chicken with aromatic rice.", price: 4.50, image: "https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=400&auto=format&fit=crop", category: "Main Dishes", popular: true },
     { id: 3, name: "Soy Sauce Chicken Rice", description: "Chicken marinated in soy sauce served with rice.", price: 4.50, image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400&auto=format&fit=crop", category: "Main Dishes" },
@@ -45,12 +50,82 @@ const MenuPage = () => {
   const getTotalPrice = () =>
     cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
 
-  const filtered = menuItems.filter(item =>
+  // Filter menu items by search term
+  const filtered = (menuItems.length > 0 ? menuItems : sampleMenu).filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.description || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const categories = [...new Set(menuItems.map(i => i.category))];
+  const categories = [...new Set((menuItems.length > 0 ? menuItems : sampleMenu).map(i => i.category))];
+
+  // Fetch dishes from backend when component mounts or stallId changes
+  useEffect(() => {
+    const id = stallId ? parseInt(stallId) : null;
+    const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE) ? import.meta.env.VITE_API_BASE : '';
+
+    if (!id) {
+      // No stall id in URL — keep sample data
+      setMenuItems(sampleMenu);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    // Fetch stall details
+    if (id) {
+      fetch(`${apiBase}/api/stalls/${id}`)
+        .then(async res => {
+          if (!res.ok) throw new Error(`Server responded ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.success && data.data) {
+            const s = data.data;
+            setStall({
+              name: s.stall_name || s.stallName || 'Stall',
+              rating: s.rating || 0,
+              reviews: s.total_reviews || 0,
+              deliveryTime: s.opening_hours ? `${s.opening_hours} - ${s.closing_hours}` : '',
+              distance: '',
+              image: s.image_url || s.image || '',
+              categories: s.specialties || []
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('Failed to fetch stall details:', err);
+        });
+
+      fetch(`${apiBase}/api/stalls/${id}/dishes`)
+      .then(async res => {
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.success && Array.isArray(data.data)) {
+          const formatted = data.data.map(d => ({
+            id: d.id,
+            name: d.name,
+            description: d.description || '',
+            price: d.price !== undefined ? parseFloat(d.price) : 0,
+            image: d.image_url || d.image || '',
+            category: d.category || 'Main Dishes',
+            popular: d.is_popular === 1 || d.is_popular === true
+          }));
+
+          setMenuItems(formatted);
+        } else {
+          setMenuItems(sampleMenu);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch dishes:', err);
+        setError('Failed to load menu');
+        setMenuItems(sampleMenu);
+      })
+      .finally(() => setLoading(false));
+    }
+  }, [stallId]);
 
   return (
     <main className="menu-page">
