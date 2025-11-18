@@ -10,11 +10,18 @@ import { EventSourcePolyfill } from "event-source-polyfill";
 class NetsQrSampleLayout extends Component {
   constructor(props) {
     super(props);
+    // Prefer checkout amount passed via router state (from CartSidebar), then fall back to localStorage if present.
+    const navState = props?.navState || {};
+    const checkoutAmountFromState = navState?.amount ? parseFloat(navState.amount) : null;
+    const checkoutAmountFromStorage = parseFloat(localStorage.getItem('checkoutAmount')) || null;
+    const finalAmount = checkoutAmountFromState ?? checkoutAmountFromStorage ?? 3;
+    const generatedTxnId = `sandbox_nets|m|${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+
     this.state = {
       convertTime: {},
       secondsNetsTimeout: 300, // TODO 8: Total duration before NETS QR transaction timeout (5 minutes)
-      amount: 3, // TODO 9: Set amount
-      txnId: "sandbox_nets|m|8ff8e5b6-d43e-4786-8ac5-7accf8c5bd9b", // TODO 10: Refer to 'README.md' file
+      amount: finalAmount, // use checkout amount if provided
+      txnId: generatedTxnId,
       mobile: 0, // TODO 11: Set mobile number
       netsQrPayment: txnLoading,
       netsQrRetrievalRef: "",
