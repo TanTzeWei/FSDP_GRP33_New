@@ -48,6 +48,27 @@
   100% { transform: rotate(360deg); }
 }
 
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* User Location Marker Styles */
+.custom-user-location {
+  background: transparent !important;
+  border: none !important;
+}
+
 /* Map Content Layout */
 .map-content {
   display: grid;
@@ -134,6 +155,30 @@
 
 .popup-details-btn:hover {
   background: #00a045;
+}
+
+.popup-order-btn {
+  background: linear-gradient(135deg, #00b14f 0%, #007a3d 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 177, 79, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.popup-order-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.4);
+  background: linear-gradient(135deg, #007a3d 0%, #00b14f 100%);
 }
 
 /* Override Leaflet popup styles */
