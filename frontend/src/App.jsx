@@ -20,6 +20,7 @@ import CartSidebar from './components/CartSidebar';
 function MainApp() {
   const [activeSection, setActiveSection] = useState('menu');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedHawkerCenter, setSelectedHawkerCenter] = useState(null);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -32,7 +33,7 @@ function MainApp() {
       case 'profile':
         return <OrderHistory />;
       case 'location':
-        return <LocationMap />;
+        return <LocationMap onHawkerSelect={setSelectedHawkerCenter} />;
       default:
         return <Menu />;
     }
@@ -53,6 +54,7 @@ function MainApp() {
         activeSection={activeSection} 
         setActiveSection={setActiveSection}
         onCartClick={handleCartClick}
+        selectedHawkerCenter={selectedHawkerCenter}
       />
       <main className="main-content">
         {renderSection()}
