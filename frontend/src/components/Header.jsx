@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './Header.css';
 
-const Header = ({ activeSection, setActiveSection, onCartClick }) => {
+const Header = ({ activeSection, setActiveSection, onCartClick, selectedHawkerCenter }) => {
   const navItems = [
     { key: 'menu', label: 'Food' },
     { key: 'deals', label: 'Upload' },
@@ -34,7 +34,9 @@ const Header = ({ activeSection, setActiveSection, onCartClick }) => {
         <div className="header-right">
           <div className="location-selector" onClick={() => setActiveSection('location')}>
             <span className="location-icon">📍</span>
-            <span className="location-text">Singapore</span>
+            <span className="location-text">
+              {selectedHawkerCenter ? selectedHawkerCenter.name : 'Singapore'}
+            </span>
           </div>
           
           <button 
