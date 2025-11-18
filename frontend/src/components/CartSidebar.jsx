@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react';
 import { CartContext } from '../context/CartContext';
 import { Plus, Minus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './CartSidebar.css';
 
 const CartSidebar = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('cart');
+  const navigate = useNavigate();
   
   console.log('CartSidebar component mounted!');
   
@@ -57,7 +59,9 @@ const CartSidebar = ({ onClose }) => {
   };
 
   const proceedToCheckout = () => {
-    alert('Proceeding to checkout...');
+    // Pass checkout data via navigation state (avoid storing secrets in localStorage)
+    const total = parseFloat((cartTotal + 2.50).toFixed(2));
+    navigate('/nets-qr', { state: { amount: total, items: cartItems } });
   };
 
   return (

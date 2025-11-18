@@ -1,11 +1,14 @@
 // components/Menu.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import './Menu.css';
 
 const Menu = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [featuredPhotos, setFeaturedPhotos] = useState([]);
+  const [communityPhotos, setCommunityPhotos] = useState([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
   const stallItems = [
     {
       id: 1,
@@ -77,24 +80,56 @@ const Menu = () => {
 
   const categories = ["All", "Chinese", "Malay", "Indian", "Peranakan", "Western", "Drinks"];
 
-  // Mock data for user-uploaded photos (will be replaced with API data later)
-  const featuredPhotos = [
-    { id: 1, imageUrl: "/api/placeholder/200/200", dishName: "Signature Laksa", stallName: "Peranakan Kitchen", likes: 247, username: "foodie_anna", verified: true },
-    { id: 2, imageUrl: "/api/placeholder/200/200", dishName: "Char Siu Rice", stallName: "Ah Lim's Chinese Stall", likes: 189, username: "hungry_tom", verified: false },
-    { id: 3, imageUrl: "/api/placeholder/200/200", dishName: "Rendang Beef", stallName: "Warung Pak Hasan", likes: 203, username: "spice_lover", verified: true },
-    { id: 4, imageUrl: "/api/placeholder/200/200", dishName: "Masala Dosa", stallName: "Mumbai Spice Corner", likes: 156, username: "curry_king", verified: false }
-  ];
+  // Fetch photos from API
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      setLoadingPhotos(true);
+      try {
+        // Fetch featured photos
+        const featuredResponse = await fetch('http://localhost:3000/api/photos/featured');
+        const featuredData = await featuredResponse.json();
+        
+        console.log('Featured photos response:', featuredData);
+        
+        if (featuredData.success) {
+          setFeaturedPhotos(featuredData.data || []);
+          console.log('Featured photos set:', featuredData.data);
+        }
 
-  const communityPhotos = [
-    { id: 5, imageUrl: "/api/placeholder/150/150", dishName: "Wonton Noodles", stallName: "Ah Lim's Chinese Stall", likes: 42, username: "noodle_ninja" },
-    { id: 6, imageUrl: "/api/placeholder/150/150", dishName: "Nasi Lemak", stallName: "Warung Pak Hasan", likes: 38, username: "coconut_rice" },
-    { id: 7, imageUrl: "/api/placeholder/150/150", dishName: "Fish & Chips", stallName: "Western Grill House", likes: 31, username: "crispy_fish" },
-    { id: 8, imageUrl: "/api/placeholder/150/150", dishName: "Bubble Tea", stallName: "Fresh Drinks Bar", likes: 67, username: "boba_boss" },
-    { id: 9, imageUrl: "/api/placeholder/150/150", dishName: "Roti Prata", stallName: "Mumbai Spice Corner", likes: 29, username: "flaky_bread" },
-    { id: 10, imageUrl: "/api/placeholder/150/150", dishName: "Kueh Lapis", stallName: "Peranakan Kitchen", likes: 45, username: "heritage_food" },
-    { id: 11, imageUrl: "/api/placeholder/150/150", dishName: "Mee Goreng", stallName: "Warung Pak Hasan", likes: 33, username: "spicy_noodles" },
-    { id: 12, imageUrl: "/api/placeholder/150/150", dishName: "Fresh Juice", stallName: "Fresh Drinks Bar", likes: 28, username: "vitamin_c" }
-  ];
+        // Fetch community photos
+        const communityResponse = await fetch('http://localhost:3000/api/photos?limit=12');
+        const communityData = await communityResponse.json();
+        
+        console.log('Community photos response:', communityData);
+        
+        if (communityData.success) {
+          setCommunityPhotos(communityData.data || []);
+          console.log('Community photos set:', communityData.data);
+        }
+      } catch (error) {
+        console.error('Error fetching photos:', error);
+        // Set fallback mock data if API fails
+        setFeaturedPhotos([
+          { id: 1, imageUrl: "/api/placeholder/200/200", dishName: "Signature Laksa", stallName: "Peranakan Kitchen", likes: 247, username: "foodie_anna" },
+          { id: 2, imageUrl: "/api/placeholder/200/200", dishName: "Char Siu Rice", stallName: "Ah Lim's Chinese Stall", likes: 189, username: "hungry_tom" },
+          { id: 3, imageUrl: "/api/placeholder/200/200", dishName: "Rendang Beef", stallName: "Warung Pak Hasan", likes: 203, username: "spice_lover" },
+          { id: 4, imageUrl: "/api/placeholder/200/200", dishName: "Masala Dosa", stallName: "Mumbai Spice Corner", likes: 156, username: "curry_king" }
+        ]);
+        setCommunityPhotos([
+          { id: 5, imageUrl: "/api/placeholder/150/150", dishName: "Wonton Noodles", stallName: "Ah Lim's Chinese Stall", likes: 42, username: "noodle_ninja" },
+          { id: 6, imageUrl: "/api/placeholder/150/150", dishName: "Nasi Lemak", stallName: "Warung Pak Hasan", likes: 38, username: "coconut_rice" },
+          { id: 7, imageUrl: "/api/placeholder/150/150", dishName: "Fish & Chips", stallName: "Western Grill House", likes: 31, username: "crispy_fish" },
+          { id: 8, imageUrl: "/api/placeholder/150/150", dishName: "Bubble Tea", stallName: "Fresh Drinks Bar", likes: 67, username: "boba_boss" }
+        ]);
+      } finally {
+        setLoadingPhotos(false);
+      }
+    };
+
+    fetchPhotos();
+  }, []);
+
+
 
   const filteredStalls = selectedCategory === 'All' 
     ? stallItems 
@@ -111,31 +146,45 @@ const Menu = () => {
           <p className="section-subtitle">Most loved dishes captured by our community</p>
         </div>
         
-        <div className="featured-photos-grid">
-          {featuredPhotos.map(photo => (
-            <div key={photo.id} className="featured-photo-card">
-              <div className="photo-container">
-                <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
-                <div className="photo-overlay">
-                  <div className="likes-badge">
-                    <span className="heart-icon">❤️</span>
-                    <span className="likes-count">{photo.likes}</span>
+        {loadingPhotos ? (
+          <div className="photos-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading amazing food photos...</p>
+          </div>
+        ) : (
+          <div className="featured-photos-grid">
+            {featuredPhotos.length > 0 ? (
+              featuredPhotos.map(photo => (
+                <div key={photo.id} className="featured-photo-card">
+                  <div className="photo-container">
+                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <div className="photo-overlay">
+                      <div className="likes-badge">
+                        <span className="heart-icon">❤️</span>
+                        <span className="likes-count">{photo.likes}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="photo-info">
+                    <h4 className="dish-name">{photo.dishName}</h4>
+                    <p className="stall-name">{photo.stallName}</p>
+                    <div className="photo-meta">
+                      <span className="username">
+                        @{photo.username}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="no-photos-message">
+                <span className="no-photos-icon">📷</span>
+                <h4>No featured photos yet!</h4>
+                <p>Amazing food photos will appear here when shared by the community!</p>
               </div>
-              <div className="photo-info">
-                <h4 className="dish-name">{photo.dishName}</h4>
-                <p className="stall-name">{photo.stallName}</p>
-                <div className="photo-meta">
-                  <span className="username">
-                    {photo.verified && <span className="verified-badge">✓</span>}
-                    @{photo.username}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Community Food Snapshots - All User Photos */}
@@ -145,32 +194,49 @@ const Menu = () => {
           <p className="section-subtitle">Real dishes, real stories from fellow food lovers</p>
         </div>
         
-        <div className="community-photos-grid">
-          {communityPhotos.map(photo => (
-            <div key={photo.id} className="community-photo-card">
-              <div className="photo-container">
-                <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
-                <div className="photo-overlay">
-                  <div className="likes-badge small">
-                    <span className="heart-icon">❤️</span>
-                    <span className="likes-count">{photo.likes}</span>
+        {loadingPhotos ? (
+          <div className="photos-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading community photos...</p>
+          </div>
+        ) : (
+          <div className="community-photos-grid">
+            {communityPhotos.length > 0 ? (
+              communityPhotos.map(photo => (
+                <div key={photo.id} className="community-photo-card">
+                  <div className="photo-container">
+                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <div className="photo-overlay">
+                      <div className="likes-badge small">
+                        <span className="heart-icon">❤️</span>
+                        <span className="likes-count">{photo.likes}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="photo-info">
+                    <h5 className="dish-name">{photo.dishName}</h5>
+                    <p className="stall-name">{photo.stallName}</p>
+                    <span className="username">@{photo.username}</span>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="no-photos-message">
+                <span className="no-photos-icon">📷</span>
+                <h4>No community photos yet!</h4>
+                <p>Community photos will appear here when uploaded!</p>
               </div>
-              <div className="photo-info">
-                <h5 className="dish-name">{photo.dishName}</h5>
-                <p className="stall-name">{photo.stallName}</p>
-                <span className="username">@{photo.username}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
         
-        <div className="view-more-container">
-          <button className="view-more-btn">
-            📱 View All Community Photos
-          </button>
-        </div>
+        {communityPhotos.length > 0 && (
+          <div className="view-more-container">
+            <button className="view-more-btn">
+              📱 View All Community Photos
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="menu-section">
@@ -213,6 +279,8 @@ const Menu = () => {
         ))}
       </div>
       </div>
+
+
     </div>
   );
 };

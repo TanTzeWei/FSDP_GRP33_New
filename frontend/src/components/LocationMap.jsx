@@ -60,6 +60,41 @@ const createHawkerIcon = (rating) => {
   });
 };
 
+// Custom user location icon - blue circle with white outer ring
+const createUserLocationIcon = () => {
+  return L.divIcon({
+    className: 'custom-user-location',
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007AFF;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        position: relative;
+      ">
+      </div>
+      <div style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 122, 255, 0.3);
+        background: rgba(0, 122, 255, 0.1);
+        animation: pulse 2s infinite;
+      ">
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
+  });
+};
+
 // Component to handle map events
 const MapController = ({ center, zoom }) => {
   const map = useMap();
@@ -73,13 +108,15 @@ const MapController = ({ center, zoom }) => {
   return null;
 };
 
-const LocationMap = () => {
+const LocationMap = ({ onHawkerSelect }) => {
   const [hawkerCentres, setHawkerCentres] = useState([]);
   const [selectedHawker, setSelectedHawker] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mapCenter, setMapCenter] = useState({ lat: 1.3521, lng: 103.8198 }); // Singapore center
   const [zoom, setZoom] = useState(11);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
 
   // Mock hawker centre data (in real app, this would come from API)
   const mockHawkerData = [
@@ -249,6 +286,40 @@ const LocationMap = () => {
     fetchHawkerCentres();
   }, []);
 
+  // Get user's current location
+  useEffect(() => {
+    const getUserLocation = () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            setLocationError(null);
+            console.log('User location obtained:', latitude, longitude);
+          },
+          (error) => {
+            console.error('Error getting user location:', error);
+            setLocationError(error.message);
+            // Fallback to Singapore center if location access is denied
+            setUserLocation({ lat: 1.3521, lng: 103.8198 });
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5 minutes
+          }
+        );
+      } else {
+        console.error('Geolocation is not supported by this browser');
+        setLocationError('Geolocation not supported');
+        // Fallback to Singapore center
+        setUserLocation({ lat: 1.3521, lng: 103.8198 });
+      }
+    };
+
+    getUserLocation();
+  }, []);
+
   const handleMarkerClick = (hawker) => {
     setSelectedHawker(hawker);
     setMapCenter({ lat: hawker.latitude, lng: hawker.longitude });
@@ -259,6 +330,19 @@ const LocationMap = () => {
   const openDetailModal = (hawker) => {
     setSelectedHawker(hawker);
     setShowDetailModal(true);
+  };
+
+  const handleOrderHere = (hawker) => {
+    // Update the header location text with selected hawker
+    if (onHawkerSelect) {
+      onHawkerSelect(hawker);
+    }
+    
+    // Optional: You can add additional order logic here
+    console.log(`Order placed at: ${hawker.name}`);
+    
+    // Show a brief confirmation or redirect to menu
+    alert(`🛍️ Great choice! You're now ordering from ${hawker.name}`);
   };
 
   const closeDetails = () => {
@@ -317,6 +401,27 @@ const LocationMap = () => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
                   
+                  {/* User Current Location Marker */}
+                  {userLocation && (
+                    <Marker
+                      position={[userLocation.lat, userLocation.lng]}
+                      icon={createUserLocationIcon()}
+                    >
+                      <Popup>
+                        <div className="map-popup">
+                          <h4>📍 Your Current Location</h4>
+                          <p className="popup-address">
+                            Lat: {userLocation.lat.toFixed(6)}<br/>
+                            Lng: {userLocation.lng.toFixed(6)}
+                          </p>
+                          <div className="popup-info">
+                            <span>🎯 You are here</span>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
+                  
                   {/* Hawker Centre Markers with Custom Pins */}
                   {hawkerCentres.map((hawker) => (
                     <Marker
@@ -339,13 +444,13 @@ const LocationMap = () => {
                             <span>🕐 {hawker.openingHours}</span>
                           </div>
                           <button 
-                            className="popup-details-btn"
+                            className="popup-order-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDetailModal(hawker);
+                              handleOrderHere(hawker);
                             }}
                           >
-                            View Details
+                            🛍️ Order Here
                           </button>
                         </div>
                       </Popup>

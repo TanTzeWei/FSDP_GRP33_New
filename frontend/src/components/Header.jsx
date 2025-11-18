@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import Avatar from './Avatar';
 import './Header.css';
 
-const Header = ({ activeSection, setActiveSection, onCartClick }) => {
+const Header = ({ activeSection, setActiveSection, onCartClick, selectedHawkerCenter }) => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   
@@ -39,7 +39,9 @@ const Header = ({ activeSection, setActiveSection, onCartClick }) => {
         <div className="header-right">
           <div className="location-selector" onClick={() => setActiveSection('location')}>
             <span className="location-icon">📍</span>
-            <span className="location-text">Singapore</span>
+            <span className="location-text">
+              {selectedHawkerCenter ? selectedHawkerCenter.name : 'Singapore'}
+            </span>
           </div>
           
           <button 
