@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import './App.css';
 // Home removed: MainApp (default `/`) provides the main UI
 import Login from "./pages/login";
@@ -14,12 +14,11 @@ import PointsSystem from './pages/PointsSystem';
 import Profile from './components/Profile';
 import LocationMap from './components/LocationMap';
 import OrderHistory from './components/OrderHistory';
-import CartSidebar from './components/CartSidebar';
 
 // Main App component with section navigation
 function MainApp() {
   const [activeSection, setActiveSection] = useState('menu');
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const navigate = useNavigate();
 
   const renderSection = () => {
     switch (activeSection) {
@@ -39,12 +38,8 @@ function MainApp() {
   };
 
   const handleCartClick = () => {
-    console.log('Cart button clicked! Opening cart sidebar...');
-    setIsCartOpen(true);
-  };
-
-  const handleCartClose = () => {
-    setIsCartOpen(false);
+    // Navigate to the single cart page instead of opening a sidebar
+    navigate('/cart');
   };
 
   return (
@@ -57,11 +52,6 @@ function MainApp() {
       <main className="main-content">
         {renderSection()}
       </main>
-      {isCartOpen && (
-        <div>
-          <CartSidebar onClose={handleCartClose} />
-        </div>
-      )}
     </div>
   );
 }

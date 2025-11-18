@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ShoppingCart, Star, Clock, MapPin, Search } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
+import { CartContext } from '../context/CartContext';
 import './menupage.css';
 
 const MenuPage = () => {
   const navigate = useNavigate();
 
-  const [cart, setCart] = useState([]);
+  const { cartItems, addToCart, getTotalItems, getTotalPrice } = useContext(CartContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,22 +34,7 @@ const MenuPage = () => {
     { id: 5, name: "Iced Lemon Tea", description: "Refreshing homemade iced lemon tea.", price: 1.50, image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&auto=format&fit=crop", category: "Drinks" },
   ];
 
-  const addToCart = (item) => {
-    const existing = cart.find(i => i.id === item.id);
-    if (existing) {
-      setCart(cart.map(i => 
-        i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-      ));
-    } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
-    }
-  };
-
-  const getTotalItems = () =>
-    cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const getTotalPrice = () =>
-    cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+  // addToCart, getTotalItems, getTotalPrice provided by CartContext
 
   // Filter menu items by search term
   const filtered = (menuItems.length > 0 ? menuItems : sampleMenu).filter(item =>
@@ -236,12 +222,12 @@ const MenuPage = () => {
       </section>
 
       {/* CART FOOTER */}
-      {cart.length > 0 && (
+      {cartItems && cartItems.length > 0 && (
         <footer className="cart-footer">
           <div className="cart-footer-container">
             <div className="cart-summary">
               <span className="cart-items-count">{getTotalItems()} items</span>
-              <span className="cart-total-price">${getTotalPrice()}</span>
+              <span className="cart-total-price">${getTotalPrice().toFixed(2)}</span>
               <button 
                 className="view-cart-button"
                 onClick={() => navigate('/cart')}
