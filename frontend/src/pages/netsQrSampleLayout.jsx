@@ -15,7 +15,7 @@ class NetsQrSampleLayout extends Component {
     const checkoutAmountFromState = navState?.amount ? parseFloat(navState.amount) : null;
     const checkoutAmountFromStorage = parseFloat(localStorage.getItem('checkoutAmount')) || null;
     const finalAmount = checkoutAmountFromState ?? checkoutAmountFromStorage ?? 3;
-    const generatedTxnId = `sandbox_nets|m|${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+    const generatedTxnId = `sandbox_nets|m|8ff8e5b6-d43e-4786-8ac5-7accf8c5bd9b`;
 
     this.state = {
       convertTime: {},
@@ -46,6 +46,11 @@ class NetsQrSampleLayout extends Component {
   async requestNets(amount, txnId, mobile) {
     // TODO 14: Fill in codes for NETS QR Request function
     try {
+    console.log("[requestNets] 🔄 Starting NETS QR request...");
+    console.log("[requestNets] URL:", commonConfigs.apiUrls.requestNetsApi());
+    console.log("[requestNets] Headers:", commonConfigs.apiHeader);
+    console.log("[requestNets] API Key value:", commonConfigs.apiHeader["api-key"]);
+    console.log("[requestNets] Project ID value:", commonConfigs.apiHeader["project-id"]);
     this.setState({ netsQrGenerate: true })
     var body = {
     txn_id: txnId,
@@ -53,12 +58,15 @@ class NetsQrSampleLayout extends Component {
     notify_mobile: mobile
     }
 
-    console.log(body);
+    console.log("[requestNets] Request body:", body);
 
     await axios.post(commonConfigs.apiUrls.requestNetsApi(), body, { headers: commonConfigs.apiHeader })
     .then((res) => {
-        console.log(res);
+        console.log("[requestNets] ✅ Success response received:", res);
+        console.log("[requestNets] Response status:", res.status);
+        console.log("[requestNets] Response data:", res.data);
         var resData = res.data.result.data;
+        console.log("[requestNets] Extracted resData:", resData);
 
         if (
         resData.response_code == "00" &&
@@ -66,6 +74,7 @@ class NetsQrSampleLayout extends Component {
         resData.qr_code !== "" &&
         resData.qr_code !== null
         ) {
+        console.log("[requestNets] ✅ QR Code generated successfully!");
         localStorage.setItem("txnRetrievalRef", resData.txn_retrieval_ref);
         this.startNetsTimer();
         this.setState({
@@ -77,6 +86,8 @@ class NetsQrSampleLayout extends Component {
         });
         this.webhookNets();
         } else {
+        console.log("[requestNets] ⚠️ QR generation failed with response code:", resData.response_code);
+        console.log("[requestNets] Response code details:", resData);
         this.setState({
             netsQrResponseCode:
             resData.response_code === ""
@@ -97,10 +108,22 @@ class NetsQrSampleLayout extends Component {
         }
     })
     .catch((err) => {
-        console.log(err);
-        window.location.href = "/nets-qr/fail";
+        console.error("[requestNets] ❌ API Error occurred!");
+        console.error("[requestNets] Error message:", err.message);
+        console.error("[requestNets] Error response:", err.response?.data);
+        console.error("[requestNets] Status code:", err.response?.status);
+        console.error("[requestNets] Status text:", err.response?.statusText);
+        console.error("[requestNets] Config headers used:", err.config?.headers);
+        console.error("[requestNets] Full error object:", err);
+        // TEMPORARILY DISABLED - DO NOT REDIRECT, SHOW ERROR INSTEAD
+        // window.location.href = "/nets-qr/fail";
+        this.setState({
+            errorMsg: `API Error: ${err.response?.status} - ${err.message}`,
+            netsQrResponseCode: err.response?.status || "ERROR"
+        });
     });
   } catch (error) {
+        console.error("[requestNets] Exception caught:", error);
         this.setState({
         errorMsg: "Error in requestNets",
         })
