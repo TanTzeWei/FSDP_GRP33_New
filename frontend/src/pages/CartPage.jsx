@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from '../context/CartContext';
+import Header from '../components/Header';
 import "./CartPage.css";
 
 const CartPage = () => {
@@ -21,6 +22,13 @@ const CartPage = () => {
     <main className="cart-page">
 
       {/* HEADER */}
+      <Header
+        activeSection="menu"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
+
+      {/* LEGACY HEADER - can be removed */}
       <header className="cart-header">
         <nav className="cart-nav">
           <button 

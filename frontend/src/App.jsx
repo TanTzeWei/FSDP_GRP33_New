@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import './App.css';
 // Home removed: MainApp (default `/`) provides the main UI
 import Login from "./pages/login";
@@ -22,7 +22,15 @@ import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
 function MainApp() {
   const [activeSection, setActiveSection] = useState('menu');
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedHawkerCenter, setSelectedHawkerCenter] = useState(null);
+
+  // Handle navigation state to set active section
+  React.useEffect(() => {
+    if (location.state?.activeSection) {
+      setActiveSection(location.state.activeSection);
+    }
+  }, [location.state]);
 
   const renderSection = () => {
     switch (activeSection) {

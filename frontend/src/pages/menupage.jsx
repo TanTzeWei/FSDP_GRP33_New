@@ -17,6 +17,7 @@ const MenuPage = () => {
   const stallId = searchParams.get('stall');
   const [stallImageError, setStallImageError] = useState(false);
   const [itemImageErrors, setItemImageErrors] = useState({});
+  const [activeSection, setActiveSection] = useState('menu');
   
   const [stall, setStall] = useState({
     name: 'Loading...',
@@ -130,8 +131,8 @@ const MenuPage = () => {
     <main className="menu-page">
 
       <Header
-        activeSection="menu"
-        setActiveSection={() => {}}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
         onCartClick={() => navigate('/cart')}
       />
 
