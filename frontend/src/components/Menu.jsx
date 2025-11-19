@@ -157,7 +157,7 @@ const Menu = () => {
               featuredPhotos.map(photo => (
                 <div key={photo.id} className="featured-photo-card">
                   <div className="photo-container">
-                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge">
                         <span className="heart-icon">❤️</span>
@@ -205,7 +205,7 @@ const Menu = () => {
               communityPhotos.map(photo => (
                 <div key={photo.id} className="community-photo-card">
                   <div className="photo-container">
-                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge small">
                         <span className="heart-icon">❤️</span>

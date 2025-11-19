@@ -21,6 +21,7 @@ const cors = require('cors');
 let UserController, HawkerCentreController, UploadController, authMiddleware;
 let DishController;
 let StallController;
+let MenuPhotoController;
 
 try {
     UserController = require('./controllers/userController');
@@ -41,6 +42,13 @@ try {
     console.log('✅ UploadController loaded');
 } catch (error) {
     console.error('❌ Error loading UploadController:', error.message);
+}
+
+try {
+    MenuPhotoController = require('./controllers/menuPhotoController');
+    console.log('✅ MenuPhotoController loaded');
+} catch (error) {
+    console.error('❌ Error loading MenuPhotoController:', error.message);
 }
 
 try {
@@ -97,8 +105,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Note: Static file serving for uploads removed - now using Cloudinary
+// Static files are served directly from Cloudinary CDN
 
 // User Routes (only if controllers loaded successfully)
 if (UserController && authMiddleware) {
@@ -166,6 +174,28 @@ if (UploadController) {
     console.log('✅ Photo BLOB upload routes configured (database storage)');
 } else {
     console.log('⚠️  Photo upload routes disabled (missing UploadController)');
+}
+
+// Menu Photo Upload Routes (for menu item photos)
+if (MenuPhotoController) {
+    // Upload menu photo and create/update dish
+    app.post('/api/menu-photos/upload', MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    
+    // Get menu photos by stall
+    app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
+    
+    // Get menu photos by hawker centre
+    app.get('/api/menu-photos/hawker/:hawkerCentreId', MenuPhotoController.getMenuPhotosByHawkerCentre);
+    
+    // Get single menu photo
+    app.get('/api/menu-photos/:photoId', MenuPhotoController.getMenuPhoto);
+    
+    // Delete menu photo
+    app.delete('/api/menu-photos/:photoId', MenuPhotoController.deleteMenuPhoto);
+    
+    console.log('✅ Menu photo upload routes configured (file storage)');
+} else {
+    console.log('⚠️  Menu photo upload routes disabled (missing MenuPhotoController)');
 }
 
 // Dish routes (food_items CRUD)
