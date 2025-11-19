@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Trash2, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from '../context/CartContext';
 import Header from '../components/Header';
@@ -14,9 +14,6 @@ const CartPage = () => {
 
   const getSubtotal = () =>
     (itemsToRender || []).reduce((sum, i) => sum + (parseFloat(i.price) || 0) * (i.quantity || 0), 0);
-
-  const deliveryFee = 2.5;
-  const serviceFee = 0.5;
 
   return (
     <main className="cart-page">
@@ -103,7 +100,7 @@ const CartPage = () => {
                           className="quantity-button"
                           onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
                         >
-                          <Minus className="quantity-icon" />
+                          −
                         </button>
 
                         <span className="quantity-display">
@@ -114,7 +111,7 @@ const CartPage = () => {
                           className="quantity-button"
                           onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
                         >
-                          <Plus className="quantity-icon" />
+                          +
                         </button>
                       </div>
 
@@ -142,26 +139,12 @@ const CartPage = () => {
                 <span className="price-value">${getSubtotal().toFixed(2)}</span>
               </div>
 
-              <div className="price-row">
-                <span className="price-label">Delivery Fee</span>
-                <span className="price-value">
-                  ${deliveryFee.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="price-row">
-                <span className="price-label">Service Fee</span>
-                <span className="price-value">
-                  ${serviceFee.toFixed(2)}
-                </span>
-              </div>
-
               <hr className="price-divider" />
 
               <div className="price-row total-row">
                 <span className="total-label">Total</span>
                 <span className="total-value">
-                  ${(getSubtotal() + deliveryFee + serviceFee).toFixed(2)}
+                  ${getSubtotal().toFixed(2)}
                 </span>
               </div>
 

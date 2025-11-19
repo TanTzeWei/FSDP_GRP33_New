@@ -1,6 +1,5 @@
 import React, { useState, useContext } from 'react';
 import { CartContext } from '../context/CartContext';
-import { Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './CartSidebar.css';
 
@@ -48,19 +47,9 @@ const CartSidebar = ({ onClose }) => {
   const totalOrders = orderHistory.length;
   const totalSpent = orderHistory.reduce((sum, order) => sum + order.total, 0);
 
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity === 0) {
-      // Remove item logic
-      console.log('Remove item', id);
-    } else {
-      // Update quantity logic
-      console.log('Update quantity', id, newQuantity);
-    }
-  };
-
   const proceedToCheckout = () => {
     // Pass checkout data via navigation state (avoid storing secrets in localStorage)
-    const total = parseFloat((cartTotal + 2.50).toFixed(2));
+    const total = parseFloat(cartTotal.toFixed(2));
     navigate('/nets-qr', { state: { amount: total, items: cartItems } });
   };
 
@@ -95,67 +84,55 @@ const CartSidebar = ({ onClose }) => {
                     {cartItems.map((item) => (
                       <div key={item.id} className="cart-item">
                         <div className="item-image">{item.image}</div>
-                        <div className="cart-items">
-                          {(cartItems || []).map((item) => (
-                            <div key={item.id} className="cart-item">
-                              <div className="item-image">{item.image}</div>
-                              <div className="item-details">
-                                <h4>{item.name}</h4>
-                                <p>{item.stallName}</p>
-                                <div className="item-controls">
-                                  <div className="quantity-controls">
-                                    <button 
-                                      className="qty-btn"
-                                      onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
-                                      aria-label={`Decrease quantity of ${item.name}`}
-                                    >
-                                      -
-                                    </button>
-                                    <span className="quantity">{item.quantity}</span>
-                                    <button 
-                                      className="qty-btn"
-                                      onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
-                                      aria-label={`Increase quantity of ${item.name}`}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                  <div className="item-price">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</div>
-                                </div>
-                              </div>
+                        <div className="item-details">
+                          <h4>{item.name}</h4>
+                          <p>{item.stallName}</p>
+                          <div className="item-controls">
+                            <div className="quantity-controls">
+                              <button 
+                                className="qty-btn"
+                                onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
+                                aria-label={`Decrease quantity of ${item.name}`}
+                              >
+                                −
+                              </button>
+                              <span className="quantity">{item.quantity}</span>
+                              <button 
+                                className="qty-btn"
+                                onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
+                                aria-label={`Increase quantity of ${item.name}`}
+                              >
+                                +
+                              </button>
                             </div>
-                          ))}
+                            <div className="item-price">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</div>
+                          </div>
                         </div>
-                    <div className="summary-stats">
-                      <div className="stat">
-                        <span className="stat-label">Total Orders</span>
-                        <span className="stat-value">{totalOrders}</span>
                       </div>
-                      <div className="stat">
-                        <span className="stat-label">Total Spent</span>
-                        <span className="stat-value">${totalSpent.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="cart-total">
-                      <div className="subtotal">
-                        <span>Subtotal</span>
-                        <span>${cartTotal.toFixed(2)}</span>
-                      </div>
-                      <div className="delivery-fee">
-                        <span>Delivery Fee</span>
-                        <span>$2.50</span>
-                      </div>
-                      <div className="total">
-                        <span>Total</span>
-                        <span>${(cartTotal + 2.50).toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <button className="checkout-btn" onClick={proceedToCheckout}>
-                      🚀 Checkout - ${(cartTotal + 2.50).toFixed(2)}
-                    </button>
+                    ))}
                   </div>
+
+                  <div className="summary-stats">
+                    <div className="stat">
+                      <span className="stat-label">Total Orders</span>
+                      <span className="stat-value">{totalOrders}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-label">Total Spent</span>
+                      <span className="stat-value">${totalSpent.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="cart-total">
+                    <div className="subtotal">
+                      <span>Total</span>
+                      <span>${cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <button className="checkout-btn" onClick={proceedToCheckout}>
+                    🚀 Checkout - ${cartTotal.toFixed(2)}
+                  </button>
                 </>
               ) : (
                 <div className="empty-cart">

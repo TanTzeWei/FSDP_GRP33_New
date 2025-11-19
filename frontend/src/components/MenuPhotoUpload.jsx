@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import './MenuPhotoUpload.css';
 
 const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
+  const { user } = useContext(AuthContext);
   const [uploadState, setUploadState] = useState({
     file: null,
     preview: null,
@@ -143,6 +145,19 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log('Upload attempt - Current user:', user);
+
+    // Check if user is guest
+    if (user?.isGuest === true) {
+      console.log('Guest upload blocked');
+      setUploadState(prev => ({
+        ...prev,
+        isUploading: false,
+        error: 'Guests cannot upload photos. Please sign up or log in to continue.'
+      }));
+      return;
+    }
+
     // Validation
     if (!uploadState.file) {
       setUploadState(prev => ({
@@ -212,6 +227,11 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       });
 
       const result = await response.json();
+
+      // Check for auth errors or other failures
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Upload failed with status ${response.status}`);
+      }
 
       if (result.success) {
         if (onUploadSuccess) {

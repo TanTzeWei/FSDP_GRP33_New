@@ -178,8 +178,8 @@ if (UploadController) {
 
 // Menu Photo Upload Routes (for menu item photos)
 if (MenuPhotoController) {
-    // Upload menu photo and create/update dish
-    app.post('/api/menu-photos/upload', MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    // Upload menu photo and create/update dish - REQUIRES AUTH
+    app.post('/api/menu-photos/upload', authMiddleware, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
     
     // Get menu photos by stall
     app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
