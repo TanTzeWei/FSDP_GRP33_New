@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './LocationMap.css';
@@ -117,6 +118,7 @@ const LocationMap = ({ onHawkerSelect }) => {
   const [zoom, setZoom] = useState(11);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const navigate = useNavigate();
 
   // Mock hawker centre data (in real app, this would come from API)
   const mockHawkerData = [
@@ -604,7 +606,16 @@ const LocationMap = ({ onHawkerSelect }) => {
               <button className="action-btn primary" onClick={() => alert('Getting directions...')}>
                 🧭 Get Directions
               </button>
-              <button className="action-btn secondary" onClick={() => alert('View menu...')}>
+              <button 
+                className="action-btn secondary" 
+                onClick={() => {
+                  if (onHawkerSelect) {
+                    onHawkerSelect(selectedHawker);
+                  }
+                  navigate('/');
+                  closeDetails();
+                }}
+              >
                 📋 View Menu
               </button>
               <button className="action-btn secondary" onClick={() => alert('Call hawker centre...')}>
