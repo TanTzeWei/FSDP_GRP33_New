@@ -157,7 +157,7 @@ const CartPage = () => {
                 </span>
               </div>
 
-              <button className="checkout-button" onClick={() => navigate('/netsqr')}>
+              <button className="checkout-button" onClick={() => navigate('/nets-qr')}>
                 Proceed to Checkout
               </button>
             </div>
