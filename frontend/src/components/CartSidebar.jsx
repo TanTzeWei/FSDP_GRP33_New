@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { CartContext } from '../context/CartContext';
+import { Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './CartSidebar.css';
 
@@ -8,25 +10,8 @@ const CartSidebar = ({ onClose }) => {
   
   console.log('CartSidebar component mounted!');
   
-  // Current cart items (this would come from your cart context/state)
-  const cartItems = [
-    {
-      id: 1,
-      name: 'Char Kway Teow',
-      stallName: 'Ah Lim Chinese Stall',
-      price: 6.50,
-      quantity: 2,
-      image: '🍜'
-    },
-    {
-      id: 2,
-      name: 'Bubble Tea',
-      stallName: 'Fresh Drinks Bar',
-      price: 4.80,
-      quantity: 1,
-      image: '🧋'
-    }
-  ];
+  // Use shared cart state
+  const { cartItems, updateQuantity, removeFromCart, getTotalPrice } = useContext(CartContext);
 
   // Order history
   const orderHistory = [
@@ -59,7 +44,7 @@ const CartSidebar = ({ onClose }) => {
     }
   ];
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartTotal = (cartItems || []).reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
   const totalOrders = orderHistory.length;
   const totalSpent = orderHistory.reduce((sum, order) => sum + order.total, 0);
 
@@ -110,33 +95,37 @@ const CartSidebar = ({ onClose }) => {
                     {cartItems.map((item) => (
                       <div key={item.id} className="cart-item">
                         <div className="item-image">{item.image}</div>
-                        <div className="item-details">
-                          <h4>{item.name}</h4>
-                          <p>{item.stallName}</p>
-                          <div className="item-controls">
-                            <div className="quantity-controls">
-                              <button 
-                                className="qty-btn"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              >
-                                -
-                              </button>
-                              <span className="quantity">{item.quantity}</span>
-                              <button 
-                                className="qty-btn"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              >
-                                +
-                              </button>
+                        <div className="cart-items">
+                          {(cartItems || []).map((item) => (
+                            <div key={item.id} className="cart-item">
+                              <div className="item-image">{item.image}</div>
+                              <div className="item-details">
+                                <h4>{item.name}</h4>
+                                <p>{item.stallName}</p>
+                                <div className="item-controls">
+                                  <div className="quantity-controls">
+                                    <button 
+                                      className="qty-btn"
+                                      onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
+                                      aria-label={`Decrease quantity of ${item.name}`}
+                                    >
+                                      -
+                                    </button>
+                                    <span className="quantity">{item.quantity}</span>
+                                    <button 
+                                      className="qty-btn"
+                                      onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
+                                      aria-label={`Increase quantity of ${item.name}`}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                  <div className="item-price">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="item-price">${(item.price * item.quantity).toFixed(2)}</div>
-                          </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="cart-summary">
                     <div className="summary-stats">
                       <div className="stat">
                         <span className="stat-label">Total Orders</span>

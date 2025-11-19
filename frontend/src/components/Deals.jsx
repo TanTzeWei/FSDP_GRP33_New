@@ -83,7 +83,7 @@ const Deals = () => {
               <div key={index} className="recent-photo">
                 <div className="success-badge">✓ Uploaded</div>
                 <img 
-                  src={`http://localhost:3000${photo.imageUrl}`} 
+                  src={photo.imageUrl} 
                   alt={photo.dishName}
                   className="recent-image"
                 />

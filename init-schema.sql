@@ -377,7 +377,7 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE(),
         
-        CONSTRAINT FK_user_points_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        CONSTRAINT FK_user_points_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE
     );
     
     CREATE INDEX idx_user_points_user ON user_points(user_id);
@@ -397,7 +397,7 @@ BEGIN
         item_details NVARCHAR(MAX), -- JSON string with additional details
         created_at DATETIME2 DEFAULT GETDATE(),
         
-        CONSTRAINT FK_points_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        CONSTRAINT FK_points_history_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE
     );
     
     CREATE INDEX idx_points_history_user ON points_history(user_id);
@@ -442,7 +442,7 @@ BEGIN
         order_id INT, -- Reference to order if used
         created_at DATETIME2 DEFAULT GETDATE(),
         
-        CONSTRAINT FK_redeemed_vouchers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT FK_redeemed_vouchers_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE,
         CONSTRAINT FK_redeemed_vouchers_voucher FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE NO ACTION
     );
     
@@ -468,7 +468,7 @@ PRINT 'Hawker Hub database schema created successfully!';
 PRINT 'Tables created: users, cuisine_types, hawker_centres, stalls, food_items, reviews, orders, order_items, user_points, points_history, vouchers, redeemed_vouchers';
 PRINT 'Sample data inserted for cuisine types, hawker centres, and vouchers.';
 
--- BLOB Photo Storage Tables (photos stored IN database)
+-- Cloudinary Photo Storage Tables (photos stored in Cloudinary cloud)
 -- Drop existing photo tables if they exist
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'photo_likes')
     DROP TABLE photo_likes;
@@ -476,7 +476,7 @@ IF EXISTS (SELECT * FROM sys.tables WHERE name = 'photo_likes')
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'photos')
     DROP TABLE photos;
 
--- Photos table with BLOB storage (photos stored IN database as binary data)
+-- Photos table with Cloudinary URL storage
 CREATE TABLE photos (
     id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
@@ -484,7 +484,10 @@ CREATE TABLE photos (
     stall_id INT NULL,
     food_item_id INT NULL,
     original_filename NVARCHAR(255) NOT NULL,
-    photo_data VARBINARY(MAX) NOT NULL, -- Photo stored as binary data in database
+    photo_data VARBINARY(MAX) NOT NULL, -- Minimal dummy data (Cloudinary stores actual image)
+    file_path NVARCHAR(500) NULL, -- Cloudinary image URL
+    image_url NVARCHAR(500) NULL, -- Cloudinary image URL
+    public_id NVARCHAR(255) NULL, -- Cloudinary public ID for deletion
     file_size INT NOT NULL, -- Size in bytes
     mime_type NVARCHAR(100) NOT NULL, -- e.g., 'image/jpeg'
     dish_name NVARCHAR(255) NOT NULL,
@@ -495,8 +498,8 @@ CREATE TABLE photos (
     created_at DATETIME2 DEFAULT GETDATE(),
     updated_at DATETIME2 DEFAULT GETDATE(),
     
-    -- Foreign keys
-    CONSTRAINT FK_photos_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION,
+    -- Foreign keys (using userId for users table)
+    CONSTRAINT FK_photos_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE NO ACTION,
     CONSTRAINT FK_photos_hawker_centre FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION,
     CONSTRAINT FK_photos_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
     CONSTRAINT FK_photos_food_item FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE NO ACTION
@@ -509,7 +512,7 @@ CREATE TABLE photo_likes (
     photo_id INT NOT NULL,
     created_at DATETIME2 DEFAULT GETDATE(),
     
-    CONSTRAINT FK_photo_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION,
+    CONSTRAINT FK_photo_likes_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE NO ACTION,
     CONSTRAINT FK_photo_likes_photo FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
     CONSTRAINT UQ_user_photo_like UNIQUE (user_id, photo_id)
 );
@@ -523,62 +526,9 @@ CREATE INDEX idx_photos_featured ON photos (is_featured, likes_count DESC);
 CREATE INDEX idx_photo_likes_photo ON photo_likes (photo_id);
 CREATE INDEX idx_photo_likes_user ON photo_likes (user_id);
 
-PRINT 'BLOB Photo storage tables created successfully!';
+PRINT 'Cloudinary Photo storage tables created successfully!';
 
--- BLOB Photo Storage Tables (photos stored IN database as binary data)
--- Drop existing photo tables if they exist to recreate with BLOB storage
-IF EXISTS (SELECT * FROM sys.tables WHERE name = 'photo_likes')
-    DROP TABLE photo_likes;
 
-IF EXISTS (SELECT * FROM sys.tables WHERE name = 'photos')
-    DROP TABLE photos;
 
--- Photos table with BLOB storage (photos stored IN database as binary data)
-CREATE TABLE photos (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    user_id INT NOT NULL,
-    hawker_centre_id INT NOT NULL,
-    stall_id INT NULL,
-    food_item_id INT NULL,
-    original_filename NVARCHAR(255) NOT NULL,
-    photo_data VARBINARY(MAX) NOT NULL, -- Photo stored as binary data in database
-    file_size INT NOT NULL, -- Size in bytes
-    mime_type NVARCHAR(100) NOT NULL, -- e.g., 'image/jpeg'
-    dish_name NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX) NULL,
-    likes_count INT DEFAULT 0,
-    is_featured BIT DEFAULT 0,
-    is_approved BIT DEFAULT 1,
-    created_at DATETIME2 DEFAULT GETDATE(),
-    updated_at DATETIME2 DEFAULT GETDATE(),
-    
-    -- Foreign keys (referencing the correct users table)
-    CONSTRAINT FK_photos_user_blob FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_photos_hawker_centre_blob FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_photos_stall_blob FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_photos_food_item_blob FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE NO ACTION
-);
-
--- Photo likes table
-CREATE TABLE photo_likes (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    user_id INT NOT NULL,
-    photo_id INT NOT NULL,
-    created_at DATETIME2 DEFAULT GETDATE(),
-    
-    CONSTRAINT FK_photo_likes_user_blob FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_photo_likes_photo_blob FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
-    CONSTRAINT UQ_user_photo_like_blob UNIQUE (user_id, photo_id)
-);
-
--- Indexes for performance
-CREATE INDEX idx_photos_user_blob ON photos (user_id);
-CREATE INDEX idx_photos_hawker_centre_blob ON photos (hawker_centre_id);
-CREATE INDEX idx_photos_stall_blob ON photos (stall_id);
-CREATE INDEX idx_photos_likes_blob ON photos (likes_count DESC);
-CREATE INDEX idx_photos_featured_blob ON photos (is_featured, likes_count DESC);
-CREATE INDEX idx_photo_likes_photo_blob ON photo_likes (photo_id);
-CREATE INDEX idx_photo_likes_user_blob ON photo_likes (user_id);
-
-PRINT 'Database BLOB photo storage tables created successfully! Photos will be stored in database.';
+PRINT 'Database schema created successfully!';
 

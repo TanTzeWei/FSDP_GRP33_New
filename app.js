@@ -19,6 +19,9 @@ const cors = require('cors');
 
 // Import controllers with error handling
 let UserController, HawkerCentreController, UploadController, authMiddleware;
+let DishController;
+let StallController;
+let MenuPhotoController;
 
 try {
     UserController = require('./controllers/userController');
@@ -42,6 +45,13 @@ try {
 }
 
 try {
+    MenuPhotoController = require('./controllers/menuPhotoController');
+    console.log('✅ MenuPhotoController loaded');
+} catch (error) {
+    console.error('❌ Error loading MenuPhotoController:', error.message);
+}
+
+try {
     PointsController = require('./controllers/pointsController');
     console.log('✅ PointsController loaded');
 } catch (error) {
@@ -53,6 +63,20 @@ try {
     console.log('✅ AuthMiddleware loaded');
 } catch (error) {
     console.error('❌ Error loading AuthMiddleware:', error.message);
+}
+
+try {
+    DishController = require('./controllers/dishController');
+    console.log('✅ DishController loaded');
+} catch (error) {
+    console.error('❌ Error loading DishController:', error.message);
+}
+
+try {
+    StallController = require('./controllers/stallController');
+    console.log('✅ StallController loaded');
+} catch (error) {
+    console.error('❌ Error loading StallController:', error.message);
 }
 
 // Create Express app
@@ -81,8 +105,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Note: Static file serving for uploads removed - now using Cloudinary
+// Static files are served directly from Cloudinary CDN
 
 // User Routes (only if controllers loaded successfully)
 if (UserController && authMiddleware) {
@@ -150,6 +174,57 @@ if (UploadController) {
     console.log('✅ Photo BLOB upload routes configured (database storage)');
 } else {
     console.log('⚠️  Photo upload routes disabled (missing UploadController)');
+}
+
+// Menu Photo Upload Routes (for menu item photos)
+if (MenuPhotoController) {
+    // Upload menu photo and create/update dish
+    app.post('/api/menu-photos/upload', MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    
+    // Get menu photos by stall
+    app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
+    
+    // Get menu photos by hawker centre
+    app.get('/api/menu-photos/hawker/:hawkerCentreId', MenuPhotoController.getMenuPhotosByHawkerCentre);
+    
+    // Get single menu photo
+    app.get('/api/menu-photos/:photoId', MenuPhotoController.getMenuPhoto);
+    
+    // Delete menu photo
+    app.delete('/api/menu-photos/:photoId', MenuPhotoController.deleteMenuPhoto);
+    
+    console.log('✅ Menu photo upload routes configured (file storage)');
+} else {
+    console.log('⚠️  Menu photo upload routes disabled (missing MenuPhotoController)');
+}
+
+// Dish routes (food_items CRUD)
+if (DishController) {
+    // Public: list dishes for a stall
+    app.get('/api/stalls/:stallId/dishes', DishController.listByStall);
+    // Public: get single dish
+    app.get('/api/dishes/:id', DishController.getDish);
+
+    // Protected routes: create/update/delete dishes (requires auth)
+    if (authMiddleware) {
+        app.post('/api/dishes', authMiddleware, DishController.createDish);
+        app.put('/api/dishes/:id', authMiddleware, DishController.updateDish);
+        app.delete('/api/dishes/:id', authMiddleware, DishController.deleteDish);
+    } else {
+        console.log('⚠️  Dish write routes disabled (missing authMiddleware)');
+    }
+
+    console.log('✅ Dish routes configured');
+} else {
+    console.log('⚠️  Dish routes disabled (missing DishController)');
+}
+
+// Stall route: get stall details
+if (StallController) {
+    app.get('/api/stalls/:id', StallController.getStallById);
+    console.log('✅ Stall route configured');
+} else {
+    console.log('⚠️  Stall routes disabled (missing StallController)');
 }
 
 // Points System Routes (only if controller loaded successfully)

@@ -72,7 +72,7 @@
 /* Map Content Layout */
 .map-content {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr;
   gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
@@ -84,6 +84,8 @@
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .map-container {
@@ -301,8 +303,12 @@
 }
 
 .hawker-items {
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
 }
 
 .hawker-item {
@@ -671,6 +677,7 @@
   
   .hawker-items {
     max-height: 300px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
 

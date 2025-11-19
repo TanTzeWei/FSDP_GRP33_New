@@ -1,24 +1,11 @@
 // controllers/uploadController.js
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-const fs = require('fs');
 const UploadModel = require('../models/uploadModel');
+const CloudinaryUpload = require('../utils/cloudinaryUpload');
 
-// Configure multer to store files on disk (not in memory)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
+// Configure multer to store files in memory (will be uploaded to Cloudinary)
+const storage = multer.memoryStorage();
 
 // File filter to allow only images
 const fileFilter = (req, file, cb) => {
@@ -45,7 +32,7 @@ class UploadController {
   // Middleware for handling single photo upload
   static uploadMiddleware = upload.single('photo');
 
-  // Upload a new photo
+  // Upload a new photo to Cloudinary
   static async uploadPhoto(req, res) {
     console.log('=== UPLOAD REQUEST RECEIVED ===');
     console.log('Timestamp:', new Date().toISOString());
@@ -53,16 +40,12 @@ class UploadController {
     try {
       console.log('Request method:', req.method);
       console.log('Request URL:', req.url);
-      console.log('Request headers:', JSON.stringify(req.headers, null, 2));
-      console.log('Request body keys:', Object.keys(req.body || {}));
-      console.log('Request body:', req.body);
       console.log('Request file exists:', !!req.file);
       if (req.file) {
         console.log('File details:');
         console.log('- Original name:', req.file.originalname);
         console.log('- MIME type:', req.file.mimetype);
         console.log('- Size:', req.file.size);
-        console.log('- Buffer length:', req.file.buffer ? req.file.buffer.length : 'No buffer');
       }
 
       // Validate required fields
@@ -92,25 +75,43 @@ class UploadController {
         });
       }
 
-      console.log('Preparing photo data for database save...');
+      // Check Cloudinary configuration
+      if (!CloudinaryUpload.isConfigured()) {
+        console.log('ERROR: Cloudinary not configured');
+        return res.status(500).json({
+          success: false,
+          message: 'Upload service not configured'
+        });
+      }
 
-      // Prepare photo data for file system storage
+      console.log('Uploading to Cloudinary...');
+
+      // Upload to Cloudinary
+      const cloudinaryResult = await CloudinaryUpload.uploadPhoto(
+        req.file.buffer,
+        `${uuidv4()}-${req.file.originalname}`
+      );
+
+      console.log('Cloudinary upload successful:', cloudinaryResult.url);
+
+      // Prepare photo data for database
       const photoData = {
         userId: 1, // Fixed user ID to avoid foreign key issues temporarily
         hawkerCentreId: parseInt(hawkerCentreId),
         stallId: stallId ? parseInt(stallId) : null,
         foodItemId: null, // Can be linked later
         originalName: req.file.originalname,
-        filePath: `/uploads/${req.file.filename}`, // File path instead of binary data
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
+        imageUrl: cloudinaryResult.url, // Cloudinary URL
+        publicId: cloudinaryResult.publicId, // Cloudinary public ID for deletion
+        fileSize: cloudinaryResult.size,
+        mimeType: cloudinaryResult.mimeType,
         dishName: dishName.trim(),
         description: description ? description.trim() : null
       };
 
       console.log('Photo data prepared:', {
         ...photoData,
-        filePath: photoData.filePath
+        imageUrl: photoData.imageUrl
       });
 
       console.log('Calling UploadModel.savePhotoRecord...');
@@ -126,7 +127,7 @@ class UploadController {
         message: 'Photo uploaded successfully!',
         data: {
           id: savedPhoto.id,
-          imageUrl: photoData.filePath, // Direct file path
+          imageUrl: photoData.imageUrl,
           dishName: photoData.dishName,
           createdAt: savedPhoto.created_at
         }
@@ -141,13 +142,13 @@ class UploadController {
       
       res.status(500).json({
         success: false,
-        message: 'Failed to upload photo to database',
+        message: 'Failed to upload photo',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
 
-  // Serve photo image from file system
+  // Serve photo image (redirect to Cloudinary URL)
   static async getPhotoImage(req, res) {
     try {
       const { id } = req.params;
@@ -168,30 +169,14 @@ class UploadController {
         });
       }
 
-      const filePath = path.join(__dirname, '..', photoData.file_path);
-      
-      // Check if file exists
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: 'Photo file not found'
-        });
-      }
-
-      // Set appropriate headers
-      res.set({
-        'Content-Type': photoData.mime_type,
-        'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
-      });
-
-      // Send file
-      res.sendFile(filePath);
+      // Redirect to Cloudinary URL
+      res.redirect(photoData.image_url || photoData.file_path);
 
     } catch (error) {
       console.error('Error retrieving photo:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve photo from database',
+        message: 'Failed to retrieve photo',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -212,11 +197,11 @@ class UploadController {
       // Format photos for frontend
       const formattedPhotos = photos.map(photo => ({
         id: photo.id,
-        imageUrl: `/api/photos/${photo.id}/image`, // URL to get image from database
+        imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
         stallName: photo.stall_name || photo.hawker_centre_name,
         likes: photo.likes_count,
-        username: `${photo.first_name} ${photo.last_name}`,
+        username: photo.name, // Single name field from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
@@ -254,11 +239,11 @@ class UploadController {
 
       const formattedPhotos = photos.map(photo => ({
         id: photo.id,
-        imageUrl: `/api/photos/${photo.id}/image`, // URL to get image from database
+        imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
         stallName: photo.stall_name,
         likes: photo.likes_count,
-        username: `${photo.first_name} ${photo.last_name}`,
+        username: photo.name, // Single name field from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
@@ -448,6 +433,17 @@ class UploadController {
         });
       }
 
+      // Delete from Cloudinary if public_id exists
+      if (photo.public_id) {
+        try {
+          await CloudinaryUpload.deleteFile(photo.public_id);
+          console.log('Deleted from Cloudinary:', photo.public_id);
+        } catch (cloudinaryError) {
+          console.error('Error deleting from Cloudinary:', cloudinaryError);
+          // Don't fail the request if Cloudinary deletion fails
+        }
+      }
+
       // Delete from database
       const deleted = await UploadModel.deletePhoto(parseInt(photoId), parseInt(userId));
 
@@ -456,15 +452,6 @@ class UploadController {
           success: false,
           message: 'Photo not found or already deleted'
         });
-      }
-
-      // Delete file from filesystem
-      try {
-        const filePath = path.join(__dirname, '..', photo.file_path);
-        await fs.unlink(filePath);
-      } catch (fileError) {
-        console.error('Error deleting file:', fileError);
-        // Don't fail the request if file deletion fails
       }
 
       res.status(200).json({

@@ -24,6 +24,7 @@
   display: flex;
   align-items: center;
   gap: 40px;
+  flex: 0 1 auto;
 }
 
 .logo {
@@ -103,6 +104,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
+  flex: 0 1 auto;
 }
 
 .location-selector {
@@ -115,6 +117,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: none;
+  white-space: nowrap;
 }
 
 .location-selector:hover {
@@ -122,6 +126,7 @@
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15);
+  background: #f0f8f4;
 }
 
 .location-icon {
@@ -275,14 +280,16 @@
   .header-container {
     padding: 0 12px;
     height: 56px;
+    gap: 8px;
   }
   
   .header-left {
-    gap: 20px;
+    gap: 16px;
+    flex: 1;
   }
   
   .main-nav {
-    gap: 20px;
+    gap: 16px;
   }
   
   .nav-item {
@@ -290,19 +297,24 @@
   }
   
   .brand-name {
-    font-size: 20px;
+    font-size: 18px;
   }
   
   .hawker-logo {
-    font-size: 24px;
+    font-size: 20px;
   }
   
   .header-right {
-    gap: 12px;
+    gap: 8px;
+    flex: 0;
   }
   
   .location-text {
     display: none;
+  }
+  
+  .location-selector {
+    padding: 8px 10px;
   }
 }
 

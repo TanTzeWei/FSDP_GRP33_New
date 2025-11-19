@@ -1,5 +1,6 @@
 // components/Menu.js
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import './Menu.css';
 
@@ -156,7 +157,7 @@ const Menu = () => {
               featuredPhotos.map(photo => (
                 <div key={photo.id} className="featured-photo-card">
                   <div className="photo-container">
-                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge">
                         <span className="heart-icon">❤️</span>
@@ -204,7 +205,7 @@ const Menu = () => {
               communityPhotos.map(photo => (
                 <div key={photo.id} className="community-photo-card">
                   <div className="photo-container">
-                    <img src={`http://localhost:3000${photo.imageUrl}`} alt={photo.dishName} className="photo-image" />
+                    <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge small">
                         <span className="heart-icon">❤️</span>
@@ -255,7 +256,11 @@ const Menu = () => {
 
       <div className="stalls-grid">
         {filteredStalls.map(stall => (
-          <div key={stall.id} className="stall-card">
+          <Link
+            key={stall.id}
+            to={`/menu?stall=${stall.id}`}
+            className="stall-card"
+          >
             <div className="stall-image">
               <img src={stall.image} alt={stall.name} />
               <div className="stall-icon">{stall.stallIcon}</div>
@@ -268,9 +273,9 @@ const Menu = () => {
                 <span className="delivery-time">🕐 {stall.deliveryTime}</span>
                 <span className="distance">📍 {stall.distance}</span>
               </div>
-              <button className="view-menu-btn">View Menu</button>
+              <div className="view-menu-btn">View Menu</div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       </div>

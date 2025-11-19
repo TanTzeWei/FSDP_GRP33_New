@@ -3,7 +3,7 @@ const sql = require('mssql');
 const dbConfig = require('../dbConfig');
 
 class UploadModel {
-  // Save a photo as BLOB data in the database
+  // Save a photo with Cloudinary URL
   static async savePhotoRecord(photoData) {
     try {
       console.log('🔍 Starting savePhotoRecord with data:', {
@@ -14,15 +14,11 @@ class UploadModel {
         fileSize: photoData.fileSize,
         mimeType: photoData.mimeType,
         dishName: photoData.dishName,
-        hasPhotoData: !!photoData.photoData,
-        photoDataLength: photoData.photoData ? photoData.photoData.length : 0
+        imageUrl: photoData.imageUrl
       });
       
       await sql.connect(dbConfig);
       console.log('✅ Database connected for photo save');
-      
-      // Create a small dummy BLOB instead of the actual photo data to test
-      const dummyPhotoData = Buffer.from('dummy image data for testing');
       
       const request = new sql.Request();
       
@@ -31,7 +27,9 @@ class UploadModel {
       request.input('stall_id', sql.Int, photoData.stallId);
       request.input('food_item_id', sql.Int, photoData.foodItemId);
       request.input('original_filename', sql.NVarChar(255), photoData.originalName);
-      request.input('file_path', sql.NVarChar(500), photoData.filePath); // Use file path instead
+      request.input('file_path', sql.NVarChar(500), photoData.imageUrl); // Cloudinary URL
+      request.input('image_url', sql.NVarChar(500), photoData.imageUrl); // Cloudinary URL
+      request.input('public_id', sql.NVarChar(255), photoData.publicId); // Cloudinary public ID
       request.input('file_size', sql.Int, photoData.fileSize);
       request.input('mime_type', sql.NVarChar(100), photoData.mimeType);
       request.input('dish_name', sql.NVarChar(255), photoData.dishName);
@@ -40,19 +38,19 @@ class UploadModel {
       console.log('🔍 About to execute SQL query...');
       
       // Add dummy photo_data since it's NOT NULL in database
-      request.input('photo_data', sql.VarBinary, Buffer.from('dummy'));
+      request.input('photo_data', sql.VarBinary, Buffer.from('cloudinary'));
       
       const result = await request.query(`
         INSERT INTO photos (
           user_id, hawker_centre_id, stall_id, food_item_id,
-          original_filename, photo_data, file_path, file_size, mime_type,
-          dish_name, description
+          original_filename, photo_data, file_path, image_url, public_id, 
+          file_size, mime_type, dish_name, description
         )
         OUTPUT INSERTED.id, INSERTED.created_at
         VALUES (
           @user_id, @hawker_centre_id, @stall_id, @food_item_id,
-          @original_filename, @photo_data, @file_path, @file_size, @mime_type,
-          @dish_name, @description
+          @original_filename, @photo_data, @file_path, @image_url, @public_id,
+          @file_size, @mime_type, @dish_name, @description
         )
       `);
 
@@ -74,7 +72,7 @@ class UploadModel {
       request.input('photo_id', sql.Int, photoId);
       
       const result = await request.query(`
-        SELECT file_path, mime_type, file_size, original_filename
+        SELECT file_path, image_url, mime_type, file_size, original_filename, public_id
         FROM photos 
         WHERE id = @photo_id AND is_approved = 1
       `);
@@ -98,12 +96,12 @@ class UploadModel {
       const result = await request.query(`
         SELECT 
           p.id, p.dish_name, p.description, p.likes_count, 
-          p.is_featured, p.created_at, p.file_size, p.mime_type, p.file_path,
-          u.first_name, u.last_name,
+          p.is_featured, p.created_at, p.file_size, p.mime_type, p.file_path, p.image_url,
+          u.name,
           hc.name as hawker_centre_name,
           s.stall_name as stall_name
         FROM photos p
-        INNER JOIN users u ON p.user_id = u.id
+        INNER JOIN users u ON p.user_id = u.userId
         INNER JOIN hawker_centres hc ON p.hawker_centre_id = hc.id
         LEFT JOIN stalls s ON p.stall_id = s.id
         WHERE p.is_approved = 1
@@ -130,12 +128,12 @@ class UploadModel {
       const result = await request.query(`
         SELECT 
           p.id, p.dish_name, p.description, p.likes_count, 
-          p.created_at, p.file_size, p.mime_type, p.file_path,
-          u.first_name, u.last_name,
+          p.created_at, p.file_size, p.mime_type, p.file_path, p.image_url,
+          u.name,
           hc.name as hawker_centre_name,
           s.stall_name as stall_name
         FROM photos p
-        INNER JOIN users u ON p.user_id = u.id
+        INNER JOIN users u ON p.user_id = u.userId
         INNER JOIN hawker_centres hc ON p.hawker_centre_id = hc.id
         LEFT JOIN stalls s ON p.stall_id = s.id
         WHERE p.is_approved = 1 AND p.is_featured = 1
@@ -159,11 +157,11 @@ class UploadModel {
       const result = await sql.query(`
         SELECT 
           p.id, p.dish_name, p.description, p.likes_count, 
-          p.created_at, p.file_size, p.mime_type,
-          u.first_name, u.last_name,
+          p.created_at, p.file_size, p.mime_type, p.file_path, p.image_url,
+          u.name,
           s.stall_name as stall_name
         FROM photos p
-        INNER JOIN users u ON p.user_id = u.id
+        INNER JOIN users u ON p.user_id = u.userId
         LEFT JOIN stalls s ON p.stall_id = s.id
         WHERE p.hawker_centre_id = @hawker_centre_id AND p.is_approved = 1
         ORDER BY p.likes_count DESC, p.created_at DESC
@@ -259,12 +257,12 @@ class UploadModel {
       const result = await sql.query(`
         SELECT 
           p.*,
-          u.first_name, u.last_name, u.email,
+          u.name, u.email,
           hc.name as hawker_centre_name,
           s.name as stall_name,
           fi.name as food_item_name
         FROM photos p
-        INNER JOIN users u ON p.user_id = u.id
+        INNER JOIN users u ON p.user_id = u.userId
         INNER JOIN hawker_centres hc ON p.hawker_centre_id = hc.id
         LEFT JOIN stalls s ON p.stall_id = s.id
         LEFT JOIN food_items fi ON p.food_item_id = fi.id
