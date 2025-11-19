@@ -168,8 +168,8 @@ if (UploadController) {
     app.post('/api/photos/:photoId/like', UploadController.likePhoto);
     app.delete('/api/photos/:photoId/like', UploadController.unlikePhoto);
     
-    // Delete photo
-    app.delete('/api/photos/:photoId', UploadController.deletePhoto);
+    // Delete photo - REQUIRES AUTH
+    app.delete('/api/photos/:photoId', authMiddleware, UploadController.deletePhoto);
     
     console.log('✅ Photo BLOB upload routes configured (database storage)');
 } else {

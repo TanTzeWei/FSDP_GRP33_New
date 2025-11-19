@@ -113,7 +113,7 @@
 
 .continue-shopping-button {
   padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -121,12 +121,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .continue-shopping-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .continue-shopping-button:active {
@@ -509,7 +509,7 @@
   width: 100%;
   padding: 0.875rem;
   margin-top: 1.5rem;
-  background-color: #f97316;
+  background-color: #10b981;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -520,7 +520,7 @@
 }
 
 .checkout-button:hover {
-  background-color: #ea580c;
+  background-color: #059669;
 }
 
 /* Responsive Adjustments */

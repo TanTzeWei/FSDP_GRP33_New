@@ -57,7 +57,8 @@ const Header = ({ activeSection, setActiveSection, onCartClick, selectedHawkerCe
         <div className="header-right">
           <div className="location-selector" onClick={() => {
             setActiveSection && setActiveSection('location');
-            navigate('/');
+            // Always navigate to home with location section active
+            navigate('/', { state: { activeSection: 'location' } });
           }}>
             <span className="location-icon">📍</span>
             <span className="location-text">
