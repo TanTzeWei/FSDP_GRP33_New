@@ -9,6 +9,8 @@ const Menu = () => {
   const [featuredPhotos, setFeaturedPhotos] = useState([]);
   const [communityPhotos, setCommunityPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [selectedStallFilter, setSelectedStallFilter] = useState('All');
+  const [selectedDishFilter, setSelectedDishFilter] = useState('All');
   const stallItems = [
     {
       id: 1,
@@ -80,6 +82,49 @@ const Menu = () => {
 
   const categories = ["All", "Chinese", "Malay", "Indian", "Peranakan", "Western", "Drinks"];
 
+  // Get unique stalls from community photos
+  const uniqueStalls = ['All', ...new Set(communityPhotos.map(p => p.stallName || 'Unknown Stall'))];
+
+  // Get unique dishes from community photos (for selected stall)
+  const filteredByStall = selectedStallFilter === 'All' 
+    ? communityPhotos 
+    : communityPhotos.filter(p => p.stallName === selectedStallFilter);
+  
+  const uniqueDishes = ['All', ...new Set(filteredByStall.map(p => p.dishName || 'Unknown Dish'))];
+
+  // Filter photos by stall and dish
+  const filteredCommunityPhotos = communityPhotos.filter(photo => {
+    const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
+    const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
+    return stallMatch && dishMatch;
+  });
+
+  const filteredFeaturedPhotos = featuredPhotos.filter(photo => {
+    const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
+    const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
+    return stallMatch && dishMatch;
+  });
+
+  // Fetch menu photos from API
+  useEffect(() => {
+    const fetchMenuPhotos = async () => {
+      try {
+        // Fetch menu photos (from food_items that have images)
+        const response = await fetch('http://localhost:3000/api/menu-photos/stall/1');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Merge menu photos into featured and community photos
+          // (This data will be used if needed in future)
+        }
+      } catch (error) {
+        console.error('Error fetching menu photos:', error);
+      }
+    };
+
+    fetchMenuPhotos();
+  }, []);
+
   // Fetch photos from API
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -145,6 +190,46 @@ const Menu = () => {
           <h2>🏆 Hall of Flavor Fame</h2>
           <p className="section-subtitle">Most loved dishes captured by our community</p>
         </div>
+
+        {/* Stall and Dish Filters */}
+        {communityPhotos.length > 0 && (
+          <div className="photo-filters">
+            <div className="filter-group">
+              <label className="filter-label">Filter by Stall:</label>
+              <div className="filter-buttons">
+                {uniqueStalls.map(stall => (
+                  <button
+                    key={stall}
+                    className={`filter-btn stall-filter-btn ${selectedStallFilter === stall ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedStallFilter(stall);
+                      setSelectedDishFilter('All');
+                    }}
+                  >
+                    {stall}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {uniqueDishes.length > 1 && (
+              <div className="filter-group">
+                <label className="filter-label">Filter by Dish:</label>
+                <div className="filter-buttons">
+                  {uniqueDishes.map(dish => (
+                    <button
+                      key={dish}
+                      className={`filter-btn dish-filter-btn ${selectedDishFilter === dish ? 'active' : ''}`}
+                      onClick={() => setSelectedDishFilter(dish)}
+                    >
+                      {dish}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         {loadingPhotos ? (
           <div className="photos-loading">
@@ -153,8 +238,8 @@ const Menu = () => {
           </div>
         ) : (
           <div className="featured-photos-grid">
-            {featuredPhotos.length > 0 ? (
-              featuredPhotos.map(photo => (
+            {filteredFeaturedPhotos.length > 0 ? (
+              filteredFeaturedPhotos.map(photo => (
                 <div key={photo.id} className="featured-photo-card">
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
@@ -179,8 +264,8 @@ const Menu = () => {
             ) : (
               <div className="no-photos-message">
                 <span className="no-photos-icon">📷</span>
-                <h4>No featured photos yet!</h4>
-                <p>Amazing food photos will appear here when shared by the community!</p>
+                <h4>No featured photos found!</h4>
+                <p>Try changing the filters or check back later for amazing food photos!</p>
               </div>
             )}
           </div>
@@ -201,8 +286,8 @@ const Menu = () => {
           </div>
         ) : (
           <div className="community-photos-grid">
-            {communityPhotos.length > 0 ? (
-              communityPhotos.map(photo => (
+            {filteredCommunityPhotos.length > 0 ? (
+              filteredCommunityPhotos.map(photo => (
                 <div key={photo.id} className="community-photo-card">
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
@@ -223,14 +308,14 @@ const Menu = () => {
             ) : (
               <div className="no-photos-message">
                 <span className="no-photos-icon">📷</span>
-                <h4>No community photos yet!</h4>
-                <p>Community photos will appear here when uploaded!</p>
+                <h4>No community photos found!</h4>
+                <p>Try changing the filters or check back later for amazing food photos!</p>
               </div>
             )}
           </div>
         )}
         
-        {communityPhotos.length > 0 && (
+        {filteredCommunityPhotos.length > 0 && (
           <div className="view-more-container">
             <button className="view-more-btn">
               📱 View All Community Photos
