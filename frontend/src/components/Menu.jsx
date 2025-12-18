@@ -19,7 +19,7 @@ const Menu = () => {
       rating: "4.8",
       deliveryTime: "25-35 mins",
       distance: "1.2 km",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&q=80",
       category: "chinese",
       stallIcon: "🏮"
     },
@@ -30,7 +30,7 @@ const Menu = () => {
       rating: "4.6",
       deliveryTime: "20-30 mins", 
       distance: "0.8 km",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1596040217128-87dbcc687ec0?w=400&h=300&fit=crop&q=80",
       category: "malay",
       stallIcon: "🌙"
     },
@@ -41,7 +41,7 @@ const Menu = () => {
       rating: "4.7",
       deliveryTime: "30-40 mins",
       distance: "1.5 km", 
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1585937421456-de714db1eb1b?w=400&h=300&fit=crop&q=80",
       category: "indian",
       stallIcon: "🇮🇳"
     },
@@ -52,7 +52,7 @@ const Menu = () => {
       rating: "4.9",
       deliveryTime: "35-45 mins",
       distance: "2.1 km",
-      image: "/api/placeholder/300/200", 
+      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606631/peranakan_stall_h5rson.jpg", 
       category: "peranakan",
       stallIcon: "🏺"
     },
@@ -63,7 +63,7 @@ const Menu = () => {
       rating: "4.4",
       deliveryTime: "25-35 mins",
       distance: "1.8 km",
-      image: "/api/placeholder/300/200",
+      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606719/download_1_qv81cd.jpg",
       category: "western",
       stallIcon: "🍔"
     },
@@ -74,7 +74,7 @@ const Menu = () => {
       rating: "4.5",
       deliveryTime: "15-25 mins",
       distance: "0.5 km",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=300&fit=crop&q=80",
       category: "drinks",
       stallIcon: "🥤"
     }

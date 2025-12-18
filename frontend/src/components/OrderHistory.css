@@ -28,6 +28,54 @@
   padding: 0 1rem 2rem 1rem;
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #00b14f;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retry-btn {
+  background: #c33;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background: #a22;
+}
+
 .orders-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -140,6 +188,19 @@
   margin-bottom: 1rem;
 }
 
+.order-info-detail {
+  display: flex;
+  gap: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.order-type {
+  background: #f0f0f0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
 .order-items h4 {
   color: #333;
   margin: 0 0 0.5rem 0;
@@ -178,6 +239,7 @@
   gap: 1rem;
 }
 
+.details-btn,
 .reorder-btn,
 .receipt-btn {
   padding: 0.75rem 1.5rem;
@@ -187,6 +249,17 @@
   font-weight: 500;
   transition: all 0.2s ease;
   flex: 1;
+}
+
+.details-btn {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e8e8e8;
+}
+
+.details-btn:hover {
+  background: #eeeeee;
+  border-color: #d0d0d0;
 }
 
 .reorder-btn {
@@ -250,6 +323,144 @@
   transform: translateY(-2px);
 }
 
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e8e8e8;
+  position: sticky;
+  top: 0;
+  background: white;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.detail-section {
+  margin-bottom: 2rem;
+}
+
+.detail-section h3 {
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+  border-bottom: 2px solid #00b14f;
+  padding-bottom: 0.5rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #666;
+}
+
+.detail-row .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.detail-row .amount {
+  color: #00b14f;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.items-table th {
+  background: #f5f5f5;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.items-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #666;
+}
+
+.items-table tr:hover {
+  background: #f9f9f9;
+}
+
+.instructions {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .order-history-header {
@@ -287,5 +498,13 @@
   
   .orders-list {
     padding: 1rem;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    max-height: 95vh;
   }
 }
