@@ -1,23 +1,19 @@
-const sql = require('mssql');
-const dbConfig = require('../dbConfig');
+const supabase = require('../dbConfig');
 
 class DishModel {
     // Get all dishes for a stall
     static async getDishesByStall(stallId) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('stallId', sql.Int, stallId);
+            const { data, error } = await supabase
+                .from('food_items')
+                .select('*')
+                .eq('stall_id', stallId)
+                .eq('is_available', true)
+                .order('is_popular', { ascending: false })
+                .order('name', { ascending: true });
 
-            const query = `
-                SELECT *
-                FROM food_items
-                WHERE stall_id = @stallId AND is_available = 1
-                ORDER BY is_popular DESC, name ASC
-            `;
-
-            const result = await request.query(query);
-            return result.recordset;
+            if (error) throw error;
+            return data;
         } catch (error) {
             throw new Error(`Error fetching dishes: ${error.message}`);
         }
@@ -26,14 +22,14 @@ class DishModel {
     // Get single dish by id
     static async getDishById(id) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('id', sql.Int, id);
+            const { data, error } = await supabase
+                .from('food_items')
+                .select('*')
+                .eq('id', id)
+                .maybeSingle();
 
-            const query = `SELECT * FROM food_items WHERE id = @id`;
-            const result = await request.query(query);
-
-            return result.recordset[0] || null;
+            if (error) throw error;
+            return data || null;
         } catch (error) {
             throw new Error(`Error fetching dish by id: ${error.message}`);
         }
@@ -42,28 +38,23 @@ class DishModel {
     // Create a new dish
     static async createDish(dish) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('stallId', sql.Int, dish.stall_id);
-            request.input('name', sql.NVarChar, dish.name);
-            request.input('description', sql.NVarChar, dish.description || null);
-            request.input('price', sql.Decimal(8, 2), dish.price);
-            request.input('imageUrl', sql.NVarChar, dish.image_url || null);
-            request.input('category', sql.NVarChar, dish.category || null);
-            request.input('spiceLevel', sql.NVarChar, dish.spice_level || null);
-            request.input('dietaryInfo', sql.NVarChar, dish.dietary_info ? JSON.stringify(dish.dietary_info) : null);
-            request.input('calories', sql.Int, dish.calories || null);
-            request.input('isAvailable', sql.Bit, dish.is_available === false ? 0 : 1);
-            request.input('isPopular', sql.Bit, dish.is_popular ? 1 : 0);
+            const payload = {
+                stall_id: dish.stall_id,
+                name: dish.name,
+                description: dish.description || null,
+                price: dish.price,
+                image_url: dish.image_url || null,
+                category: dish.category || null,
+                spice_level: dish.spice_level || null,
+                dietary_info: dish.dietary_info ? JSON.stringify(dish.dietary_info) : null,
+                calories: dish.calories || null,
+                is_available: dish.is_available === false ? false : true,
+                is_popular: dish.is_popular ? true : false
+            };
 
-            const query = `
-                INSERT INTO food_items (stall_id, name, description, price, image_url, category, spice_level, dietary_info, calories, is_available, is_popular)
-                OUTPUT INSERTED.*
-                VALUES (@stallId, @name, @description, @price, @imageUrl, @category, @spiceLevel, @dietaryInfo, @calories, @isAvailable, @isPopular)
-            `;
-
-            const result = await request.query(query);
-            return result.recordset[0];
+            const { data, error } = await supabase.from('food_items').insert([payload]).select().single();
+            if (error) throw error;
+            return data;
         } catch (error) {
             throw new Error(`Error creating dish: ${error.message}`);
         }
@@ -72,39 +63,23 @@ class DishModel {
     // Update an existing dish
     static async updateDish(id, dish) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('id', sql.Int, id);
-            request.input('name', sql.NVarChar, dish.name);
-            request.input('description', sql.NVarChar, dish.description || null);
-            request.input('price', sql.Decimal(8, 2), dish.price);
-            request.input('imageUrl', sql.NVarChar, dish.image_url || null);
-            request.input('category', sql.NVarChar, dish.category || null);
-            request.input('spiceLevel', sql.NVarChar, dish.spice_level || null);
-            request.input('dietaryInfo', sql.NVarChar, dish.dietary_info ? JSON.stringify(dish.dietary_info) : null);
-            request.input('calories', sql.Int, dish.calories || null);
-            request.input('isAvailable', sql.Bit, dish.is_available === false ? 0 : 1);
-            request.input('isPopular', sql.Bit, dish.is_popular ? 1 : 0);
+            const payload = {
+                name: dish.name,
+                description: dish.description || null,
+                price: dish.price,
+                image_url: dish.image_url || null,
+                category: dish.category || null,
+                spice_level: dish.spice_level || null,
+                dietary_info: dish.dietary_info ? JSON.stringify(dish.dietary_info) : null,
+                calories: dish.calories || null,
+                is_available: dish.is_available === false ? false : true,
+                is_popular: dish.is_popular ? true : false,
+                updated_at: new Date().toISOString()
+            };
 
-            const query = `
-                UPDATE food_items
-                SET name = @name,
-                    description = @description,
-                    price = @price,
-                    image_url = @imageUrl,
-                    category = @category,
-                    spice_level = @spiceLevel,
-                    dietary_info = @dietaryInfo,
-                    calories = @calories,
-                    is_available = @isAvailable,
-                    is_popular = @isPopular,
-                    updated_at = GETDATE()
-                OUTPUT INSERTED.*
-                WHERE id = @id
-            `;
-
-            const result = await request.query(query);
-            return result.recordset[0] || null;
+            const { data, error } = await supabase.from('food_items').update(payload).eq('id', id).select().maybeSingle();
+            if (error) throw error;
+            return data || null;
         } catch (error) {
             throw new Error(`Error updating dish: ${error.message}`);
         }
@@ -113,18 +88,9 @@ class DishModel {
     // Delete a dish
     static async deleteDish(id) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('id', sql.Int, id);
-
-            const query = `
-                DELETE FROM food_items
-                OUTPUT DELETED.*
-                WHERE id = @id
-            `;
-
-            const result = await request.query(query);
-            return result.recordset[0] || null;
+            const { data, error } = await supabase.from('food_items').delete().eq('id', id).select().maybeSingle();
+            if (error) throw error;
+            return data || null;
         } catch (error) {
             throw new Error(`Error deleting dish: ${error.message}`);
         }

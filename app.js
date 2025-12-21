@@ -13,7 +13,7 @@ try {
     process.exit(1);
 }
 
-const sql = require('mssql');
+const supabase = require('./dbConfig');
 const path = require('path');
 const cors = require('cors');
 
@@ -260,29 +260,14 @@ app.get('/', (req, res) => {
 // Test database insert route
 app.get('/test-db', async (req, res) => {
     try {
-        const sql = require('mssql');
-        const { connectDB } = require('./dbConfig');
-        
-        console.log('Testing database insert...');
-        await connectDB();
-        
-        // Test simple insert without BLOB
-        const result = await sql.query`
-            INSERT INTO photos (
-                user_id, hawker_centre_id, stall_id, food_item_id,
-                original_filename, photo_data, file_size, mime_type,
-                dish_name, description
-            )
-            OUTPUT INSERTED.id, INSERTED.created_at
-            VALUES (
-                1, 1, NULL, NULL,
-                'test.jpg', 0x123456, 1024, 'image/jpeg',
-                'Test Dish', 'Test Description'
-            )
-        `;
-        
-        console.log('Database insert successful:', result.recordset[0]);
-        res.json({ success: true, data: result.recordset[0] });
+        console.log('Testing Supabase connection...');
+        // Simple select to verify access to the Users table
+        const { data, error } = await supabase.from('users').select('user_id').limit(1);
+        if (error) {
+            console.error('Supabase test error:', error);
+            return res.status(500).json({ success: false, error: error.message || error });
+        }
+        res.json({ success: true, data: data && data[0] ? data[0] : null });
         
     } catch (error) {
         console.error('Database test error:', error);
@@ -296,14 +281,13 @@ const PORT = process.env.PORT || 3000;
 // Test database connection on startup
 async function testDatabaseConnection() {
     try {
-        const dbConfig = require('./dbConfig');
-        const pool = await sql.connect(dbConfig);
-        console.log('✅ Database connected successfully');
-        console.log(`📊 Connected to: ${dbConfig.server}/${dbConfig.database}`);
-        await pool.close();
+        // Perform a lightweight select to validate Supabase connectivity
+        const { data, error } = await supabase.from('users').select('user_id').limit(1);
+        if (error) throw error;
+        console.log('✅ Supabase connected successfully');
     } catch (error) {
-        console.error('❌ Database connection failed:', error.message);
-        console.error('💡 Check your .env file database configuration');
+        console.error('❌ Database connection failed:', error.message || error);
+        console.error('💡 Check your .env file SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
     }
 }
 
