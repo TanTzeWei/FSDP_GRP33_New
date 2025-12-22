@@ -13,6 +13,11 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'customer', -- 'customer', 'stall_owner', 'admin'
+  is_stall_owner BOOLEAN DEFAULT FALSE,
+  stall_id BIGINT REFERENCES stalls(id) ON DELETE SET NULL,
+  owner_verified BOOLEAN DEFAULT FALSE,
+  approval_status TEXT DEFAULT 'none', -- 'none','pending','approved','rejected'
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

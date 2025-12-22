@@ -8,12 +8,23 @@ class UserModel {
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
+            const insertRow = {
+                name: userData.name,
+                email: userData.email,
+                password: hashedPassword,
+                role: userData.role || 'customer',
+                is_stall_owner: userData.is_stall_owner || false,
+                stall_id: userData.stall_id || null,
+                owner_verified: userData.owner_verified || false,
+                approval_status: userData.approval_status || 'none'
+            };
+
             const { data, error, status } = await supabase
                 .from('users')
-                .insert([{ name: userData.name, email: userData.email, password: hashedPassword }])
-                .select('user_id, name, email')
+                .insert([insertRow])
+                .select('user_id, name, email, role, is_stall_owner, stall_id, owner_verified, approval_status')
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 // unique violation handling may vary; return friendly message
@@ -33,7 +44,7 @@ class UserModel {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('user_id, name, email, password')
+                .select('user_id, name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status')
                 .eq('email', email)
                 .maybeSingle();
 

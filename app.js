@@ -116,6 +116,10 @@ if (UserController && authMiddleware) {
     app.put('/profile', authMiddleware, UserController.updateProfile);
     app.put('/change-password', authMiddleware, UserController.changePassword);
     app.delete('/profile', authMiddleware, UserController.deleteAccount);
+    // Admin: approve owner accounts
+    app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
+    app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);
+    app.post('/admin/owners/:userId/reject', authMiddleware, authMiddleware.requireAdmin, UserController.rejectOwner);
     console.log('✅ User routes configured');
 } else {
     console.log('⚠️  User routes disabled (missing UserController or authMiddleware)');
@@ -178,8 +182,8 @@ if (UploadController) {
 
 // Menu Photo Upload Routes (for menu item photos)
 if (MenuPhotoController) {
-    // Upload menu photo and create/update dish - REQUIRES AUTH
-    app.post('/api/menu-photos/upload', authMiddleware, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    // Upload menu photo and create/update dish - REQUIRES STALL OWNER
+    app.post('/api/menu-photos/upload', authMiddleware, authMiddleware.requireStallOwner, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
     
     // Get menu photos by stall
     app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
@@ -207,9 +211,9 @@ if (DishController) {
 
     // Protected routes: create/update/delete dishes (requires auth)
     if (authMiddleware) {
-        app.post('/api/dishes', authMiddleware, DishController.createDish);
-        app.put('/api/dishes/:id', authMiddleware, DishController.updateDish);
-        app.delete('/api/dishes/:id', authMiddleware, DishController.deleteDish);
+        app.post('/api/dishes', authMiddleware, authMiddleware.requireStallOwner, DishController.createDish);
+        app.put('/api/dishes/:id', authMiddleware, authMiddleware.requireStallOwner, DishController.updateDish);
+        app.delete('/api/dishes/:id', authMiddleware, authMiddleware.requireStallOwner, DishController.deleteDish);
     } else {
         console.log('⚠️  Dish write routes disabled (missing authMiddleware)');
     }

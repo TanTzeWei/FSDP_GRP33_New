@@ -9,19 +9,47 @@ class UserController {
     static async signup(req, res) {
         try {
             console.log('Signup payload:', req.body);
-            const { name, email, password } = req.body;
+            const { name, email, password, role, stall_id, stall_name, invite_code } = req.body;
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'All fields are required' });
             }
 
+            // If signing up as stall owner, mark as pending approval and optionally create a stall record
+            let createData = { name, email, password };
+            if (role === 'stall_owner') {
+                createData.role = 'stall_owner';
+                createData.is_stall_owner = true;
+                createData.approval_status = 'pending';
+                createData.owner_verified = false;
+
+                // If a stall_name is provided, create a pending stall and associate it
+                if (stall_name) {
+                    const supabase = require('../dbConfig');
+                    const { data: stallData, error: stallErr } = await supabase
+                        .from('stalls')
+                        .insert([{ stall_name: stall_name, hawker_centre_id: stall_id || null, status: 'Pending' }])
+                        .select('id')
+                        .maybeSingle();
+                    if (stallErr) console.warn('Failed to create stall during owner signup', stallErr);
+                    if (stallData) createData.stall_id = stallData.id;
+                } else if (stall_id) {
+                    createData.stall_id = stall_id;
+                }
+            }
+
             // Pass `name` to match DB column `name`
-            const result = await UserModel.createUser({ name, email, password });
+            const result = await UserModel.createUser(createData);
             if (!result.success) {
                 return res.status(400).json({ success: false, message: result.message });
             }
 
-            // Generate token
-            const token = jwt.sign({ userId: result.user.userId, email: result.user.email }, JWT_SECRET, { expiresIn: '2h' });
+            // For stall owners, do not auto-approve; return pending message without token
+            if (result.user.role === 'stall_owner' || result.user.is_stall_owner) {
+                return res.status(201).json({ success: true, message: 'Owner signup received - pending approval', user: result.user, token: null });
+            }
+
+            // Generate token for normal users
+            const token = jwt.sign({ userId: result.user.userId, email: result.user.email, role: result.user.role, stallId: result.user.stall_id }, JWT_SECRET, { expiresIn: '2h' });
 
             res.status(201).json({
                 success: true,
@@ -48,7 +76,12 @@ class UserController {
                 return res.status(401).json({ success: false, message: result.message });
             }
 
-            const token = jwt.sign({ userId: result.user.userId, email: result.user.email }, JWT_SECRET, { expiresIn: '2h' });
+            // Deny stall owners who are not approved
+            if ((result.user.role === 'stall_owner' || result.user.is_stall_owner) && result.user.approval_status !== 'approved') {
+                return res.status(403).json({ success: false, message: 'Owner account pending approval' });
+            }
+
+            const token = jwt.sign({ userId: result.user.userId, email: result.user.email, role: result.user.role, stallId: result.user.stall_id }, JWT_SECRET, { expiresIn: '2h' });
 
             res.json({
                 success: true,
@@ -59,6 +92,54 @@ class UserController {
         } catch (error) {
             console.error(error);
             res.status(500).json({ success: false, message: 'Server error during login' });
+        }
+    }
+
+    // Admin: approve owner
+    static async approveOwner(req, res) {
+        try {
+            const userId = req.params.userId;
+            const supabase = require('../dbConfig');
+            // Update user approval status
+            const { data, error } = await supabase.from('users').update({ approval_status: 'approved', owner_verified: true }).eq('user_id', userId).select('user_id, name, email, role, stall_id, approval_status, owner_verified').maybeSingle();
+            if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to approve owner' });
+
+            // Optionally activate stall
+            if (data && data.stall_id) {
+                await supabase.from('stalls').update({ status: 'Active' }).eq('id', data.stall_id);
+            }
+
+            res.json({ success: true, message: 'Owner approved', user: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error during owner approval' });
+        }
+    }
+
+    // Admin: list pending owner signups
+    static async listPendingOwners(req, res) {
+        try {
+            const supabase = require('../dbConfig');
+            const { data, error } = await supabase.from('users').select('user_id, name, email, created_at, stall_id, approval_status').eq('approval_status', 'pending').order('created_at', { ascending: true });
+            if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to fetch pending owners' });
+            res.json({ success: true, data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error fetching pending owners' });
+        }
+    }
+
+    // Admin: reject owner signup
+    static async rejectOwner(req, res) {
+        try {
+            const userId = req.params.userId;
+            const supabase = require('../dbConfig');
+            const { data, error } = await supabase.from('users').update({ approval_status: 'rejected', owner_verified: false }).eq('user_id', userId).select('user_id, name, email, approval_status').maybeSingle();
+            if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to reject owner' });
+            res.json({ success: true, message: 'Owner rejected', user: data });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error rejecting owner' });
         }
     }
 
