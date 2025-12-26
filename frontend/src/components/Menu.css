@@ -798,6 +798,13 @@ a.stall-card {
   font-size: 0.9rem;
 }
 
+/* Liked heart state */
+.heart-icon.liked {
+  filter: drop-shadow(0 4px 10px rgba(255, 71, 87, 0.25));
+  transform: scale(1.15);
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
 .filter-btn:hover {
   border-color: #ff6b35;
   color: #ff6b35;

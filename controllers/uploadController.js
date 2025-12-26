@@ -348,6 +348,18 @@ class UploadController {
     }
   }
 
+  // Get list of photo IDs liked by current user
+  static async getLikedPhotos(req, res) {
+    try {
+      const userId = req.user?.id || 1; // TODO: use real auth
+      const likedIds = await UploadModel.getLikedPhotoIds(parseInt(userId));
+      res.status(200).json({ success: true, data: likedIds });
+    } catch (error) {
+      console.error('Error fetching liked photos:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch liked photos' });
+    }
+  }
+
   // Get single photo details
   static async getPhotoDetails(req, res) {
     try {

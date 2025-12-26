@@ -9,6 +9,7 @@ const Menu = () => {
   const [featuredPhotos, setFeaturedPhotos] = useState([]);
   const [communityPhotos, setCommunityPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [likedPhotos, setLikedPhotos] = useState([]); // local set of photo IDs this client has liked
   const [selectedStallFilter, setSelectedStallFilter] = useState('All');
   const [selectedDishFilter, setSelectedDishFilter] = useState('All');
   const stallItems = [
@@ -105,6 +106,40 @@ const Menu = () => {
     return stallMatch && dishMatch;
   });
 
+  // Update likes count for a photo across featured/community lists
+  const updatePhotoLikes = (photoId, newCount) => {
+    setFeaturedPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
+    setCommunityPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
+  };
+
+  // Toggle like/unlike for a photo
+  const toggleLike = async (photoId) => {
+    const isLiked = likedPhotos.includes(photoId);
+    try {
+      if (!isLiked) {
+        const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method: 'POST' });
+        const json = await res.json();
+        if (res.ok && json.data) {
+          updatePhotoLikes(photoId, json.data.likesCount);
+          setLikedPhotos(prev => [...prev, photoId]);
+        } else {
+          console.warn('Like failed', json);
+        }
+      } else {
+        const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method: 'DELETE' });
+        const json = await res.json();
+        if (res.ok && json.data) {
+          updatePhotoLikes(photoId, json.data.likesCount);
+          setLikedPhotos(prev => prev.filter(id => id !== photoId));
+        } else {
+          console.warn('Unlike failed', json);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
   // Fetch menu photos from API
   useEffect(() => {
     const fetchMenuPhotos = async () => {
@@ -150,6 +185,17 @@ const Menu = () => {
         if (communityData.success) {
           setCommunityPhotos(communityData.data || []);
           console.log('Community photos set:', communityData.data);
+        }
+
+        // Fetch liked photo ids for current user (optional - will fallback to empty)
+        try {
+          const likedRes = await fetch('http://localhost:3000/api/photos/liked');
+          const likedJson = await likedRes.json();
+          if (likedRes.ok && likedJson.success) {
+            setLikedPhotos(likedJson.data || []);
+          }
+        } catch (e) {
+          console.warn('Could not fetch liked photo ids:', e);
         }
       } catch (error) {
         console.error('Error fetching photos:', error);
@@ -245,7 +291,14 @@ const Menu = () => {
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge">
-                        <span className="heart-icon">❤️</span>
+                        <span
+                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''}`}
+                          onClick={() => toggleLike(photo.id)}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          ❤️
+                        </span>
                         <span className="likes-count">{photo.likes}</span>
                       </div>
                     </div>
@@ -293,7 +346,14 @@ const Menu = () => {
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge small">
-                        <span className="heart-icon">❤️</span>
+                        <span
+                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''}`}
+                          onClick={() => toggleLike(photo.id)}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          ❤️
+                        </span>
                         <span className="likes-count">{photo.likes}</span>
                       </div>
                     </div>

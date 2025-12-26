@@ -165,9 +165,12 @@ if (UploadController) {
     // Get photos by hawker centre
     app.get('/api/photos/hawker/:hawkerCentreId', UploadController.getPhotosByHawkerCentre);
     
+    // Get ids of photos liked by current user (must come before the :photoId route)
+    app.get('/api/photos/liked', UploadController.getLikedPhotos);
+
     // Get photo details
     app.get('/api/photos/:photoId', UploadController.getPhotoDetails);
-    
+
     // Like/Unlike photos
     app.post('/api/photos/:photoId/like', UploadController.likePhoto);
     app.delete('/api/photos/:photoId/like', UploadController.unlikePhoto);

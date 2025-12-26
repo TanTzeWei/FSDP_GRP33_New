@@ -112,13 +112,29 @@ class UploadModel {
   static async likePhoto(userId, photoId) {
     try {
       // Check existing like
+      console.log(`[likePhoto] Checking existing like for user=${userId} photo=${photoId}`);
       const { data: existing } = await supabase.from('photo_likes').select('id').eq('user_id', userId).eq('photo_id', photoId).limit(1).maybeSingle();
+      console.log('[likePhoto] existing:', existing);
       if (existing) throw new Error('User has already liked this photo');
 
-      await supabase.from('photo_likes').insert([{ user_id: userId, photo_id: photoId }]);
-      const { data, error } = await supabase.from('photos').update({ likes_count: supabase.rpc ? supabase.rpc('increment_likes', { _id: photoId }) : undefined }).eq('id', photoId).select('likes_count').maybeSingle();
+      // Insert like record
+      console.log(`[likePhoto] Inserting like record user=${userId} photo=${photoId}`);
+      const { data: inserted, error: insertErr } = await supabase.from('photo_likes').insert([{ user_id: userId, photo_id: photoId }]).select().maybeSingle();
+      console.log('[likePhoto] insert result:', { inserted, insertErr });
+      if (insertErr) throw insertErr;
+
+      // Read current likes_count then update to avoid using invalid RPC usage here
+      console.log(`[likePhoto] Reading current likes_count for photo=${photoId}`);
+      const { data: photoData, error: selectErr } = await supabase.from('photos').select('likes_count').eq('id', photoId).maybeSingle();
+      console.log('[likePhoto] photoData:', photoData, 'selectErr:', selectErr);
+      if (selectErr) throw selectErr;
+      const current = photoData && typeof photoData.likes_count === 'number' ? photoData.likes_count : 0;
+      const newCount = current + 1;
+
+      const { data, error } = await supabase.from('photos').update({ likes_count: newCount }).eq('id', photoId).select('likes_count').maybeSingle();
+      console.log('[likePhoto] update result:', { data, error });
       if (error) throw error;
-      return data ? data.likes_count : null;
+      return data ? data.likes_count : newCount;
     } catch (error) {
       console.error('Error liking photo:', error);
       throw error;
@@ -128,9 +144,11 @@ class UploadModel {
   // Unlike a photo
   static async unlikePhoto(userId, photoId) {
     try {
-      const { data: deleted, error: delErr } = await supabase.from('photo_likes').delete().eq('user_id', userId).eq('photo_id', photoId);
+      console.log(`[unlikePhoto] Deleting like for user=${userId} photo=${photoId}`);
+      const { data: deleted, error: delErr } = await supabase.from('photo_likes').delete().eq('user_id', userId).eq('photo_id', photoId).select();
+      console.log('[unlikePhoto] delete result:', { deleted, delErr });
       if (delErr) throw delErr;
-      if (!deleted || deleted.length === 0) throw new Error('Like not found');
+      if (!deleted || (Array.isArray(deleted) && deleted.length === 0)) throw new Error('Like not found');
 
       const { data, error } = await supabase.from('photos').select('likes_count').eq('id', photoId).maybeSingle();
       if (error) throw error;
@@ -175,6 +193,18 @@ class UploadModel {
       return true;
     } catch (error) {
       console.error('Error updating featured status:', error);
+      throw error;
+    }
+  }
+
+  // Get IDs of photos liked by a specific user
+  static async getLikedPhotoIds(userId) {
+    try {
+      const { data, error } = await supabase.from('photo_likes').select('photo_id').eq('user_id', userId);
+      if (error) throw error;
+      return data ? data.map(r => r.photo_id) : [];
+    } catch (error) {
+      console.error('Error fetching liked photo ids:', error);
       throw error;
     }
   }
