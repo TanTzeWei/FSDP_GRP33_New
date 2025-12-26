@@ -7,7 +7,6 @@ import Signup from "./pages/Signup";
 import ProfilePage from "./pages/ProfilePage";
 // StallLogin component removed in favor of single login page
 import StallDashboard from "./pages/stallDashboard";
-import DashboardCustomer from "./pages/DashboardCustomer";
 import DashboardStallOwner from "./pages/DashboardStallOwner";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import AdminApprovals from "./pages/AdminApprovals";
@@ -86,7 +85,6 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         
         <Route path="/stall/dashboard" element={<StallDashboard />} />
-        <Route path="/dashboard/customer" element={<DashboardCustomer />} />
         <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />
         <Route path="/dashboard/admin" element={<DashboardAdmin />} />
         <Route path="/admin/approvals" element={<AdminApprovals />} />

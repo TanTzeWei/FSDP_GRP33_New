@@ -46,7 +46,7 @@ function Signup() {
       showToast(res.data?.message || "Signup successful!", { type: "success" });
       if (user?.role === 'admin') return navigate('/dashboard/admin');
       if (user?.role === 'stall_owner') return navigate('/dashboard/stall-owner');
-      return navigate('/dashboard/customer');
+      return navigate('/');
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Signup failed");

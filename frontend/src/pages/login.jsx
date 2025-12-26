@@ -35,7 +35,7 @@ function Login() {
       const role = user?.role || (user?.is_stall_owner ? 'stall_owner' : 'customer');
       if (role === 'admin') return navigate('/dashboard/admin');
       if (role === 'stall_owner') return navigate('/dashboard/stall-owner');
-      return navigate('/dashboard/customer');
+      return navigate('/');
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Login failed");
