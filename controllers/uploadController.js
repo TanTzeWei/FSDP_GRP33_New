@@ -268,7 +268,11 @@ class UploadController {
   static async likePhoto(req, res) {
     try {
       const { photoId } = req.params;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
 
       if (!photoId) {
         return res.status(400).json({
@@ -310,7 +314,11 @@ class UploadController {
   static async unlikePhoto(req, res) {
     try {
       const { photoId } = req.params;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
 
       if (!photoId) {
         return res.status(400).json({
@@ -351,7 +359,8 @@ class UploadController {
   // Get list of photo IDs liked by current user
   static async getLikedPhotos(req, res) {
     try {
-      const userId = req.user?.id || 1; // TODO: use real auth
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
       const likedIds = await UploadModel.getLikedPhotoIds(parseInt(userId));
       res.status(200).json({ success: true, data: likedIds });
     } catch (error) {

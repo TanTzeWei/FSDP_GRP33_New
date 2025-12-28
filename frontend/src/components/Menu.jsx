@@ -1,8 +1,9 @@
 // components/Menu.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import './Menu.css';
+import { AuthContext } from '../context/AuthContext';
 
 const Menu = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -10,6 +11,7 @@ const Menu = () => {
   const [communityPhotos, setCommunityPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [likedPhotos, setLikedPhotos] = useState([]); // local set of photo IDs this client has liked
+  const [pendingLikes, setPendingLikes] = useState({}); // track in-flight like requests by photoId
   const [selectedStallFilter, setSelectedStallFilter] = useState('All');
   const [selectedDishFilter, setSelectedDishFilter] = useState('All');
   const stallItems = [
@@ -112,31 +114,56 @@ const Menu = () => {
     setCommunityPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
   };
 
+  const { token } = useContext(AuthContext);
+
   // Toggle like/unlike for a photo
   const toggleLike = async (photoId) => {
     const isLiked = likedPhotos.includes(photoId);
+    // Prevent duplicate requests
+    if (pendingLikes[photoId]) return;
+
     try {
+      setPendingLikes(prev => ({ ...prev, [photoId]: true }));
+
+      // Optimistic UI update
       if (!isLiked) {
-        const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method: 'POST' });
-        const json = await res.json();
-        if (res.ok && json.data) {
-          updatePhotoLikes(photoId, json.data.likesCount);
-          setLikedPhotos(prev => [...prev, photoId]);
-        } else {
-          console.warn('Like failed', json);
-        }
+        setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
+        updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
       } else {
-        const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method: 'DELETE' });
-        const json = await res.json();
-        if (res.ok && json.data) {
-          updatePhotoLikes(photoId, json.data.likesCount);
+        setLikedPhotos(prev => prev.filter(id => id !== photoId));
+        updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
+      }
+
+      const method = isLiked ? 'DELETE' : 'POST';
+      const headers = { Accept: 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method, headers, credentials: 'include' });
+      const json = await res.json().catch(() => ({}));
+
+      if (res.ok && json.data) {
+        updatePhotoLikes(photoId, json.data.likesCount);
+        // ensure likedPhotos matches server authoritative state
+        setLikedPhotos(prev => isLiked ? prev.filter(id => id !== photoId) : Array.from(new Set([...prev, photoId])));
+      } else {
+        console.warn('Like/Unlike failed', res.status, json);
+        // rollback optimistic update on failure
+        if (!isLiked) {
           setLikedPhotos(prev => prev.filter(id => id !== photoId));
+          // decrement rollback
+          updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
         } else {
-          console.warn('Unlike failed', json);
+          setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
+          updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
         }
       }
     } catch (error) {
       console.error('Error toggling like:', error);
+    } finally {
+      setPendingLikes(prev => {
+        const copy = { ...prev };
+        delete copy[photoId];
+        return copy;
+      });
     }
   };
 
@@ -189,11 +216,16 @@ const Menu = () => {
 
         // Fetch liked photo ids for current user (optional - will fallback to empty)
         try {
-          const likedRes = await fetch('http://localhost:3000/api/photos/liked');
-          const likedJson = await likedRes.json();
-          if (likedRes.ok && likedJson.success) {
-            setLikedPhotos(likedJson.data || []);
+          if (token) {
+            const likedRes = await fetch('http://localhost:3000/api/photos/liked', { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, credentials: 'include' });
+            const likedJson = await likedRes.json();
+            if (likedRes.ok && likedJson.success) {
+              setLikedPhotos(likedJson.data || []);
+            }
+          } else {
+            setLikedPhotos([]);
           }
+        
         } catch (e) {
           console.warn('Could not fetch liked photo ids:', e);
         }
@@ -292,10 +324,11 @@ const Menu = () => {
                     <div className="photo-overlay">
                       <div className="likes-badge">
                         <span
-                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''}`}
-                          onClick={() => toggleLike(photo.id)}
+                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}
+                          onClick={() => token ? toggleLike(photo.id) : null}
                           role="button"
                           tabIndex={0}
+                          title={!token ? 'Login to like photos' : 'Like'}
                         >
                           ❤️
                         </span>
@@ -347,10 +380,11 @@ const Menu = () => {
                     <div className="photo-overlay">
                       <div className="likes-badge small">
                         <span
-                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''}`}
-                          onClick={() => toggleLike(photo.id)}
+                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}
+                          onClick={() => token ? toggleLike(photo.id) : null}
                           role="button"
                           tabIndex={0}
+                          title={!token ? 'Login to like photos' : 'Like'}
                         >
                           ❤️
                         </span>
