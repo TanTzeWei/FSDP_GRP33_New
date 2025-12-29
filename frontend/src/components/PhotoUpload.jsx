@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import './PhotoUpload.css';
 
@@ -18,15 +18,92 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
-  // Mock hawker centres data (replace with real data from API)
-  const hawkerCentres = [
-    { id: 1, name: 'Maxwell Food Centre' },
-    { id: 2, name: 'Lau Pa Sat' },
-    { id: 3, name: 'Newton Food Centre' },
-    { id: 4, name: 'Chinatown Complex' },
-    { id: 5, name: 'Tekka Centre' },
-    { id: 6, name: 'Tiong Bahru Market' }
-  ];
+  const [hawkerCentres, setHawkerCentres] = useState([]);
+  const [stalls, setStalls] = useState([]);
+
+  // Fetch hawker centres on mount
+  useEffect(() => {
+    const fetchHawkerCentres = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/hawker-centres');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setHawkerCentres(json.data || []);
+        } else {
+          setHawkerCentres([
+            { id: 101, name: 'Maxwell Food Centre' },
+            { id: 102, name: 'Lau Pa Sat' },
+            { id: 103, name: 'Tiong Bahru Market' }
+          ]);
+        }
+      } catch (e) {
+        console.error('Error fetching hawker centres:', e);
+        setHawkerCentres([
+          { id: 101, name: 'Maxwell Food Centre' },
+          { id: 102, name: 'Lau Pa Sat' },
+          { id: 103, name: 'Tiong Bahru Market' }
+        ]);
+      }
+    };
+
+    fetchHawkerCentres();
+  }, []);
+
+  // Fetch stalls when hawker centre changes
+  useEffect(() => {
+    const fetchStalls = async (centreId) => {
+      if (!centreId) {
+        setStalls([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:3000/api/hawker-centres/${centreId}`);
+        const json = await res.json();
+        if (json.success && json.data && Array.isArray(json.data.stalls) && json.data.stalls.length > 0) {
+          setStalls(json.data.stalls);
+        } else {
+          const examples = {
+            101: [
+              { id: 1001, stall_name: "Ah Lim's Chinese Stall" },
+              { id: 1002, stall_name: 'Peranakan Kitchen' }
+            ],
+            102: [
+              { id: 2001, stall_name: 'Warung Pak Hasan' },
+              { id: 2002, stall_name: 'Mumbai Spice Corner' }
+            ],
+            103: [
+              { id: 3001, stall_name: 'Fresh Drinks Bar' },
+              { id: 3002, stall_name: 'Western Grill House' }
+            ]
+          };
+          setStalls(examples[centreId] || []);
+        }
+      } catch (e) {
+        console.error('Error fetching stalls:', e);
+        const examples = {
+          101: [
+            { id: 1001, stall_name: "Ah Lim's Chinese Stall" },
+            { id: 1002, stall_name: 'Peranakan Kitchen' }
+          ],
+          102: [
+            { id: 2001, stall_name: 'Warung Pak Hasan' },
+            { id: 2002, stall_name: 'Mumbai Spice Corner' }
+          ],
+          103: [
+            { id: 3001, stall_name: 'Fresh Drinks Bar' },
+            { id: 3002, stall_name: 'Western Grill House' }
+          ]
+        };
+        setStalls(examples[centreId] || []);
+      }
+    };
+
+    // Reset stall selection when hawker centre changes
+    setUploadState(prev => ({ ...prev, stallId: '' }));
+    if (uploadState.hawkerCentreId) fetchStalls(uploadState.hawkerCentreId);
+    else setStalls([]);
+  }, [uploadState.hawkerCentreId]);
 
   // Handle file selection
   const handleFileSelect = (file) => {
@@ -305,6 +382,23 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
                 {hawkerCentres.map(centre => (
                   <option key={centre.id} value={centre.id}>
                     {centre.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="stall">Stall (Optional)</label>
+              <select
+                id="stall"
+                value={uploadState.stallId}
+                onChange={(e) => handleInputChange('stallId', e.target.value)}
+                disabled={uploadState.isUploading || stalls.length === 0}
+              >
+                <option value="">Select a stall (optional)</option>
+                {stalls.map(stall => (
+                  <option key={stall.id} value={stall.id}>
+                    {stall.stall_name || stall.name || `Stall ${stall.id}`}
                   </option>
                 ))}
               </select>
