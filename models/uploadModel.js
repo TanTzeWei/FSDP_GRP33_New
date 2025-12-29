@@ -123,13 +123,11 @@ class UploadModel {
       console.log('[likePhoto] insert result:', { inserted, insertErr });
       if (insertErr) throw insertErr;
 
-      // Read current likes_count then update to avoid using invalid RPC usage here
-      console.log(`[likePhoto] Reading current likes_count for photo=${photoId}`);
-      const { data: photoData, error: selectErr } = await supabase.from('photos').select('likes_count').eq('id', photoId).maybeSingle();
-      console.log('[likePhoto] photoData:', photoData, 'selectErr:', selectErr);
-      if (selectErr) throw selectErr;
-      const current = photoData && typeof photoData.likes_count === 'number' ? photoData.likes_count : 0;
-      const newCount = current + 1;
+      // Recompute likes_count from actual rows in photo_likes to avoid races
+      console.log(`[likePhoto] Counting likes for photo=${photoId}`);
+      const { data: _, error: countErr, count } = await supabase.from('photo_likes').select('photo_id', { count: 'exact', head: true }).eq('photo_id', photoId);
+      if (countErr) throw countErr;
+      const newCount = typeof count === 'number' ? count : 0;
 
       const { data, error } = await supabase.from('photos').update({ likes_count: newCount }).eq('id', photoId).select('likes_count').maybeSingle();
       console.log('[likePhoto] update result:', { data, error });
@@ -150,9 +148,10 @@ class UploadModel {
       if (delErr) throw delErr;
       if (!deleted || (Array.isArray(deleted) && deleted.length === 0)) throw new Error('Like not found');
 
-      const { data, error } = await supabase.from('photos').select('likes_count').eq('id', photoId).maybeSingle();
-      if (error) throw error;
-      const newCount = Math.max(0, (data.likes_count || 0) - 1);
+      // Recompute likes_count from actual rows in photo_likes after deletion
+      const { data: _, error: countErr, count } = await supabase.from('photo_likes').select('photo_id', { count: 'exact', head: true }).eq('photo_id', photoId);
+      if (countErr) throw countErr;
+      const newCount = typeof count === 'number' ? count : 0;
       await supabase.from('photos').update({ likes_count: newCount }).eq('id', photoId);
       return newCount;
     } catch (error) {
