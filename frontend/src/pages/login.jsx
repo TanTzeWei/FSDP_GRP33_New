@@ -32,9 +32,10 @@ function Login() {
       // show success toast and navigate to role-based dashboard
       showToast(res.data?.message || "Login successful!", { type: "success", duration: 2500 });
       // role-based routing
+      // Stall owners should go to the Stall Owner Dashboard page
       const role = user?.role || (user?.is_stall_owner ? 'stall_owner' : 'customer');
       if (role === 'admin') return navigate('/dashboard/admin');
-      if (role === 'stall_owner') return navigate('/dashboard/stall-owner');
+      if (role === 'stall_owner') return navigate('/stall/dashboard');
       return navigate('/');
     } catch (err) {
       setLoading(false);
