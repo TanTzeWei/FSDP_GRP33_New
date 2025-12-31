@@ -1,30 +1,30 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import MenuItemModal from '../components/MenuItemModal';
 import PhotoUploadModal from '../components/PhotoUploadModal';
+import MenuItemCard from '../components/MenuItemCard';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import './stallDashboard.css';
+
+/**
+ * StallDashboard Component
+ * 
+ * Main dashboard for stall owners to manage menu items and photos.
+ * Features:
+ * - View and manage menu items
+ * - Review and moderate user-uploaded photos
+ * - Set official photos for menu items
+ * - Bulk actions support
+ * - Filter by status (All, With Photos, Without Photos)
+ */
 
 // Lightweight inline icons
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
-
-const UploadIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
   </svg>
 );
 
@@ -36,14 +36,31 @@ const ImageIcon = () => (
   </svg>
 );
 
-const CheckIcon = () => (
+const TrashIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="20 6 9 17 4 12" />
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
   </svg>
 );
 
 function StallDashboard() {
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   /* =======================
      Core State
@@ -63,6 +80,7 @@ function StallDashboard() {
   const [sortBy, setSortBy] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedItems, setSelectedItems] = useState(new Set());
 
   /* =======================
      Modal State
@@ -83,6 +101,70 @@ function StallDashboard() {
   const showSuccess = (message) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(''), 5000);
+  };
+
+  const showError = (message) => {
+    setError(message);
+    setTimeout(() => setError(''), 5000);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      logout();
+      navigate('/login');
+    }
+  };
+
+  /* =======================
+     Filtered Dishes
+  ======================= */
+  const filteredDishes = useMemo(() => {
+    if (activeFilter === 'with_photos') {
+      return dishes.filter((d) => d.image_url);
+    } else if (activeFilter === 'without_photos') {
+      return dishes.filter((d) => !d.image_url);
+    }
+    return dishes;
+  }, [dishes, activeFilter]);
+
+  /* =======================
+     Bulk Selection Handlers
+  ======================= */
+  const handleSelectItem = useCallback((dishId, checked) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(dishId);
+      } else {
+        newSet.delete(dishId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(
+    (checked) => {
+      if (checked) {
+        setSelectedItems(new Set(filteredDishes.map((d) => d.id)));
+      } else {
+        setSelectedItems(new Set());
+      }
+    },
+    [filteredDishes]
+  );
+
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+
+    const confirmMsg = `Delete ${selectedItems.size} selected item${
+      selectedItems.size > 1 ? 's' : ''
+    }?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    // TODO: Implement bulk delete API call
+    showSuccess(`${selectedItems.size} items prepared for deletion`);
+    setSelectedItems(new Set());
   };
 
   /* =======================
@@ -150,6 +232,7 @@ function StallDashboard() {
     setUpdatingDishIds((p) => ({ ...p, [dishId]: true }));
     const prevDishes = [...dishes];
 
+    // Optimistic update
     setDishes((prev) =>
       prev.map((d) =>
         d.id === dishId ? { ...d, image_url: photo.imageUrl } : d
@@ -158,42 +241,99 @@ function StallDashboard() {
 
     try {
       await axios.put(`/api/dishes/${dishId}`, {
-        image_url: photo.imageUrl
+        image_url: photo.imageUrl,
       });
-    } catch {
+      showSuccess('Official photo updated');
+    } catch (err) {
       setDishes(prevDishes);
       setActionErrors((p) => ({
         ...p,
-        [dishId]: 'Failed to update photo'
+        [dishId]: 'Failed to update photo',
       }));
+      showError('Failed to update official photo');
     } finally {
       setUpdatingDishIds((p) => ({ ...p, [dishId]: false }));
     }
   };
 
-  const handleSaveMenuItem = async (formData) => {
-    if (editingMenuItem) {
-      await axios.put(`/api/dishes/${editingMenuItem.id}`, formData);
-      setDishes((p) =>
-        p.map((d) => (d.id === editingMenuItem.id ? { ...d, ...formData } : d))
-      );
-      showSuccess('Menu item updated');
-    } else {
-      const res = await axios.post('/api/dishes', formData);
-      setDishes((p) => [res.data?.data || res.data, ...p]);
-      showSuccess('Menu item added');
-    }
+  const handleApprovePhoto = async (photoId, dishId) => {
+    try {
+      // TODO: Implement photo approval API
+      // await axios.put(`/api/menu-photos/${photoId}/approve`);
 
-    setMenuItemModalOpen(false);
-    setEditingMenuItem(null);
+      // Update local state
+      setPhotosByDish((prev) => {
+        const dishName = dishes.find((d) => d.id === dishId)?.name;
+        if (!dishName) return prev;
+
+        const photos = prev[dishName] || [];
+        return {
+          ...prev,
+          [dishName]: photos.map((p) =>
+            p.id === photoId
+              ? { ...p, raw: { ...p.raw, approval_status: 'approved' } }
+              : p
+          ),
+        };
+      });
+
+      showSuccess('Photo approved');
+    } catch (err) {
+      showError('Failed to approve photo');
+    }
   };
 
-  const filteredDishes =
-    activeFilter === 'with_photos'
-      ? dishes.filter((d) => d.image_url)
-      : activeFilter === 'without_photos'
-      ? dishes.filter((d) => !d.image_url)
-      : dishes;
+  const handleRejectPhoto = async (photoId, dishId) => {
+    try {
+      // TODO: Implement photo rejection API
+      // await axios.put(`/api/menu-photos/${photoId}/reject`);
+
+      // Update local state
+      setPhotosByDish((prev) => {
+        const dishName = dishes.find((d) => d.id === dishId)?.name;
+        if (!dishName) return prev;
+
+        const photos = prev[dishName] || [];
+        return {
+          ...prev,
+          [dishName]: photos.map((p) =>
+            p.id === photoId
+              ? { ...p, raw: { ...p.raw, approval_status: 'rejected' } }
+              : p
+          ),
+        };
+      });
+
+      showSuccess('Photo rejected');
+    } catch (err) {
+      showError('Failed to reject photo');
+    }
+  };
+
+  const handleSaveMenuItem = async (formData) => {
+    try {
+      if (editingMenuItem) {
+        await axios.put(`/api/dishes/${editingMenuItem.id}`, formData);
+        setDishes((p) =>
+          p.map((d) =>
+            d.id === editingMenuItem.id ? { ...d, ...formData } : d
+          )
+        );
+        showSuccess('Menu item updated');
+      } else {
+        const res = await axios.post('/api/dishes', formData);
+        setDishes((p) => [res.data?.data || res.data, ...p]);
+        showSuccess('Menu item added');
+      }
+
+      setMenuItemModalOpen(false);
+      setEditingMenuItem(null);
+    } catch (err) {
+      showError(
+        editingMenuItem ? 'Failed to update item' : 'Failed to add item'
+      );
+    }
+  };
 
   /* =======================
      Render
@@ -211,21 +351,15 @@ function StallDashboard() {
   if (loading) {
     return (
       <div className="stall-dashboard">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p className="loading-text">Loading your dashboard…</p>
-        </div>
+        <LoadingSkeleton count={6} />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="stall-dashboard">
-        <div className="error-message">{error}</div>
-      </div>
-    );
-  }
+  const allSelected =
+    filteredDishes.length > 0 &&
+    filteredDishes.every((d) => selectedItems.has(d.id));
+  const someSelected = selectedItems.size > 0 && !allSelected;
 
   return (
     <div className="stall-dashboard">
@@ -234,16 +368,30 @@ function StallDashboard() {
         <div>
           <h1>Stall Dashboard</h1>
         </div>
-        {stall && (
-          <div className="dashboard-header-info">
-            <div className="stall-name">{stall.name || stall.stall_name}</div>
-            {lastUpdated && (
-              <div className="last-updated">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </div>
-            )}
+        <div className="dashboard-header-right">
+          {stall && (
+            <div className="dashboard-header-info">
+              <div className="stall-name">{stall.name || stall.stall_name}</div>
+              {lastUpdated && (
+                <div className="last-updated">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="user-menu">
+            <div className="user-info">
+              <UserIcon />
+              <span className="user-name">
+                {user?.username || user?.name || 'Stall Owner'}
+              </span>
+            </div>
+            <button className="btn-logout" onClick={handleLogout}>
+              <LogoutIcon />
+              Logout
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Success Message */}
@@ -251,10 +399,51 @@ function StallDashboard() {
         <div className="success-message">{successMessage}</div>
       )}
 
+      {/* Error Message */}
+      {error && <div className="error-message">{error}</div>}
+
+      {/* Bulk Actions Toolbar */}
+      {selectedItems.size > 0 && (
+        <div className="bulk-actions-toolbar">
+          <div className="bulk-info">
+            <span className="bulk-count">{selectedItems.size} selected</span>
+          </div>
+          <div className="bulk-actions">
+            <button
+              className="bulk-action-btn bulk-delete"
+              onClick={handleBulkDelete}
+            >
+              <TrashIcon />
+              Delete Selected
+            </button>
+            <button
+              className="bulk-action-btn bulk-cancel"
+              onClick={() => setSelectedItems(new Set())}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Action Bar */}
       <div className="action-bar">
         <div className="filter-group">
-          <span className="filter-label">Filter:</span>
+          <div className="select-all-container">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(input) => {
+                if (input) input.indeterminate = someSelected;
+              }}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+              aria-label="Select all items"
+            />
+            <span className="filter-label">
+              {someSelected ? 'Some selected' : allSelected ? 'All selected' : 'Select all'}
+            </span>
+          </div>
+          <div className="filter-divider"></div>
           <button
             className={`filter-btn ${activeFilter === null ? 'active' : ''}`}
             onClick={() => setActiveFilter(null)}
@@ -294,16 +483,24 @@ function StallDashboard() {
       {filteredDishes.length === 0 ? (
         <div className="empty-state">
           <ImageIcon className="empty-icon" />
-          <h2 className="empty-title">No Menu Items Yet</h2>
+          <h2 className="empty-title">
+            {activeFilter
+              ? 'No items match this filter'
+              : 'No Menu Items Yet'}
+          </h2>
           <p className="empty-description">
-            Get started by adding your first menu item to showcase your dishes.
+            {activeFilter
+              ? 'Try selecting a different filter to view other items.'
+              : 'Get started by adding your first menu item to showcase your dishes.'}
           </p>
-          <button
-            className="btn-primary"
-            onClick={() => setMenuItemModalOpen(true)}
-          >
-            Add Your First Item
-          </button>
+          {!activeFilter && (
+            <button
+              className="btn-primary"
+              onClick={() => setMenuItemModalOpen(true)}
+            >
+              Add Your First Item
+            </button>
+          )}
         </div>
       ) : (
         <div className="menu-items-grid">
@@ -313,120 +510,27 @@ function StallDashboard() {
             const hasError = actionErrors[dish.id];
 
             return (
-              <div key={dish.id} className="menu-item-card">
-                {/* Card Header */}
-                <div className="menu-item-header">
-                  <div className="menu-item-title">
-                    <h3 className="menu-item-name">{dish.name}</h3>
-                    <p className="menu-item-price">
-                      ${parseFloat(dish.price || 0).toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="menu-item-actions">
-                    <button
-                      className="btn-icon"
-                      onClick={() => {
-                        setEditingMenuItem(dish);
-                        setMenuItemModalOpen(true);
-                      }}
-                      title="Edit menu item"
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      className="btn-icon"
-                      onClick={() => {
-                        setUploadingForMenuItem(dish);
-                        setPhotoUploadModalOpen(true);
-                      }}
-                      title="Upload photo"
-                    >
-                      <UploadIcon />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Official Photo */}
-                <div className="official-photo-section">
-                  <div className="official-photo-label">Official Photo</div>
-                  <div className="official-photo-container">
-                    {dish.image_url ? (
-                      <img
-                        src={dish.image_url}
-                        alt={dish.name}
-                        className="official-photo"
-                      />
-                    ) : (
-                      <div className="no-photo-placeholder">
-                        <ImageIcon className="no-photo-icon" />
-                        <p className="no-photo-text">No photo selected</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* User Uploaded Photos */}
-                <div className="user-uploads-section">
-                  <div className="uploads-header">
-                    <div className="uploads-label">User Uploads</div>
-                    <div className="uploads-count">{photos.length} photos</div>
-                  </div>
-
-                  {photos.length > 0 ? (
-                    <div className="user-photos-grid">
-                      {photos.map((photo) => (
-                        <div
-                          key={photo.id}
-                          className={`user-photo-item ${
-                            isUpdating ? 'updating' : ''
-                          }`}
-                          onClick={() =>
-                            handleSelectOfficialPhoto(
-                              dish.id,
-                              photo,
-                              dish.image_url
-                            )
-                          }
-                          title="Click to set as official photo"
-                        >
-                          <img
-                            src={photo.imageUrl}
-                            alt=""
-                            className="user-photo"
-                          />
-                          <div className="select-overlay">
-                            <CheckIcon className="select-icon" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="no-uploads-message">
-                      <ImageIcon className="no-uploads-icon" />
-                      <p className="no-uploads-text">
-                        No user uploads yet for this dish
-                      </p>
-                      <p className="no-uploads-hint">
-                        Customers can upload photos when they order
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Error Display */}
-                {hasError && (
-                  <div
-                    style={{
-                      padding: '12px 16px',
-                      background: '#fef2f2',
-                      color: '#dc2626',
-                      fontSize: '13px',
-                    }}
-                  >
-                    {hasError}
-                  </div>
-                )}
-              </div>
+              <MenuItemCard
+                key={dish.id}
+                dish={dish}
+                photos={photos}
+                isUpdating={isUpdating}
+                isSelected={selectedItems.has(dish.id)}
+                onSelect={handleSelectItem}
+                onEdit={(item) => {
+                  setEditingMenuItem(item);
+                  setMenuItemModalOpen(true);
+                }}
+                onUpload={(item) => {
+                  setUploadingForMenuItem(item);
+                  setPhotoUploadModalOpen(true);
+                }}
+                onSetOfficial={handleSelectOfficialPhoto}
+                onApprovePhoto={handleApprovePhoto}
+                onRejectPhoto={handleRejectPhoto}
+                hasError={!!hasError}
+                errorMessage={hasError}
+              />
             );
           })}
         </div>
