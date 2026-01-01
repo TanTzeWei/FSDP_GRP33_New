@@ -165,6 +165,9 @@ if (UploadController) {
     // Get photos by hawker centre
     app.get('/api/photos/hawker/:hawkerCentreId', UploadController.getPhotosByHawkerCentre);
     
+    // Get community photos by stall (for stall owner dashboard)
+    app.get('/api/photos/stall/:stallId', UploadController.getPhotosByStall);
+    
     // Get ids of photos liked by current user (must come before the :photoId route)
     app.get('/api/photos/liked', authMiddleware, UploadController.getLikedPhotos);
 
@@ -174,6 +177,9 @@ if (UploadController) {
     // Like/Unlike photos (requires authentication)
     app.post('/api/photos/:photoId/like', authMiddleware, UploadController.likePhoto);
     app.delete('/api/photos/:photoId/like', authMiddleware, UploadController.unlikePhoto);
+    
+    // Update photo approval status (requires authentication - stall owner)
+    app.put('/api/photos/:photoId/approval', authMiddleware, UploadController.updateApprovalStatus);
     
     // Delete photo - REQUIRES AUTH
     app.delete('/api/photos/:photoId', authMiddleware, UploadController.deletePhoto);

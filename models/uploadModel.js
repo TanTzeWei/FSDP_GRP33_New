@@ -108,6 +108,44 @@ class UploadModel {
     }
   }
 
+  // Get community photos by stall (for stall owner dashboard)
+  static async getPhotosByStall(stallId, limit = 50) {
+    try {
+      const { data, error } = await supabase
+        .from('photos')
+        .select('id, dish_name, description, likes_count, is_approved, created_at, file_size, mime_type, file_path, image_url, users(name), hawker_centres(name)')
+        .eq('stall_id', stallId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching photos by stall:', error);
+      throw error;
+    }
+  }
+
+  // Update photo approval status
+  static async updateApprovalStatus(photoId, status) {
+    try {
+      const isApproved = status === 'approved';
+      const { data, error } = await supabase
+        .from('photos')
+        .update({ 
+          is_approved: isApproved,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', photoId)
+        .select()
+        .single();
+      if (error) throw error;
+      return { ...data, approval_status: status };
+    } catch (error) {
+      console.error('Error updating approval status:', error);
+      throw error;
+    }
+  }
+
   // Like a photo
   static async likePhoto(userId, photoId) {
     try {

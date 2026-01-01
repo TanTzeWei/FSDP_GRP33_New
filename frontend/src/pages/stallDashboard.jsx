@@ -6,6 +6,7 @@ import MenuItemModal from '../components/MenuItemModal';
 import PhotoUploadModal from '../components/PhotoUploadModal';
 import MenuItemCard from '../components/MenuItemCard';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import CommunityPhotoGallery from '../components/CommunityPhotoGallery';
 import './stallDashboard.css';
 
 /**
@@ -68,17 +69,21 @@ function StallDashboard() {
   const [stall, setStall] = useState(null);
   const [dishes, setDishes] = useState([]);
   const [photosByDish, setPhotosByDish] = useState({});
+  const [communityPhotos, setCommunityPhotos] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   /* =======================
      UI State
   ======================= */
   const [loading, setLoading] = useState(true);
+  const [loadingCommunityPhotos, setLoadingCommunityPhotos] = useState(false);
   const [error, setError] = useState('');
   const [updatingDishIds, setUpdatingDishIds] = useState({});
+  const [updatingPhotoIds, setUpdatingPhotoIds] = useState({});
   const [actionErrors, setActionErrors] = useState({});
   const [sortBy, setSortBy] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'community'
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedItems, setSelectedItems] = useState(new Set());
 
@@ -178,6 +183,7 @@ function StallDashboard() {
       setError('');
       setPhotosByDish({});
       setDishes([]);
+      setCommunityPhotos([]);
 
       const stallId = getUserStallId();
       if (!stallId) {
@@ -187,18 +193,21 @@ function StallDashboard() {
       }
 
       try {
-        const [stallRes, dishesRes, photosRes] = await Promise.all([
+        const [stallRes, dishesRes, photosRes, communityRes] = await Promise.all([
           axios.get(`/api/stalls/${stallId}`),
           axios.get(`/api/stalls/${stallId}/dishes`),
-          axios.get(`/api/menu-photos/stall/${stallId}`)
+          axios.get(`/api/menu-photos/stall/${stallId}`),
+          axios.get(`/api/photos/stall/${stallId}`)
         ]);
 
         const stallData = stallRes.data?.data || stallRes.data;
         const dishesList = dishesRes.data?.data || dishesRes.data || [];
         const photosList = photosRes.data?.data || photosRes.data || [];
+        const communityList = communityRes.data?.data || communityRes.data || [];
 
         setStall(stallData);
         setDishes(dishesList);
+        setCommunityPhotos(communityList);
 
         const grouped = {};
         photosList.forEach((p) => {
@@ -310,6 +319,80 @@ function StallDashboard() {
     }
   };
 
+  /* =======================
+     Community Photo Actions
+  ======================= */
+  const handleApproveCommunityPhoto = async (photoId) => {
+    setUpdatingPhotoIds((p) => ({ ...p, [photoId]: true }));
+    
+    try {
+      await axios.put(`/api/photos/${photoId}/approval`, { status: 'approved' });
+      
+      // Update local state
+      setCommunityPhotos((prev) =>
+        prev.map((p) =>
+          p.id === photoId ? { ...p, approvalStatus: 'approved', isApproved: true } : p
+        )
+      );
+      
+      showSuccess('Photo approved successfully');
+    } catch (err) {
+      console.error('Error approving photo:', err);
+      showError('Failed to approve photo');
+    } finally {
+      setUpdatingPhotoIds((p) => ({ ...p, [photoId]: false }));
+    }
+  };
+
+  const handleRejectCommunityPhoto = async (photoId) => {
+    setUpdatingPhotoIds((p) => ({ ...p, [photoId]: true }));
+    
+    try {
+      await axios.put(`/api/photos/${photoId}/approval`, { status: 'rejected' });
+      
+      // Update local state
+      setCommunityPhotos((prev) =>
+        prev.map((p) =>
+          p.id === photoId ? { ...p, approvalStatus: 'rejected', isApproved: false } : p
+        )
+      );
+      
+      showSuccess('Photo rejected');
+    } catch (err) {
+      console.error('Error rejecting photo:', err);
+      showError('Failed to reject photo');
+    } finally {
+      setUpdatingPhotoIds((p) => ({ ...p, [photoId]: false }));
+    }
+  };
+
+  const handleSetCommunityPhotoAsOfficial = async (dishId, photo) => {
+    const dish = dishes.find((d) => d.id === dishId);
+    if (dish?.image_url && !window.confirm(`Set this photo as the official photo for "${dish.name}"?`)) return;
+
+    setUpdatingDishIds((p) => ({ ...p, [dishId]: true }));
+    const prevDishes = [...dishes];
+
+    // Optimistic update
+    setDishes((prev) =>
+      prev.map((d) =>
+        d.id === dishId ? { ...d, image_url: photo.imageUrl } : d
+      )
+    );
+
+    try {
+      await axios.put(`/api/dishes/${dishId}`, {
+        image_url: photo.imageUrl,
+      });
+      showSuccess(`Official photo updated for "${dish?.name}"`);
+    } catch (err) {
+      setDishes(prevDishes);
+      showError('Failed to update official photo');
+    } finally {
+      setUpdatingDishIds((p) => ({ ...p, [dishId]: false }));
+    }
+  };
+
   const handleSaveMenuItem = async (formData) => {
     try {
       if (editingMenuItem) {
@@ -403,7 +486,7 @@ function StallDashboard() {
       {error && <div className="error-message">{error}</div>}
 
       {/* Bulk Actions Toolbar */}
-      {selectedItems.size > 0 && (
+      {selectedItems.size > 0 && activeTab === 'menu' && (
         <div className="bulk-actions-toolbar">
           <div className="bulk-info">
             <span className="bulk-count">{selectedItems.size} selected</span>
@@ -426,114 +509,151 @@ function StallDashboard() {
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="action-bar">
-        <div className="filter-group">
-          <div className="select-all-container">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(input) => {
-                if (input) input.indeterminate = someSelected;
-              }}
-              onChange={(e) => handleSelectAll(e.target.checked)}
-              aria-label="Select all items"
-            />
-            <span className="filter-label">
-              {someSelected ? 'Some selected' : allSelected ? 'All selected' : 'Select all'}
-            </span>
-          </div>
-          <div className="filter-divider"></div>
-          <button
-            className={`filter-btn ${activeFilter === null ? 'active' : ''}`}
-            onClick={() => setActiveFilter(null)}
-          >
-            All Items ({dishes.length})
-          </button>
-          <button
-            className={`filter-btn ${
-              activeFilter === 'with_photos' ? 'active' : ''
-            }`}
-            onClick={() => setActiveFilter('with_photos')}
-          >
-            With Photos ({dishes.filter((d) => d.image_url).length})
-          </button>
-          <button
-            className={`filter-btn ${
-              activeFilter === 'without_photos' ? 'active' : ''
-            }`}
-            onClick={() => setActiveFilter('without_photos')}
-          >
-            Without Photos ({dishes.filter((d) => !d.image_url).length})
-          </button>
-        </div>
-
+      {/* Dashboard Tabs */}
+      <div className="dashboard-tabs">
         <button
-          className="btn-primary"
-          onClick={() => {
-            setEditingMenuItem(null);
-            setMenuItemModalOpen(true);
-          }}
+          className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`}
+          onClick={() => setActiveTab('menu')}
         >
-          <PlusIcon /> Add Menu Item
+          <ImageIcon /> Menu Items ({dishes.length})
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'community' ? 'active' : ''}`}
+          onClick={() => setActiveTab('community')}
+        >
+          📷 Community Photos ({communityPhotos.length})
+          {communityPhotos.filter(p => !p.approvalStatus || p.approvalStatus === 'pending').length > 0 && (
+            <span className="pending-badge">
+              {communityPhotos.filter(p => !p.approvalStatus || p.approvalStatus === 'pending').length}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Menu Items Grid */}
-      {filteredDishes.length === 0 ? (
-        <div className="empty-state">
-          <ImageIcon className="empty-icon" />
-          <h2 className="empty-title">
-            {activeFilter
-              ? 'No items match this filter'
-              : 'No Menu Items Yet'}
-          </h2>
-          <p className="empty-description">
-            {activeFilter
-              ? 'Try selecting a different filter to view other items.'
-              : 'Get started by adding your first menu item to showcase your dishes.'}
-          </p>
-          {!activeFilter && (
+      {/* Tab Content */}
+      {activeTab === 'menu' ? (
+        <>
+          {/* Action Bar */}
+          <div className="action-bar">
+            <div className="filter-group">
+              <div className="select-all-container">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = someSelected;
+                  }}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  aria-label="Select all items"
+                />
+                <span className="filter-label">
+                  {someSelected ? 'Some selected' : allSelected ? 'All selected' : 'Select all'}
+                </span>
+              </div>
+              <div className="filter-divider"></div>
+              <button
+                className={`filter-btn ${activeFilter === null ? 'active' : ''}`}
+                onClick={() => setActiveFilter(null)}
+              >
+                All Items ({dishes.length})
+              </button>
+              <button
+                className={`filter-btn ${
+                  activeFilter === 'with_photos' ? 'active' : ''
+                }`}
+                onClick={() => setActiveFilter('with_photos')}
+              >
+                With Photos ({dishes.filter((d) => d.image_url).length})
+              </button>
+              <button
+                className={`filter-btn ${
+                  activeFilter === 'without_photos' ? 'active' : ''
+                }`}
+                onClick={() => setActiveFilter('without_photos')}
+              >
+                Without Photos ({dishes.filter((d) => !d.image_url).length})
+              </button>
+            </div>
+
             <button
               className="btn-primary"
-              onClick={() => setMenuItemModalOpen(true)}
+              onClick={() => {
+                setEditingMenuItem(null);
+                setMenuItemModalOpen(true);
+              }}
             >
-              Add Your First Item
+              <PlusIcon /> Add Menu Item
             </button>
-          )}
-        </div>
-      ) : (
-        <div className="menu-items-grid">
-          {filteredDishes.map((dish) => {
-            const photos = photosByDish[dish.name] || [];
-            const isUpdating = updatingDishIds[dish.id];
-            const hasError = actionErrors[dish.id];
+          </div>
 
-            return (
-              <MenuItemCard
-                key={dish.id}
-                dish={dish}
-                photos={photos}
-                isUpdating={isUpdating}
-                isSelected={selectedItems.has(dish.id)}
-                onSelect={handleSelectItem}
-                onEdit={(item) => {
-                  setEditingMenuItem(item);
-                  setMenuItemModalOpen(true);
-                }}
-                onUpload={(item) => {
-                  setUploadingForMenuItem(item);
-                  setPhotoUploadModalOpen(true);
-                }}
-                onSetOfficial={handleSelectOfficialPhoto}
-                onApprovePhoto={handleApprovePhoto}
-                onRejectPhoto={handleRejectPhoto}
-                hasError={!!hasError}
-                errorMessage={hasError}
-              />
-            );
-          })}
-        </div>
+          {/* Menu Items Grid */}
+          {filteredDishes.length === 0 ? (
+            <div className="empty-state">
+              <ImageIcon className="empty-icon" />
+              <h2 className="empty-title">
+                {activeFilter
+                  ? 'No items match this filter'
+                  : 'No Menu Items Yet'}
+              </h2>
+              <p className="empty-description">
+                {activeFilter
+                  ? 'Try selecting a different filter to view other items.'
+                  : 'Get started by adding your first menu item to showcase your dishes.'}
+              </p>
+              {!activeFilter && (
+                <button
+                  className="btn-primary"
+                  onClick={() => setMenuItemModalOpen(true)}
+                >
+                  Add Your First Item
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="menu-items-grid">
+              {filteredDishes.map((dish) => {
+                const photos = photosByDish[dish.name] || [];
+                const isUpdating = updatingDishIds[dish.id];
+                const hasError = actionErrors[dish.id];
+
+                return (
+                  <MenuItemCard
+                    key={dish.id}
+                    dish={dish}
+                    photos={photos}
+                    isUpdating={isUpdating}
+                    isSelected={selectedItems.has(dish.id)}
+                    onSelect={handleSelectItem}
+                    onEdit={(item) => {
+                      setEditingMenuItem(item);
+                      setMenuItemModalOpen(true);
+                    }}
+                    onUpload={(item) => {
+                      setUploadingForMenuItem(item);
+                      setPhotoUploadModalOpen(true);
+                    }}
+                    onSetOfficial={handleSelectOfficialPhoto}
+                    onApprovePhoto={handleApprovePhoto}
+                    onRejectPhoto={handleRejectPhoto}
+                    hasError={!!hasError}
+                    errorMessage={hasError}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Community Photos Tab */
+        <CommunityPhotoGallery
+          photos={communityPhotos}
+          dishes={dishes}
+          isLoading={loadingCommunityPhotos}
+          onApprove={handleApproveCommunityPhoto}
+          onReject={handleRejectCommunityPhoto}
+          onSetAsOfficialPhoto={handleSetCommunityPhotoAsOfficial}
+          updatingPhotoIds={updatingPhotoIds}
+        />
       )}
 
       {/* Modals */}

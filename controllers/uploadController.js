@@ -423,6 +423,95 @@ class UploadController {
     }
   }
 
+  // Get community photos by stall (for stall owner dashboard)
+  static async getPhotosByStall(req, res) {
+    try {
+      const { stallId } = req.params;
+      const { limit = 50 } = req.query;
+
+      if (!stallId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Stall ID is required'
+        });
+      }
+
+      const photos = await UploadModel.getPhotosByStall(parseInt(stallId), parseInt(limit));
+
+      const formattedPhotos = photos.map(photo => {
+        // Map is_approved to approvalStatus for frontend compatibility
+        let approvalStatus = 'pending';
+        if (photo.is_approved === true) approvalStatus = 'approved';
+        else if (photo.is_approved === false) approvalStatus = 'rejected';
+        
+        return {
+          id: photo.id,
+          imageUrl: photo.image_url || photo.file_path,
+          dishName: photo.dish_name,
+          description: photo.description,
+          likes: photo.likes_count,
+          isApproved: photo.is_approved,
+          approvalStatus: approvalStatus,
+          username: photo.users?.name || 'Anonymous',
+          hawkerCentreName: photo.hawker_centres?.name,
+          createdAt: photo.created_at
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: formattedPhotos,
+        total: formattedPhotos.length
+      });
+
+    } catch (error) {
+      console.error('Error fetching photos by stall:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch photos',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // Update photo approval status
+  static async updateApprovalStatus(req, res) {
+    try {
+      const { photoId } = req.params;
+      const { status } = req.body;
+
+      if (!photoId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Photo ID is required'
+        });
+      }
+
+      if (!['approved', 'rejected', 'pending'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status. Must be approved, rejected, or pending'
+        });
+      }
+
+      const updatedPhoto = await UploadModel.updateApprovalStatus(parseInt(photoId), status);
+
+      res.status(200).json({
+        success: true,
+        message: `Photo ${status} successfully`,
+        data: updatedPhoto
+      });
+
+    } catch (error) {
+      console.error('Error updating photo approval status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update photo approval status',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
   // Delete a photo
   static async deletePhoto(req, res) {
     try {
