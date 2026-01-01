@@ -47,24 +47,22 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     try {
       const response = await fetch('http://localhost:3000/api/hawker-centres');
       const result = await response.json();
-      if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+      
+      console.log('Hawker centres fetch result:', result); // Debug log
+      
+      if (result.success && Array.isArray(result.data)) {
         setHawkerCentres(result.data);
       } else {
-        // Fallback example hawker centres when API returns empty
-        setHawkerCentres([
-          { id: 101, name: 'Maxwell Food Centre' },
-          { id: 102, name: 'Lau Pa Sat' },
-          { id: 103, name: 'Tiong Bahru Market' }
-        ]);
+        console.warn('No hawker centres found in database');
+        setHawkerCentres([]);
       }
     } catch (error) {
       console.error('Error fetching hawker centres:', error);
-      // Fallback examples on network error
-      setHawkerCentres([
-        { id: 101, name: 'Maxwell Food Centre' },
-        { id: 102, name: 'Lau Pa Sat' },
-        { id: 103, name: 'Tiong Bahru Market' }
-      ]);
+      setHawkerCentres([]);
+      setUploadState(prev => ({ 
+        ...prev, 
+        error: 'Could not load hawker centres. Please check if the server is running.' 
+      }));
     }
   };
 
@@ -72,43 +70,25 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     try {
       const response = await fetch(`http://localhost:3000/api/hawker-centres/${hawkerCentreId}`);
       const result = await response.json();
-      if (result.success && result.data && Array.isArray(result.data.stalls) && result.data.stalls.length > 0) {
+      
+      console.log('Stalls fetch result:', result); // Debug log
+      
+      if (result.success && result.data && Array.isArray(result.data.stalls)) {
+        // Use the stalls from the database
         setStalls(result.data.stalls);
       } else {
-        // Provide fallback example stalls for known example centres
-        const examples = {
-          101: [
-            { id: 1001, stall_name: "Ah Lim's Chinese Stall" },
-            { id: 1002, stall_name: 'Peranakan Kitchen' }
-          ],
-          102: [
-            { id: 2001, stall_name: 'Warung Pak Hasan' },
-            { id: 2002, stall_name: 'Mumbai Spice Corner' }
-          ],
-          103: [
-            { id: 3001, stall_name: 'Fresh Drinks Bar' },
-            { id: 3002, stall_name: 'Western Grill House' }
-          ]
-        };
-        setStalls(examples[hawkerCentreId] || []);
+        // No stalls found for this hawker centre
+        console.warn('No stalls found for hawker centre:', hawkerCentreId);
+        setStalls([]);
       }
     } catch (error) {
       console.error('Error fetching stalls:', error);
-      const examples = {
-        101: [
-          { id: 1001, stall_name: "Ah Lim's Chinese Stall" },
-          { id: 1002, stall_name: 'Peranakan Kitchen' }
-        ],
-        102: [
-          { id: 2001, stall_name: 'Warung Pak Hasan' },
-          { id: 2002, stall_name: 'Mumbai Spice Corner' }
-        ],
-        103: [
-          { id: 3001, stall_name: 'Fresh Drinks Bar' },
-          { id: 3002, stall_name: 'Western Grill House' }
-        ]
-      };
-      setStalls(examples[hawkerCentreId] || []);
+      // On error, set empty array and let user know
+      setStalls([]);
+      setUploadState(prev => ({ 
+        ...prev, 
+        error: 'Could not load stalls. Please check if the server is running.' 
+      }));
     }
   };
 

@@ -20,11 +20,33 @@ class HawkerCentreController {
             const hawkerCentres = await HawkerCentreModel.getAllHawkerCentres(filters);
 
             // Parse JSON fields if they exist
-            const processedHawkerCentres = hawkerCentres.map(hc => ({
-                ...hc,
-                facilities: hc.facilities ? JSON.parse(hc.facilities) : [],
-                available_cuisines: hc.available_cuisines ? hc.available_cuisines.split(', ').filter(c => c) : []
-            }));
+            const processedHawkerCentres = hawkerCentres.map(hc => {
+                let facilities = [];
+                if (hc.facilities) {
+                    try {
+                        // If it's already an array, use it directly
+                        facilities = Array.isArray(hc.facilities) ? hc.facilities : JSON.parse(hc.facilities);
+                    } catch (e) {
+                        // If JSON parsing fails, treat it as comma-separated string
+                        facilities = typeof hc.facilities === 'string' ? hc.facilities.split(',').map(f => f.trim()) : [];
+                    }
+                }
+                
+                let available_cuisines = [];
+                if (hc.available_cuisines) {
+                    if (Array.isArray(hc.available_cuisines)) {
+                        available_cuisines = hc.available_cuisines;
+                    } else if (typeof hc.available_cuisines === 'string') {
+                        available_cuisines = hc.available_cuisines.split(', ').filter(c => c);
+                    }
+                }
+                
+                return {
+                    ...hc,
+                    facilities,
+                    available_cuisines
+                };
+            });
 
             res.status(200).json({
                 success: true,
@@ -62,16 +84,43 @@ class HawkerCentreController {
                 });
             }
 
-            // Process JSON fields
-            hawkerCentre.facilities = hawkerCentre.facilities ? JSON.parse(hawkerCentre.facilities) : [];
-            hawkerCentre.available_cuisines = hawkerCentre.available_cuisines ? 
-                hawkerCentre.available_cuisines.split(', ').filter(c => c) : [];
+            // Process facilities field (handle both JSON and comma-separated strings)
+            let facilities = [];
+            if (hawkerCentre.facilities) {
+                try {
+                    facilities = Array.isArray(hawkerCentre.facilities) ? hawkerCentre.facilities : JSON.parse(hawkerCentre.facilities);
+                } catch (e) {
+                    facilities = typeof hawkerCentre.facilities === 'string' ? hawkerCentre.facilities.split(',').map(f => f.trim()) : [];
+                }
+            }
+            hawkerCentre.facilities = facilities;
+
+            // Process available_cuisines field (handle both arrays and strings)
+            let available_cuisines = [];
+            if (hawkerCentre.available_cuisines) {
+                if (Array.isArray(hawkerCentre.available_cuisines)) {
+                    available_cuisines = hawkerCentre.available_cuisines;
+                } else if (typeof hawkerCentre.available_cuisines === 'string') {
+                    available_cuisines = hawkerCentre.available_cuisines.split(', ').filter(c => c);
+                }
+            }
+            hawkerCentre.available_cuisines = available_cuisines;
 
             // Process stalls data
-            hawkerCentre.stalls = hawkerCentre.stalls.map(stall => ({
-                ...stall,
-                specialties: stall.specialties ? JSON.parse(stall.specialties) : []
-            }));
+            hawkerCentre.stalls = hawkerCentre.stalls.map(stall => {
+                let specialties = [];
+                if (stall.specialties) {
+                    try {
+                        specialties = Array.isArray(stall.specialties) ? stall.specialties : JSON.parse(stall.specialties);
+                    } catch (e) {
+                        specialties = [];
+                    }
+                }
+                return {
+                    ...stall,
+                    specialties
+                };
+            });
 
             res.status(200).json({
                 success: true,
