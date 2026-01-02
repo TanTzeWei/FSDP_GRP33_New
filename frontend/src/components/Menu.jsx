@@ -14,6 +14,12 @@ const Menu = () => {
   const [pendingLikes, setPendingLikes] = useState({}); // track in-flight like requests by photoId
   const [selectedStallFilter, setSelectedStallFilter] = useState('All');
   const [selectedDishFilter, setSelectedDishFilter] = useState('All');
+  const [failedImages, setFailedImages] = useState(new Set());
+
+  // Handle image load error
+  const handleImageError = (stallId) => {
+    setFailedImages(prev => new Set([...prev, stallId]));
+  };
   const stallItems = [
     {
       id: 1,
@@ -22,7 +28,7 @@ const Menu = () => {
       rating: "4.8",
       deliveryTime: "25-35 mins",
       distance: "1.2 km",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&q=80",
+      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop",
       category: "chinese",
       stallIcon: "🏮"
     },
@@ -33,7 +39,7 @@ const Menu = () => {
       rating: "4.6",
       deliveryTime: "20-30 mins", 
       distance: "0.8 km",
-      image: "https://images.unsplash.com/photo-1596040217128-87dbcc687ec0?w=400&h=300&fit=crop&q=80",
+      image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=500&h=350&fit=crop",
       category: "malay",
       stallIcon: "🌙"
     },
@@ -44,7 +50,7 @@ const Menu = () => {
       rating: "4.7",
       deliveryTime: "30-40 mins",
       distance: "1.5 km", 
-      image: "https://images.unsplash.com/photo-1585937421456-de714db1eb1b?w=400&h=300&fit=crop&q=80",
+      image: "https://images.unsplash.com/photo-1585937421612-232d3d67d529?w=500&h=350&fit=crop",
       category: "indian",
       stallIcon: "🇮🇳"
     },
@@ -55,7 +61,7 @@ const Menu = () => {
       rating: "4.9",
       deliveryTime: "35-45 mins",
       distance: "2.1 km",
-      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606631/peranakan_stall_h5rson.jpg", 
+      image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=500&h=350&fit=crop", 
       category: "peranakan",
       stallIcon: "🏺"
     },
@@ -66,7 +72,7 @@ const Menu = () => {
       rating: "4.4",
       deliveryTime: "25-35 mins",
       distance: "1.8 km",
-      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606719/download_1_qv81cd.jpg",
+      image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&h=350&fit=crop",
       category: "western",
       stallIcon: "🍔"
     },
@@ -77,7 +83,7 @@ const Menu = () => {
       rating: "4.5",
       deliveryTime: "15-25 mins",
       distance: "0.5 km",
-      image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=300&fit=crop&q=80",
+      image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop",
       category: "drinks",
       stallIcon: "🥤"
     }
@@ -440,19 +446,43 @@ const Menu = () => {
             to={`/menu?stall=${stall.id}`}
             className="stall-card"
           >
-            <div className="stall-image">
-              <img src={stall.image} alt={stall.name} />
+            <div className={`stall-image ${failedImages.has(stall.id) ? 'image-failed' : ''}`}>
+              {!failedImages.has(stall.id) ? (
+                <img 
+                  src={stall.image} 
+                  alt={stall.name}
+                  onError={() => handleImageError(stall.id)}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="stall-image-placeholder">
+                  <span className="placeholder-icon">{stall.stallIcon}</span>
+                </div>
+              )}
               <div className="stall-icon">{stall.stallIcon}</div>
+              <div className="stall-image-overlay">
+                <div className="stall-name-badge">
+                  <span className="badge-icon">{stall.stallIcon}</span>
+                  <span className="badge-name">{stall.name}</span>
+                </div>
+                <div className="stall-rating-badge">
+                  <span>⭐ {stall.rating}</span>
+                </div>
+              </div>
             </div>
             <div className="stall-content">
-              <h3>{stall.name}</h3>
               <p className="stall-description">{stall.description}</p>
               <div className="stall-meta">
-                <span className="rating">⭐ {stall.rating}</span>
-                <span className="delivery-time">🕐 {stall.deliveryTime}</span>
-                <span className="distance">📍 {stall.distance}</span>
+                <span className="meta-item">
+                  <span className="meta-icon">🕐</span>
+                  {stall.deliveryTime}
+                </span>
+                <span className="meta-item">
+                  <span className="meta-icon">📍</span>
+                  {stall.distance}
+                </span>
               </div>
-              <div className="view-menu-btn">View Menu</div>
+              <button className="view-menu-btn">View Menu →</button>
             </div>
           </Link>
         ))}
