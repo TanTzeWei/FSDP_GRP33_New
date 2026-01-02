@@ -12,6 +12,7 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     hawkerCentreId: '',
     stallId: '',
     isUploading: false,
+    uploadStatus: '',
     error: null
   });
 
@@ -187,7 +188,7 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       return;
     }
 
-    setUploadState(prev => ({ ...prev, isUploading: true, error: null }));
+    setUploadState(prev => ({ ...prev, isUploading: true, error: null, uploadStatus: 'Validating image...' }));
 
     try {
       // Create FormData
@@ -201,6 +202,9 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
         formData.append('stallId', uploadState.stallId);
       }
 
+      // Update status
+      setUploadState(prev => ({ ...prev, uploadStatus: 'Uploading photo...' }));
+
       // Upload to backend
       const response = await fetch('http://localhost:3000/api/photos/upload', {
         method: 'POST',
@@ -209,8 +213,21 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
 
       const result = await response.json();
 
-      // Check for auth errors or other failures
-      if (!response.ok || !result.success) {
+      // Check for AI validation errors specifically
+      if (!response.ok) {
+        // Check if it's an AI validation failure
+        if (result.validationDetails) {
+          const details = result.validationDetails;
+          let errorMsg = result.message;
+          
+          if (!details.isFoodRelated) {
+            errorMsg = '🚫 This doesn\'t appear to be a food photo. Please upload a picture of food.';
+          } else if (details.hasInappropriateContent) {
+            errorMsg = '🚫 This image contains inappropriate content. Please upload an appropriate food photo.';
+          }
+          
+          throw new Error(errorMsg);
+        }
         throw new Error(result.message || `Upload failed with status ${response.status}`);
       }
 
@@ -220,8 +237,12 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
           onUploadSuccess(result.data);
         }
         
-        // Show success message
-        alert('🎉 Photo uploaded successfully!');
+        // Show success message with AI validation info
+        let successMsg = '🎉 Photo uploaded successfully!';
+        if (result.data.aiValidation?.foodType) {
+          successMsg += `\n\n🤖 AI detected: ${result.data.aiValidation.foodType}`;
+        }
+        alert(successMsg);
         
         // Reset form
         setUploadState({
@@ -232,6 +253,7 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
           hawkerCentreId: '',
           stallId: '',
           isUploading: false,
+          uploadStatus: '',
           error: null
         });
         
@@ -417,7 +439,7 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
               {uploadState.isUploading ? (
                 <>
                   <div className="loading-spinner"></div>
-                  Uploading...
+                  {uploadState.uploadStatus || 'Uploading...'}
                 </>
               ) : (
                 <>
@@ -427,6 +449,14 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
               )}
             </button>
           </div>
+
+          {/* AI Validation Info */}
+          {uploadState.isUploading && (
+            <div className="ai-validation-notice">
+              <span className="ai-icon">🤖</span>
+              <span>AI is checking your photo to ensure it's a valid food image...</span>
+            </div>
+          )}
         </form>
       </div>
   );

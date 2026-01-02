@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const UploadModel = require('../models/uploadModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
+const ImageAIValidation = require('../utils/imageAIValidation');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -84,6 +85,58 @@ class UploadController {
         });
       }
 
+      // === AI VALIDATION ===
+      // Validate image using AI before uploading to Cloudinary
+      console.log('Starting AI validation...');
+      
+      const enableAIValidation = process.env.ENABLE_AI_VALIDATION === 'true';
+      const strictMode = process.env.AI_VALIDATION_STRICT === 'true';
+      
+      if (enableAIValidation && ImageAIValidation.isConfigured()) {
+        try {
+          const validationResult = await ImageAIValidation.validate(req.file.buffer, {
+            strictMode: strictMode
+          });
+
+          console.log('AI Validation Result:', {
+            isValid: validationResult.isValid,
+            message: validationResult.message,
+            confidence: validationResult.confidence
+          });
+
+          // If validation fails and we're in strict mode, reject the upload
+          if (!validationResult.isValid) {
+            console.log('AI validation FAILED - rejecting upload');
+            return res.status(400).json({
+              success: false,
+              message: validationResult.message || 'Image validation failed',
+              validationDetails: {
+                isFoodRelated: validationResult.isFoodRelated,
+                hasInappropriateContent: validationResult.hasInappropriateContent,
+                confidence: validationResult.confidence,
+                foodType: validationResult.foodType
+              }
+            });
+          }
+
+          // Add validation info to response later
+          req.aiValidation = validationResult;
+          
+        } catch (validationError) {
+          console.error('AI validation error (non-blocking):', validationError.message);
+          // Continue with upload even if validation fails (unless strict mode)
+          if (strictMode) {
+            return res.status(500).json({
+              success: false,
+              message: 'Image validation service unavailable'
+            });
+          }
+        }
+      } else {
+        console.log('AI validation skipped (not enabled or not configured)');
+      }
+      // === END AI VALIDATION ===
+
       console.log('Uploading to Cloudinary...');
 
       // Upload to Cloudinary
@@ -129,7 +182,13 @@ class UploadController {
           id: savedPhoto.id,
           imageUrl: photoData.imageUrl,
           dishName: photoData.dishName,
-          createdAt: savedPhoto.created_at
+          createdAt: savedPhoto.created_at,
+          // Include AI validation info if available
+          aiValidation: req.aiValidation ? {
+            validated: true,
+            foodType: req.aiValidation.foodType,
+            confidence: req.aiValidation.confidence
+          } : null
         }
       });
 
