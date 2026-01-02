@@ -235,6 +235,15 @@ if (DishController) {
 // Stall route: get stall details
 if (StallController) {
     app.get('/api/stalls/:id', StallController.getStallById);
+    
+    // Protected routes for stall owners
+    if (authMiddleware) {
+        // Upload stall image
+        app.post('/api/stalls/:id/image', authMiddleware, authMiddleware.requireStallOwner, StallController.uploadMiddleware, StallController.uploadStallImage);
+        // Update stall details
+        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
+    }
+    
     console.log('✅ Stall route configured');
 } else {
     console.log('⚠️  Stall routes disabled (missing StallController)');

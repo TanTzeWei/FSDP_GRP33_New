@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS stalls (
   closing_hours TEXT,
   operating_days TEXT,
   contact_phone TEXT,
+  image_url TEXT, -- Stall banner/cover image URL
   status TEXT DEFAULT 'Active'
     CHECK (status IN ('Active', 'Temporarily Closed', 'Closed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
