@@ -199,9 +199,9 @@ class UploadController {
         id: photo.id,
         imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
-        stallName: photo.stall_name || photo.hawker_centre_name,
-        likes: photo.likes_count,
-        username: photo.name, // Single name field from users table
+        stallName: photo.stalls?.stall_name || photo.hawker_centres?.name || 'Unknown Stall',
+        likes: photo.likes_count || 0,
+        username: photo.users?.name || 'Anonymous', // Nested object from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
@@ -241,9 +241,9 @@ class UploadController {
         id: photo.id,
         imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
-        stallName: photo.stall_name,
-        likes: photo.likes_count,
-        username: photo.name, // Single name field from users table
+        stallName: photo.stalls?.stall_name || 'Unknown Stall',
+        likes: photo.likes_count || 0,
+        username: photo.users?.name || 'Anonymous', // Nested object from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
