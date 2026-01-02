@@ -928,6 +928,15 @@ a.stall-card {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-loading,
+.filter-empty {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 0.5rem 1rem;
 }
 
 .filter-btn {

@@ -1,6 +1,28 @@
 const supabase = require('../dbConfig');
 
 class StallModel {
+    /**
+     * Get all stalls from the database
+     * @returns {Array} List of all stalls
+     */
+    static async getAllStalls() {
+        try {
+            const { data, error } = await supabase
+                .from('stalls')
+                .select('id, stall_name, description, image_url, cuisine_types(name), hawker_centres(name)')
+                .order('stall_name', { ascending: true });
+            
+            if (error) throw error;
+            // Map stall_name to name for frontend consistency
+            return (data || []).map(stall => ({
+                ...stall,
+                name: stall.stall_name
+            }));
+        } catch (error) {
+            throw new Error(`Error fetching stalls: ${error.message}`);
+        }
+    }
+
     static async getStallById(id) {
         try {
             const { data, error } = await supabase.from('stalls').select('*, cuisine_types(name), hawker_centres(name)').eq('id', id).maybeSingle();

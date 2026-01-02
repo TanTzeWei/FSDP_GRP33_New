@@ -234,6 +234,9 @@ if (DishController) {
 
 // Stall route: get stall details
 if (StallController) {
+    // Public: get all stalls
+    app.get('/api/stalls', StallController.getAllStalls);
+    // Public: get single stall by ID
     app.get('/api/stalls/:id', StallController.getStallById);
     
     // Protected routes for stall owners

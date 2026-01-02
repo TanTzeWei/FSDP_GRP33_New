@@ -27,6 +27,20 @@ class StallController {
     // Middleware for handling stall image upload
     static uploadMiddleware = upload.single('stallImage');
 
+    /**
+     * Get all stalls
+     * GET /api/stalls
+     */
+    static async getAllStalls(req, res) {
+        try {
+            const stalls = await StallModel.getAllStalls();
+            res.status(200).json({ success: true, data: stalls });
+        } catch (error) {
+            console.error('Error in getAllStalls:', error);
+            res.status(500).json({ success: false, message: 'Failed to fetch stalls', error: error.message });
+        }
+    }
+
     static async getStallById(req, res) {
         try {
             const { id } = req.params;

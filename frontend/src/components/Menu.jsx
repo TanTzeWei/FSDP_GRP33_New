@@ -15,11 +15,32 @@ const Menu = () => {
   const [selectedStallFilter, setSelectedStallFilter] = useState('All');
   const [selectedDishFilter, setSelectedDishFilter] = useState('All');
   const [failedImages, setFailedImages] = useState(new Set());
+  const [dbStalls, setDbStalls] = useState([]); // Stalls from database for filtering
+  const [loadingStalls, setLoadingStalls] = useState(true);
 
   // Handle image load error
   const handleImageError = (stallId) => {
     setFailedImages(prev => new Set([...prev, stallId]));
   };
+
+  // Fetch stalls from database
+  useEffect(() => {
+    const fetchStalls = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/stalls');
+        const data = await response.json();
+        if (data.success) {
+          setDbStalls(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching stalls:', error);
+      } finally {
+        setLoadingStalls(false);
+      }
+    };
+    fetchStalls();
+  }, []);
+
   const stallItems = [
     {
       id: 1,
@@ -91,8 +112,8 @@ const Menu = () => {
 
   const categories = ["All", "Chinese", "Malay", "Indian", "Peranakan", "Western", "Drinks"];
 
-  // Get unique stalls from community photos
-  const uniqueStalls = ['All', ...new Set(communityPhotos.map(p => p.stallName || 'Unknown Stall'))];
+  // Get stalls from database for filtering (with "All" option)
+  const stallFilterOptions = ['All', ...dbStalls.map(s => s.name)];
 
   // Get unique dishes from community photos (for selected stall)
   const filteredByStall = selectedStallFilter === 'All' 
@@ -276,12 +297,14 @@ const Menu = () => {
         </div>
 
         {/* Stall and Dish Filters */}
-        {communityPhotos.length > 0 && (
-          <div className="photo-filters">
-            <div className="filter-group">
-              <label className="filter-label">Filter by Stall:</label>
-              <div className="filter-buttons">
-                {uniqueStalls.map(stall => (
+        <div className="photo-filters">
+          <div className="filter-group">
+            <label className="filter-label">Filter by Stall:</label>
+            <div className="filter-buttons">
+              {loadingStalls ? (
+                <span className="filter-loading">Loading stalls...</span>
+              ) : stallFilterOptions.length > 1 ? (
+                stallFilterOptions.map(stall => (
                   <button
                     key={stall}
                     className={`filter-btn stall-filter-btn ${selectedStallFilter === stall ? 'active' : ''}`}
@@ -292,11 +315,14 @@ const Menu = () => {
                   >
                     {stall}
                   </button>
-                ))}
-              </div>
+                ))
+              ) : (
+                <span className="filter-empty">No stalls available</span>
+              )}
             </div>
+          </div>
 
-            {uniqueDishes.length > 1 && (
+          {uniqueDishes.length > 1 && (
               <div className="filter-group">
                 <label className="filter-label">Filter by Dish:</label>
                 <div className="filter-buttons">
@@ -311,9 +337,8 @@ const Menu = () => {
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
         
         {loadingPhotos ? (
           <div className="photos-loading">
