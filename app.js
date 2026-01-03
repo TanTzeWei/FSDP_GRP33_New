@@ -116,6 +116,7 @@ if (UserController && authMiddleware) {
     app.put('/profile', authMiddleware, UserController.updateProfile);
     app.put('/change-password', authMiddleware, UserController.changePassword);
     app.delete('/profile', authMiddleware, UserController.deleteAccount);
+    app.get('/profile/stats', authMiddleware, UserController.getUserStats);
     // Admin: approve owner accounts
     app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
     app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);

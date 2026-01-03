@@ -90,6 +90,7 @@ function App() {
         <Route path="/admin/approvals" element={<AdminApprovals />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/points" element={<PointsSystem />} />
         <Route path="/nets-qr" element={<NetsQrSamplePage />} />
         <Route path="/nets-qr/success" element={<TxnNetsSuccessStatusLayout />} />

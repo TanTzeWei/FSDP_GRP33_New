@@ -241,6 +241,64 @@ class UserController {
             res.status(500).json({ success: false, message: 'Server error during account deletion' });
         }
     }
+
+    static async getUserStats(req, res) {
+        try {
+            const userId = req.user.userId;
+            const supabase = require('../dbConfig');
+
+            // Get photos uploaded count
+            const { count: photosCount, error: photosError } = await supabase
+                .from('photos')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+
+            if (photosError) {
+                console.error('Error fetching photos count:', photosError);
+            }
+
+            // Get total likes received on user's photos
+            const { data: likesData, error: likesError } = await supabase
+                .from('photos')
+                .select('likes_count')
+                .eq('user_id', userId);
+
+            let totalLikes = 0;
+            if (!likesError && likesData) {
+                totalLikes = likesData.reduce((sum, photo) => sum + (photo.likes_count || 0), 0);
+            }
+
+            // Get orders count
+            const { count: ordersCount, error: ordersError } = await supabase
+                .from('orders')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+
+            if (ordersError) {
+                console.error('Error fetching orders count:', ordersError);
+            }
+
+            // Get user points
+            const { data: pointsData, error: pointsError } = await supabase
+                .from('user_points')
+                .select('points_balance')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            res.json({
+                success: true,
+                stats: {
+                    photosUploaded: photosCount || 0,
+                    totalLikes: totalLikes,
+                    totalOrders: ordersCount || 0,
+                    pointsBalance: pointsData?.points_balance || 0
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching user stats:', error);
+            res.status(500).json({ success: false, message: 'Failed to fetch user stats' });
+        }
+    }
 }
 
 module.exports = UserController;
