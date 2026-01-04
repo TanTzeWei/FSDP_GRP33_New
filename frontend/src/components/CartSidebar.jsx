@@ -1,30 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { CartContext } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 import './CartSidebar.css';
 
 const CartSidebar = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('cart');
+  const navigate = useNavigate();
   
   console.log('CartSidebar component mounted!');
   
-  // Current cart items (this would come from your cart context/state)
-  const cartItems = [
-    {
-      id: 1,
-      name: 'Char Kway Teow',
-      stallName: 'Ah Lim Chinese Stall',
-      price: 6.50,
-      quantity: 2,
-      image: '🍜'
-    },
-    {
-      id: 2,
-      name: 'Bubble Tea',
-      stallName: 'Fresh Drinks Bar',
-      price: 4.80,
-      quantity: 1,
-      image: '🧋'
-    }
-  ];
+  // Use shared cart state
+  const { cartItems, updateQuantity, removeFromCart, getTotalPrice } = useContext(CartContext);
 
   // Order history
   const orderHistory = [
@@ -57,22 +43,14 @@ const CartSidebar = ({ onClose }) => {
     }
   ];
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartTotal = (cartItems || []).reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
   const totalOrders = orderHistory.length;
   const totalSpent = orderHistory.reduce((sum, order) => sum + order.total, 0);
 
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity === 0) {
-      // Remove item logic
-      console.log('Remove item', id);
-    } else {
-      // Update quantity logic
-      console.log('Update quantity', id, newQuantity);
-    }
-  };
-
   const proceedToCheckout = () => {
-    alert('Proceeding to checkout...');
+    // Pass checkout data via navigation state (avoid storing secrets in localStorage)
+    const total = parseFloat(cartTotal.toFixed(2));
+    navigate('/nets-qr', { state: { amount: total, items: cartItems } });
   };
 
   return (
@@ -113,56 +91,48 @@ const CartSidebar = ({ onClose }) => {
                             <div className="quantity-controls">
                               <button 
                                 className="qty-btn"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
+                                aria-label={`Decrease quantity of ${item.name}`}
                               >
-                                -
+                                −
                               </button>
                               <span className="quantity">{item.quantity}</span>
                               <button 
                                 className="qty-btn"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
+                                aria-label={`Increase quantity of ${item.name}`}
                               >
                                 +
                               </button>
                             </div>
-                            <div className="item-price">${(item.price * item.quantity).toFixed(2)}</div>
+                            <div className="item-price">${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="cart-summary">
-                    <div className="summary-stats">
-                      <div className="stat">
-                        <span className="stat-label">Total Orders</span>
-                        <span className="stat-value">{totalOrders}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Total Spent</span>
-                        <span className="stat-value">${totalSpent.toFixed(2)}</span>
-                      </div>
+                  <div className="summary-stats">
+                    <div className="stat">
+                      <span className="stat-label">Total Orders</span>
+                      <span className="stat-value">{totalOrders}</span>
                     </div>
-                    
-                    <div className="cart-total">
-                      <div className="subtotal">
-                        <span>Subtotal</span>
-                        <span>${cartTotal.toFixed(2)}</span>
-                      </div>
-                      <div className="delivery-fee">
-                        <span>Delivery Fee</span>
-                        <span>$2.50</span>
-                      </div>
-                      <div className="total">
-                        <span>Total</span>
-                        <span>${(cartTotal + 2.50).toFixed(2)}</span>
-                      </div>
+                    <div className="stat">
+                      <span className="stat-label">Total Spent</span>
+                      <span className="stat-value">${totalSpent.toFixed(2)}</span>
                     </div>
-
-                    <button className="checkout-btn" onClick={proceedToCheckout}>
-                      🚀 Checkout - ${(cartTotal + 2.50).toFixed(2)}
-                    </button>
                   </div>
+                  
+                  <div className="cart-total">
+                    <div className="subtotal">
+                      <span>Total</span>
+                      <span>${cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <button className="checkout-btn" onClick={proceedToCheckout}>
+                    🚀 Checkout - ${cartTotal.toFixed(2)}
+                  </button>
                 </>
               ) : (
                 <div className="empty-cart">

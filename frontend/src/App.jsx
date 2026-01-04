@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import './App.css';
-import Home from "./pages/Home";
+// Home removed: MainApp (default `/`) provides the main UI
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import ProfilePage from "./pages/ProfilePage";
@@ -14,12 +14,23 @@ import PointsSystem from './pages/PointsSystem';
 import Profile from './components/Profile';
 import LocationMap from './components/LocationMap';
 import OrderHistory from './components/OrderHistory';
-import CartSidebar from './components/CartSidebar';
+import NetsQrSamplePage from './pages/netsQrSamplePage';
+import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
+import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
 
 // Main App component with section navigation
 function MainApp() {
   const [activeSection, setActiveSection] = useState('menu');
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [selectedHawkerCenter, setSelectedHawkerCenter] = useState(null);
+
+  // Handle navigation state to set active section
+  React.useEffect(() => {
+    if (location.state?.activeSection) {
+      setActiveSection(location.state.activeSection);
+    }
+  }, [location.state]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -32,19 +43,15 @@ function MainApp() {
       case 'profile':
         return <OrderHistory />;
       case 'location':
-        return <LocationMap />;
+        return <LocationMap onHawkerSelect={setSelectedHawkerCenter} />;
       default:
         return <Menu />;
     }
   };
 
   const handleCartClick = () => {
-    console.log('Cart button clicked! Opening cart sidebar...');
-    setIsCartOpen(true);
-  };
-
-  const handleCartClose = () => {
-    setIsCartOpen(false);
+    // Navigate to the single cart page instead of opening a sidebar
+    navigate('/cart');
   };
 
   return (
@@ -53,15 +60,11 @@ function MainApp() {
         activeSection={activeSection} 
         setActiveSection={setActiveSection}
         onCartClick={handleCartClick}
+        selectedHawkerCenter={selectedHawkerCenter}
       />
       <main className="main-content">
         {renderSection()}
       </main>
-      {isCartOpen && (
-        <div>
-          <CartSidebar onClose={handleCartClose} />
-        </div>
-      )}
     </div>
   );
 }
@@ -71,13 +74,16 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainApp />} />
-        <Route path="/home" element={<Home />} />
+        {/* /home route removed. Main app is available at / and /main */}
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/points" element={<PointsSystem />} />
+        <Route path="/nets-qr" element={<NetsQrSamplePage />} />
+        <Route path="/nets-qr/success" element={<TxnNetsSuccessStatusLayout />} />
+        <Route path="/nets-qr/fail" element={<TxnNetsFailStatusLayout />} />
       </Routes>
     </BrowserRouter>
   );

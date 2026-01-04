@@ -4,6 +4,7 @@ import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { PointsProvider } from "./context/PointsContext";
+import { CartProvider } from "./context/CartContext";
 import "./index.css";
 
 const container = document.getElementById("root");
@@ -14,7 +15,9 @@ root.render(
 				<ToastProvider>
 					<AuthProvider>
 						<PointsProvider>
-							<App />
+							<CartProvider>
+								<App />
+							</CartProvider>
 						</PointsProvider>
 					</AuthProvider>
 				</ToastProvider>

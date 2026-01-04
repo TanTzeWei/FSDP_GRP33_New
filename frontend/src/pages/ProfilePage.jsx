@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
 import Avatar from '../components/Avatar';
+import Header from '../components/Header';
 import axios from 'axios';
 import './ProfilePage.css';
 
@@ -143,6 +144,12 @@ function ProfilePage() {
 
   return (
     <div className="profile-page">
+      <Header
+        activeSection="profile"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
+      
       <div className="profile-container">
         {/* Header Section */}
         <div className="profile-header">

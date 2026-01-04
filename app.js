@@ -18,7 +18,10 @@ const path = require('path');
 const cors = require('cors');
 
 // Import controllers with error handling
-let UserController, HawkerCentreController, PointsController, authMiddleware;
+let UserController, HawkerCentreController, UploadController, authMiddleware;
+let DishController;
+let StallController;
+let MenuPhotoController;
 
 try {
     UserController = require('./controllers/userController');
@@ -35,6 +38,20 @@ try {
 }
 
 try {
+    UploadController = require('./controllers/uploadController');
+    console.log('✅ UploadController loaded');
+} catch (error) {
+    console.error('❌ Error loading UploadController:', error.message);
+}
+
+try {
+    MenuPhotoController = require('./controllers/menuPhotoController');
+    console.log('✅ MenuPhotoController loaded');
+} catch (error) {
+    console.error('❌ Error loading MenuPhotoController:', error.message);
+}
+
+try {
     PointsController = require('./controllers/pointsController');
     console.log('✅ PointsController loaded');
 } catch (error) {
@@ -48,13 +65,48 @@ try {
     console.error('❌ Error loading AuthMiddleware:', error.message);
 }
 
+try {
+    DishController = require('./controllers/dishController');
+    console.log('✅ DishController loaded');
+} catch (error) {
+    console.error('❌ Error loading DishController:', error.message);
+}
+
+try {
+    StallController = require('./controllers/stallController');
+    console.log('✅ StallController loaded');
+} catch (error) {
+    console.error('❌ Error loading StallController:', error.message);
+}
+
 // Create Express app
 const app = express();
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin || 'none'}`);
+  next();
+});
+
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173', 
+    'http://localhost:5174', 
+    'http://localhost:5175', 
+    'http://localhost:5176', 
+    'http://127.0.0.1:5173', 
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Note: Static file serving for uploads removed - now using Cloudinary
+// Static files are served directly from Cloudinary CDN
 
 // User Routes (only if controllers loaded successfully)
 if (UserController && authMiddleware) {
@@ -81,6 +133,98 @@ if (HawkerCentreController) {
     console.log('✅ Hawker centre routes configured');
 } else {
     console.log('⚠️  Hawker centre routes disabled (missing HawkerCentreController)');
+}
+
+// Photo Upload Routes - BLOB Storage (photos stored IN database)
+if (UploadController) {
+    // Upload photo (stores as BLOB in database)
+    app.post('/api/photos/upload', UploadController.uploadMiddleware, UploadController.uploadPhoto);
+    
+    // Serve photo image from database
+    app.get('/api/photos/:id/image', UploadController.getPhotoImage);
+    
+    // Get all photos metadata
+    app.get('/api/photos', UploadController.getPhotos);
+    
+    // Get featured photos
+    app.get('/api/photos/featured', (req, res, next) => {
+        req.query.featured = 'true';
+        UploadController.getPhotos(req, res, next);
+    });
+    
+    // Get recent photos
+    app.get('/api/photos/recent', (req, res, next) => {
+        req.query.recent = 'true';
+        UploadController.getPhotos(req, res, next);
+    });
+    
+    // Get photos by hawker centre
+    app.get('/api/photos/hawker/:hawkerCentreId', UploadController.getPhotosByHawkerCentre);
+    
+    // Get photo details
+    app.get('/api/photos/:photoId', UploadController.getPhotoDetails);
+    
+    // Like/Unlike photos
+    app.post('/api/photos/:photoId/like', UploadController.likePhoto);
+    app.delete('/api/photos/:photoId/like', UploadController.unlikePhoto);
+    
+    // Delete photo - REQUIRES AUTH
+    app.delete('/api/photos/:photoId', authMiddleware, UploadController.deletePhoto);
+    
+    console.log('✅ Photo BLOB upload routes configured (database storage)');
+} else {
+    console.log('⚠️  Photo upload routes disabled (missing UploadController)');
+}
+
+// Menu Photo Upload Routes (for menu item photos)
+if (MenuPhotoController) {
+    // Upload menu photo and create/update dish - REQUIRES AUTH
+    app.post('/api/menu-photos/upload', authMiddleware, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    
+    // Get menu photos by stall
+    app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
+    
+    // Get menu photos by hawker centre
+    app.get('/api/menu-photos/hawker/:hawkerCentreId', MenuPhotoController.getMenuPhotosByHawkerCentre);
+    
+    // Get single menu photo
+    app.get('/api/menu-photos/:photoId', MenuPhotoController.getMenuPhoto);
+    
+    // Delete menu photo
+    app.delete('/api/menu-photos/:photoId', MenuPhotoController.deleteMenuPhoto);
+    
+    console.log('✅ Menu photo upload routes configured (file storage)');
+} else {
+    console.log('⚠️  Menu photo upload routes disabled (missing MenuPhotoController)');
+}
+
+// Dish routes (food_items CRUD)
+if (DishController) {
+    // Public: list dishes for a stall
+    app.get('/api/stalls/:stallId/dishes', DishController.listByStall);
+    // Public: get single dish
+    app.get('/api/dishes/:id', DishController.getDish);
+
+    // Protected routes: create/update/delete dishes (requires auth)
+    if (authMiddleware) {
+        app.post('/api/dishes', authMiddleware, DishController.createDish);
+        app.put('/api/dishes/:id', authMiddleware, DishController.updateDish);
+        app.delete('/api/dishes/:id', authMiddleware, DishController.deleteDish);
+    } else {
+        console.log('⚠️  Dish write routes disabled (missing authMiddleware)');
+    }
+
+    console.log('✅ Dish routes configured');
+} else {
+    console.log('⚠️  Dish routes disabled (missing DishController)');
+}
+
+// Stall route: get stall details
+if (StallController) {
+    app.get('/api/stalls/:id', StallController.getStallById);
+    console.log('✅ Stall route configured');
+} else {
+    console.log('⚠️  Stall routes disabled (missing StallController)');
 }
 
 // Points System Routes (only if controller loaded successfully)
@@ -113,6 +257,39 @@ app.get('/', (req, res) => {
 	res.send('Server is running');
 });
 
+// Test database insert route
+app.get('/test-db', async (req, res) => {
+    try {
+        const sql = require('mssql');
+        const { connectDB } = require('./dbConfig');
+        
+        console.log('Testing database insert...');
+        await connectDB();
+        
+        // Test simple insert without BLOB
+        const result = await sql.query`
+            INSERT INTO photos (
+                user_id, hawker_centre_id, stall_id, food_item_id,
+                original_filename, photo_data, file_size, mime_type,
+                dish_name, description
+            )
+            OUTPUT INSERTED.id, INSERTED.created_at
+            VALUES (
+                1, 1, NULL, NULL,
+                'test.jpg', 0x123456, 1024, 'image/jpeg',
+                'Test Dish', 'Test Description'
+            )
+        `;
+        
+        console.log('Database insert successful:', result.recordset[0]);
+        res.json({ success: true, data: result.recordset[0] });
+        
+    } catch (error) {
+        console.error('Database test error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Example: use const for port and don't reassign it
 const PORT = process.env.PORT || 3000;
 
@@ -129,6 +306,19 @@ async function testDatabaseConnection() {
         console.error('💡 Check your .env file database configuration');
     }
 }
+
+// Global error handler to prevent crashes
+process.on('uncaughtException', (error) => {
+    console.error('💥 UNCAUGHT EXCEPTION - Server will continue running:');
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('💥 UNHANDLED REJECTION - Server will continue running:');
+    console.error('Reason:', reason);
+    console.error('Promise:', promise);
+});
 
 // Start server
 app.listen(PORT, async () => {

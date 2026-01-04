@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './LocationMap.css';
@@ -60,6 +61,41 @@ const createHawkerIcon = (rating) => {
   });
 };
 
+// Custom user location icon - blue circle with white outer ring
+const createUserLocationIcon = () => {
+  return L.divIcon({
+    className: 'custom-user-location',
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007AFF;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        position: relative;
+      ">
+      </div>
+      <div style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 122, 255, 0.3);
+        background: rgba(0, 122, 255, 0.1);
+        animation: pulse 2s infinite;
+      ">
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
+  });
+};
+
 // Component to handle map events
 const MapController = ({ center, zoom }) => {
   const map = useMap();
@@ -73,13 +109,16 @@ const MapController = ({ center, zoom }) => {
   return null;
 };
 
-const LocationMap = () => {
+const LocationMap = ({ onHawkerSelect }) => {
   const [hawkerCentres, setHawkerCentres] = useState([]);
   const [selectedHawker, setSelectedHawker] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mapCenter, setMapCenter] = useState({ lat: 1.3521, lng: 103.8198 }); // Singapore center
   const [zoom, setZoom] = useState(11);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const navigate = useNavigate();
 
   // Mock hawker centre data (in real app, this would come from API)
   const mockHawkerData = [
@@ -100,6 +139,12 @@ const LocationMap = () => {
       distance: '0.8 km',
       priceRange: '$',
       popularDishes: ['Hainanese Chicken Rice', 'Char Kway Teow', 'Laksa'],
+      // Manually entered sample menu for display on stall cards
+      menu: [
+        { name: 'Hainanese Chicken Rice', price: 5.00 },
+        { name: 'Char Kway Teow', price: 4.50 },
+        { name: 'Laksa (Regular)', price: 4.00 }
+      ],
       phoneNumber: '+65 6225 8359'
     },
     {
@@ -119,6 +164,10 @@ const LocationMap = () => {
       distance: '1.2 km',
       priceRange: '$$',
       popularDishes: ['Satay', 'Bak Kut Teh', 'Carrot Cake'],
+      menu: [
+        { name: 'Chicken Satay (5pcs)', price: 6.50 },
+        { name: 'Bak Kut Teh (Small)', price: 5.50 }
+      ],
       phoneNumber: '+65 6220 2138'
     },
     {
@@ -138,6 +187,10 @@ const LocationMap = () => {
       distance: '2.1 km',
       priceRange: '$$',
       popularDishes: ['BBQ Seafood', 'Satay', 'Oyster Omelette'],
+      menu: [
+        { name: 'BBQ Prawns', price: 12.00 },
+        { name: 'Oyster Omelette', price: 7.50 }
+      ],
       phoneNumber: '+65 6235 1471'
     },
     {
@@ -157,6 +210,10 @@ const LocationMap = () => {
       distance: '0.5 km',
       priceRange: '$',
       popularDishes: ['Soya Sauce Chicken', 'Fish Ball Noodles', 'Rojak'],
+      menu: [
+        { name: 'Soya Sauce Chicken Rice', price: 4.50 },
+        { name: 'Fish Ball Noodles', price: 3.50 }
+      ],
       phoneNumber: '+65 6534 6984'
     },
     {
@@ -176,6 +233,10 @@ const LocationMap = () => {
       distance: '1.8 km',
       priceRange: '$',
       popularDishes: ['Biryani', 'Roti Prata', 'Fish Head Curry'],
+      menu: [
+        { name: 'Fish Head Curry', price: 8.50 },
+        { name: 'Roti Prata', price: 2.50 }
+      ],
       phoneNumber: '+65 6297 1059'
     },
     {
@@ -195,6 +256,10 @@ const LocationMap = () => {
       distance: '1.5 km',
       priceRange: '$$',
       popularDishes: ['Lor Mee', 'Chwee Kueh', 'Kaya Toast'],
+      menu: [
+        { name: 'Lor Mee', price: 4.00 },
+        { name: 'Chwee Kueh (3pcs)', price: 2.50 }
+      ],
       phoneNumber: '+65 6270 7611'
     }
   ];
@@ -223,6 +288,40 @@ const LocationMap = () => {
     fetchHawkerCentres();
   }, []);
 
+  // Get user's current location
+  useEffect(() => {
+    const getUserLocation = () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setUserLocation({ lat: latitude, lng: longitude });
+            setLocationError(null);
+            console.log('User location obtained:', latitude, longitude);
+          },
+          (error) => {
+            console.error('Error getting user location:', error);
+            setLocationError(error.message);
+            // Fallback to Singapore center if location access is denied
+            setUserLocation({ lat: 1.3521, lng: 103.8198 });
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5 minutes
+          }
+        );
+      } else {
+        console.error('Geolocation is not supported by this browser');
+        setLocationError('Geolocation not supported');
+        // Fallback to Singapore center
+        setUserLocation({ lat: 1.3521, lng: 103.8198 });
+      }
+    };
+
+    getUserLocation();
+  }, []);
+
   const handleMarkerClick = (hawker) => {
     setSelectedHawker(hawker);
     setMapCenter({ lat: hawker.latitude, lng: hawker.longitude });
@@ -233,6 +332,19 @@ const LocationMap = () => {
   const openDetailModal = (hawker) => {
     setSelectedHawker(hawker);
     setShowDetailModal(true);
+  };
+
+  const handleOrderHere = (hawker) => {
+    // Update the header location text with selected hawker
+    if (onHawkerSelect) {
+      onHawkerSelect(hawker);
+    }
+    
+    // Optional: You can add additional order logic here
+    console.log(`Order placed at: ${hawker.name}`);
+    
+    // Show a brief confirmation or redirect to menu
+    alert(`🛍️ Great choice! You're now ordering from ${hawker.name}`);
   };
 
   const closeDetails = () => {
@@ -291,6 +403,27 @@ const LocationMap = () => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   />
                   
+                  {/* User Current Location Marker */}
+                  {userLocation && (
+                    <Marker
+                      position={[userLocation.lat, userLocation.lng]}
+                      icon={createUserLocationIcon()}
+                    >
+                      <Popup>
+                        <div className="map-popup">
+                          <h4>📍 Your Current Location</h4>
+                          <p className="popup-address">
+                            Lat: {userLocation.lat.toFixed(6)}<br/>
+                            Lng: {userLocation.lng.toFixed(6)}
+                          </p>
+                          <div className="popup-info">
+                            <span>🎯 You are here</span>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
+                  
                   {/* Hawker Centre Markers with Custom Pins */}
                   {hawkerCentres.map((hawker) => (
                     <Marker
@@ -313,13 +446,13 @@ const LocationMap = () => {
                             <span>🕐 {hawker.openingHours}</span>
                           </div>
                           <button 
-                            className="popup-details-btn"
+                            className="popup-order-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDetailModal(hawker);
+                              handleOrderHere(hawker);
                             }}
                           >
-                            View Details
+                            🛍️ Order Here
                           </button>
                         </div>
                       </Popup>
@@ -363,6 +496,18 @@ const LocationMap = () => {
                             <span className="cuisine-more">+{hawker.cuisines.length - 3} more</span>
                           )}
                         </div>
+
+                        {/* Manually-entered menu preview shown on the bottom of the stall card */}
+                        {hawker.menu && hawker.menu.length > 0 && (
+                          <div className="hawker-menu">
+                            {hawker.menu.slice(0,3).map((m, idx) => (
+                              <div key={idx} className="menu-item-chip">
+                                <span className="menu-item-name">{m.name}</span>
+                                <span className="menu-item-price">${m.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         <button 
                           className="hawker-details-btn"
@@ -461,7 +606,16 @@ const LocationMap = () => {
               <button className="action-btn primary" onClick={() => alert('Getting directions...')}>
                 🧭 Get Directions
               </button>
-              <button className="action-btn secondary" onClick={() => alert('View menu...')}>
+              <button 
+                className="action-btn secondary" 
+                onClick={() => {
+                  if (onHawkerSelect) {
+                    onHawkerSelect(selectedHawker);
+                  }
+                  navigate('/');
+                  closeDetails();
+                }}
+              >
                 📋 View Menu
               </button>
               <button className="action-btn secondary" onClick={() => alert('Call hawker centre...')}>

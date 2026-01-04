@@ -1,10 +1,13 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Trophy, Gift, Camera, ThumbsUp, ChevronRight, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { PointsContext } from '../context/PointsContext';
+import Header from '../components/Header';
 import * as pointsService from '../services/pointsService';
 import './pointsSystem.css';
 
 const HawkerPointsSystem = () => {
+  const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState('points');
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [redeemed, setRedeemed] = useState(false);
@@ -363,6 +366,12 @@ const HawkerPointsSystem = () => {
   // Screen Router
   return (
     <div className="hawker-points-system">
+      <Header
+        activeSection="rewards"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
+      
       {currentScreen === 'points' && <PointsDashboard />}
       {currentScreen === 'rewards' && <RewardsCatalog />}
       {currentScreen === 'redeem' && <RedemptionScreen />}

@@ -1,45 +1,31 @@
-import React, { useState } from "react";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import React, { useContext } from "react";
+import { ArrowLeft, Trash2, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CartContext } from '../context/CartContext';
+import Header from '../components/Header';
 import "./CartPage.css";
 
 const CartPage = () => {
   const navigate = useNavigate();
+  const { cartItems, updateQuantity, removeFromCart } = useContext(CartContext);
 
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Roasted Chicken Rice",
-      stallName: "Ah Seng Chicken Rice",
-      price: 4.5,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop",
-    },
-  ]);
-
-  const updateQuantity = (id, qty) => {
-    if (qty <= 0) {
-      setCartItems(cartItems.filter((i) => i.id !== id));
-      return;
-    }
-    setCartItems(
-      cartItems.map((i) =>
-        i.id === id ? { ...i, quantity: qty } : i
-      )
-    );
-  };
+  const isDemo = !cartItems || cartItems.length === 0;
+  const itemsToRender = cartItems;
 
   const getSubtotal = () =>
-    cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-  const deliveryFee = 2.5;
-  const serviceFee = 0.5;
+    (itemsToRender || []).reduce((sum, i) => sum + (parseFloat(i.price) || 0) * (i.quantity || 0), 0);
 
   return (
     <main className="cart-page">
 
       {/* HEADER */}
+      <Header
+        activeSection="menu"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
+
+      {/* LEGACY HEADER - can be removed */}
       <header className="cart-header">
         <nav className="cart-nav">
           <button 
@@ -52,29 +38,30 @@ const CartPage = () => {
           <h1 className="cart-title">Your Cart</h1>
 
           <span className="cart-count">
-            {cartItems.length} items
+            {(cartItems || []).length} items
           </span>
         </nav>
       </header>
 
       {/* EMPTY STATE */}
-      {cartItems.length === 0 && (
-        <section className="empty-cart">
-          <ShoppingBag className="empty-cart-icon" />
-          <h2 className="empty-cart-title">Your cart is empty</h2>
-          <p className="empty-cart-text">Start adding delicious meals!</p>
-
-          <button 
-            className="browse-button"
-            onClick={() => navigate('/menu')}
-          >
-            Browse Menu
-          </button>
+      {isDemo && (
+        <section className="empty-cart-section">
+          <div className="empty-cart-message">
+            <ShoppingBag className="empty-cart-icon" />
+            <h2>Your cart is empty</h2>
+            <p>Add items from the menu to get started</p>
+            <button 
+              className="continue-shopping-button"
+              onClick={() => navigate('/')}
+            >
+              Continue Shopping
+            </button>
+          </div>
         </section>
       )}
 
       {/* MAIN CONTENT */}
-      {cartItems.length > 0 && (
+      {(itemsToRender && itemsToRender.length > 0) && (
         <section className="cart-content">
 
           {/* ITEMS */}
@@ -82,7 +69,7 @@ const CartPage = () => {
             <h2 className="section-title">Items</h2>
 
             <ul className="cart-items-list">
-              {cartItems.map((item) => (
+              {(itemsToRender || []).map((item) => (
                 <li key={item.id} className="cart-item">
 
                   <div className="cart-item-content">
@@ -101,7 +88,8 @@ const CartPage = () => {
 
                         <button
                           className="remove-button"
-                          onClick={() => updateQuantity(item.id, 0)}
+                          onClick={() => removeFromCart(item.id)}
+                          title='Remove item'
                         >
                           <Trash2 className="remove-icon" />
                         </button>
@@ -110,11 +98,9 @@ const CartPage = () => {
                       <div className="quantity-controls">
                         <button
                           className="quantity-button"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
+                          onClick={() => updateQuantity(item.id, (item.quantity || 0) - 1)}
                         >
-                          <Minus className="quantity-icon" />
+                          −
                         </button>
 
                         <span className="quantity-display">
@@ -123,11 +109,9 @@ const CartPage = () => {
 
                         <button
                           className="quantity-button"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
+                          onClick={() => updateQuantity(item.id, (item.quantity || 0) + 1)}
                         >
-                          <Plus className="quantity-icon" />
+                          +
                         </button>
                       </div>
 
@@ -155,30 +139,16 @@ const CartPage = () => {
                 <span className="price-value">${getSubtotal().toFixed(2)}</span>
               </div>
 
-              <div className="price-row">
-                <span className="price-label">Delivery Fee</span>
-                <span className="price-value">
-                  ${deliveryFee.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="price-row">
-                <span className="price-label">Service Fee</span>
-                <span className="price-value">
-                  ${serviceFee.toFixed(2)}
-                </span>
-              </div>
-
               <hr className="price-divider" />
 
               <div className="price-row total-row">
                 <span className="total-label">Total</span>
                 <span className="total-value">
-                  ${(getSubtotal() + deliveryFee + serviceFee).toFixed(2)}
+                  ${getSubtotal().toFixed(2)}
                 </span>
               </div>
 
-              <button className="checkout-button">
+              <button className="checkout-button" onClick={() => navigate('/nets-qr')}>
                 Proceed to Checkout
               </button>
             </div>
