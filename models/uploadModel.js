@@ -194,21 +194,6 @@ class UploadModel {
         throw new Error('User has already liked this photo');
       }
 
-      // Get photo information including the owner
-      const photoInfo = await sql.query(`
-        SELECT p.user_id, p.dish_name, s.stall_name, p.stall_id
-        FROM photos p
-        LEFT JOIN stalls s ON p.stall_id = s.id
-        WHERE p.id = @photo_id
-      `)
-        .input('photo_id', sql.Int, photoId);
-
-      if (photoInfo.recordset.length === 0) {
-        throw new Error('Photo not found');
-      }
-
-      const photo = photoInfo.recordset[0];
-
       // Insert like record
       await sql.query(`
         INSERT INTO photo_likes (user_id, photo_id) VALUES (@user_id, @photo_id)
@@ -225,12 +210,7 @@ class UploadModel {
       `)
         .input('photo_id', sql.Int, photoId);
 
-      return {
-        likesCount: result.recordset[0].likes_count,
-        photoOwnerId: photo.user_id,
-        dishName: photo.dish_name,
-        stallName: photo.stall_name || 'Unknown Stall'
-      };
+      return result.recordset[0].likes_count;
     } catch (error) {
       console.error('Error liking photo:', error);
       throw error;
