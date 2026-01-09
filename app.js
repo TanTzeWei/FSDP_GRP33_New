@@ -13,7 +13,7 @@ try {
     process.exit(1);
 }
 
-const sql = require('mssql');
+const supabase = require('./dbConfig');
 const path = require('path');
 const cors = require('cors');
 
@@ -116,6 +116,11 @@ if (UserController && authMiddleware) {
     app.put('/profile', authMiddleware, UserController.updateProfile);
     app.put('/change-password', authMiddleware, UserController.changePassword);
     app.delete('/profile', authMiddleware, UserController.deleteAccount);
+    app.get('/profile/stats', authMiddleware, UserController.getUserStats);
+    // Admin: approve owner accounts
+    app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
+    app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);
+    app.post('/admin/owners/:userId/reject', authMiddleware, authMiddleware.requireAdmin, UserController.rejectOwner);
     console.log('✅ User routes configured');
 } else {
     console.log('⚠️  User routes disabled (missing UserController or authMiddleware)');
@@ -161,12 +166,21 @@ if (UploadController) {
     // Get photos by hawker centre
     app.get('/api/photos/hawker/:hawkerCentreId', UploadController.getPhotosByHawkerCentre);
     
+    // Get community photos by stall (for stall owner dashboard)
+    app.get('/api/photos/stall/:stallId', UploadController.getPhotosByStall);
+    
+    // Get ids of photos liked by current user (must come before the :photoId route)
+    app.get('/api/photos/liked', authMiddleware, UploadController.getLikedPhotos);
+
     // Get photo details
     app.get('/api/photos/:photoId', UploadController.getPhotoDetails);
+
+    // Like/Unlike photos (requires authentication)
+    app.post('/api/photos/:photoId/like', authMiddleware, UploadController.likePhoto);
+    app.delete('/api/photos/:photoId/like', authMiddleware, UploadController.unlikePhoto);
     
-    // Like/Unlike photos
-    app.post('/api/photos/:photoId/like', UploadController.likePhoto);
-    app.delete('/api/photos/:photoId/like', UploadController.unlikePhoto);
+    // Update photo approval status (requires authentication - stall owner)
+    app.put('/api/photos/:photoId/approval', authMiddleware, UploadController.updateApprovalStatus);
     
     // Delete photo - REQUIRES AUTH
     app.delete('/api/photos/:photoId', authMiddleware, UploadController.deletePhoto);
@@ -178,8 +192,8 @@ if (UploadController) {
 
 // Menu Photo Upload Routes (for menu item photos)
 if (MenuPhotoController) {
-    // Upload menu photo and create/update dish - REQUIRES AUTH
-    app.post('/api/menu-photos/upload', authMiddleware, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
+    // Upload menu photo and create/update dish - REQUIRES STALL OWNER
+    app.post('/api/menu-photos/upload', authMiddleware, authMiddleware.requireStallOwner, MenuPhotoController.uploadMiddleware, MenuPhotoController.uploadMenuPhoto);
     
     // Get menu photos by stall
     app.get('/api/menu-photos/stall/:stallId', MenuPhotoController.getMenuPhotosByStall);
@@ -207,9 +221,9 @@ if (DishController) {
 
     // Protected routes: create/update/delete dishes (requires auth)
     if (authMiddleware) {
-        app.post('/api/dishes', authMiddleware, DishController.createDish);
-        app.put('/api/dishes/:id', authMiddleware, DishController.updateDish);
-        app.delete('/api/dishes/:id', authMiddleware, DishController.deleteDish);
+        app.post('/api/dishes', authMiddleware, authMiddleware.requireStallOwner, DishController.createDish);
+        app.put('/api/dishes/:id', authMiddleware, authMiddleware.requireStallOwner, DishController.updateDish);
+        app.delete('/api/dishes/:id', authMiddleware, authMiddleware.requireStallOwner, DishController.deleteDish);
     } else {
         console.log('⚠️  Dish write routes disabled (missing authMiddleware)');
     }
@@ -221,7 +235,19 @@ if (DishController) {
 
 // Stall route: get stall details
 if (StallController) {
+    // Public: get all stalls
+    app.get('/api/stalls', StallController.getAllStalls);
+    // Public: get single stall by ID
     app.get('/api/stalls/:id', StallController.getStallById);
+    
+    // Protected routes for stall owners
+    if (authMiddleware) {
+        // Upload stall image
+        app.post('/api/stalls/:id/image', authMiddleware, authMiddleware.requireStallOwner, StallController.uploadMiddleware, StallController.uploadStallImage);
+        // Update stall details
+        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
+    }
+    
     console.log('✅ Stall route configured');
 } else {
     console.log('⚠️  Stall routes disabled (missing StallController)');
@@ -260,29 +286,14 @@ app.get('/', (req, res) => {
 // Test database insert route
 app.get('/test-db', async (req, res) => {
     try {
-        const sql = require('mssql');
-        const { connectDB } = require('./dbConfig');
-        
-        console.log('Testing database insert...');
-        await connectDB();
-        
-        // Test simple insert without BLOB
-        const result = await sql.query`
-            INSERT INTO photos (
-                user_id, hawker_centre_id, stall_id, food_item_id,
-                original_filename, photo_data, file_size, mime_type,
-                dish_name, description
-            )
-            OUTPUT INSERTED.id, INSERTED.created_at
-            VALUES (
-                1, 1, NULL, NULL,
-                'test.jpg', 0x123456, 1024, 'image/jpeg',
-                'Test Dish', 'Test Description'
-            )
-        `;
-        
-        console.log('Database insert successful:', result.recordset[0]);
-        res.json({ success: true, data: result.recordset[0] });
+        console.log('Testing Supabase connection...');
+        // Simple select to verify access to the Users table
+        const { data, error } = await supabase.from('users').select('user_id').limit(1);
+        if (error) {
+            console.error('Supabase test error:', error);
+            return res.status(500).json({ success: false, error: error.message || error });
+        }
+        res.json({ success: true, data: data && data[0] ? data[0] : null });
         
     } catch (error) {
         console.error('Database test error:', error);
@@ -296,14 +307,13 @@ const PORT = process.env.PORT || 3000;
 // Test database connection on startup
 async function testDatabaseConnection() {
     try {
-        const dbConfig = require('./dbConfig');
-        const pool = await sql.connect(dbConfig);
-        console.log('✅ Database connected successfully');
-        console.log(`📊 Connected to: ${dbConfig.server}/${dbConfig.database}`);
-        await pool.close();
+        // Perform a lightweight select to validate Supabase connectivity
+        const { data, error } = await supabase.from('users').select('user_id').limit(1);
+        if (error) throw error;
+        console.log('✅ Supabase connected successfully');
     } catch (error) {
-        console.error('❌ Database connection failed:', error.message);
-        console.error('💡 Check your .env file database configuration');
+        console.error('❌ Database connection failed:', error.message || error);
+        console.error('💡 Check your .env file SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
     }
 }
 

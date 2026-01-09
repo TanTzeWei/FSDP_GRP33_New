@@ -1,25 +1,85 @@
-const sql = require('mssql');
-const dbConfig = require('../dbConfig');
+const supabase = require('../dbConfig');
 
 class StallModel {
+    /**
+     * Get all stalls from the database
+     * @returns {Array} List of all stalls
+     */
+    static async getAllStalls() {
+        try {
+            const { data, error } = await supabase
+                .from('stalls')
+                .select('id, stall_name, description, image_url, cuisine_types(name), hawker_centres(name)')
+                .order('stall_name', { ascending: true });
+            
+            if (error) throw error;
+            // Map stall_name to name for frontend consistency
+            return (data || []).map(stall => ({
+                ...stall,
+                name: stall.stall_name
+            }));
+        } catch (error) {
+            throw new Error(`Error fetching stalls: ${error.message}`);
+        }
+    }
+
     static async getStallById(id) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('id', sql.Int, id);
-
-            const query = `
-                SELECT s.*, ct.name AS cuisine_name, hc.name AS hawker_centre_name, hc.id AS hawker_centre_id
-                FROM stalls s
-                LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                LEFT JOIN hawker_centres hc ON s.hawker_centre_id = hc.id
-                WHERE s.id = @id
-            `;
-
-            const result = await request.query(query);
-            return result.recordset[0] || null;
+            const { data, error } = await supabase.from('stalls').select('*, cuisine_types(name), hawker_centres(name)').eq('id', id).maybeSingle();
+            if (error) throw error;
+            return data || null;
         } catch (error) {
             throw new Error(`Error fetching stall: ${error.message}`);
+        }
+    }
+
+    /**
+     * Update stall image URL
+     * @param {number} stallId - The stall ID
+     * @param {string} imageUrl - The new image URL
+     * @returns {Object} Updated stall data
+     */
+    static async updateStallImage(stallId, imageUrl) {
+        try {
+            const { data, error } = await supabase
+                .from('stalls')
+                .update({ 
+                    image_url: imageUrl,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', stallId)
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            throw new Error(`Error updating stall image: ${error.message}`);
+        }
+    }
+
+    /**
+     * Update stall details
+     * @param {number} stallId - The stall ID
+     * @param {Object} updateData - Data to update
+     * @returns {Object} Updated stall data
+     */
+    static async updateStall(stallId, updateData) {
+        try {
+            const { data, error } = await supabase
+                .from('stalls')
+                .update({ 
+                    ...updateData,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', stallId)
+                .select('*, cuisine_types(name), hawker_centres(name)')
+                .single();
+            
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            throw new Error(`Error updating stall: ${error.message}`);
         }
     }
 }

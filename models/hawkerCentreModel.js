@@ -1,46 +1,42 @@
-const sql = require('mssql');
-const dbConfig = require('../dbConfig');
+const supabase = require('../dbConfig');
+const haversine = (lat1, lon1, lat2, lon2) => {
+    const toRad = v => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+};
 
 class HawkerCentreModel {
     // Get all hawker centres with optional filtering
     static async getAllHawkerCentres(filters = {}) {
         try {
-            const pool = await sql.connect(dbConfig);
-            let query = `
-                SELECT 
-                    hc.*,
-                    COUNT(DISTINCT s.id) as active_stalls,
-                    STRING_AGG(DISTINCT ct.name, ', ') as available_cuisines,
-                    AVG(CAST(s.rating as FLOAT)) as average_stall_rating
-                FROM hawker_centres hc
-                LEFT JOIN stalls s ON hc.id = s.hawker_centre_id AND s.status = 'Active'
-                LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                WHERE hc.status = 'Active'
-            `;
+            // Basic implementation: fetch active centres and apply simple filters/aggregations in JS
+            let query = supabase.from('hawker_centres').select('*').eq('status', 'Active');
+            if (filters.minRating) query = query.gte('rating', filters.minRating);
+            if (filters.searchTerm) query = query.ilike('name', `%${filters.searchTerm}%`);
 
-            const request = pool.request();
+            const { data: centres, error } = await query;
+            if (error) throw error;
 
-            // Add filters if provided
-            if (filters.minRating) {
-                query += ' AND hc.rating >= @minRating';
-                request.input('minRating', sql.Decimal(3, 2), filters.minRating);
-            }
-
+            // Optionally filter by cuisine by fetching stalls and mapping
+            let centresWithMeta = centres.map(c => ({ ...c, active_stalls: 0, available_cuisines: [], average_stall_rating: null }));
             if (filters.cuisine) {
-                query += ' AND ct.name = @cuisine';
-                request.input('cuisine', sql.VarChar(100), filters.cuisine);
+                const { data: stalls } = await supabase.from('stalls').select('hawker_centre_id, cuisine_type_id').eq('status', 'Active');
+                const { data: cuisines } = await supabase.from('cuisine_types').select('id, name');
+                const cuisineMap = (cuisines || []).reduce((m, c) => (m[c.id] = c.name, m), {});
+                centresWithMeta = centresWithMeta.map(c => {
+                    const related = (stalls || []).filter(s => s.hawker_centre_id === c.id);
+                    const cuisineNames = Array.from(new Set(related.map(r => cuisineMap[r.cuisine_type_id]).filter(Boolean)));
+                    return { ...c, active_stalls: related.length, available_cuisines: cuisineNames.join(', ')};
+                }).filter(c => c.available_cuisines.includes(filters.cuisine));
             }
 
-            if (filters.searchTerm) {
-                query += ' AND (hc.name LIKE @searchTerm OR hc.address LIKE @searchTerm)';
-                request.input('searchTerm', sql.VarChar(255), `%${filters.searchTerm}%`);
-            }
-
-            query += ' GROUP BY hc.id, hc.name, hc.description, hc.address, hc.postal_code, hc.latitude, hc.longitude, hc.opening_hours, hc.closing_hours, hc.operating_days, hc.total_stalls, hc.rating, hc.total_reviews, hc.image_url, hc.facilities, hc.contact_phone, hc.managed_by, hc.status, hc.created_at, hc.updated_at';
-            query += ' ORDER BY hc.rating DESC, hc.total_reviews DESC';
-
-            const result = await request.query(query);
-            return result.recordset;
+            // Sort by rating and reviews
+            centresWithMeta.sort((a,b) => (b.rating || 0) - (a.rating || 0));
+            return centresWithMeta;
         } catch (error) {
             throw new Error(`Error fetching hawker centres: ${error.message}`);
         }
@@ -49,48 +45,15 @@ class HawkerCentreModel {
     // Get hawker centre by ID with detailed information
     static async getHawkerCentreById(id) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('id', sql.Int, id);
+            const { data: centre, error } = await supabase.from('hawker_centres').select('*').eq('id', id).eq('status','Active').maybeSingle();
+            if (error) throw error;
+            if (!centre) return null;
 
-            const hawkerQuery = `
-                SELECT 
-                    hc.*,
-                    COUNT(DISTINCT s.id) as active_stalls,
-                    STRING_AGG(DISTINCT ct.name, ', ') as available_cuisines,
-                    AVG(CAST(s.rating as FLOAT)) as average_stall_rating
-                FROM hawker_centres hc
-                LEFT JOIN stalls s ON hc.id = s.hawker_centre_id AND s.status = 'Active'
-                LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                WHERE hc.id = @id AND hc.status = 'Active'
-                GROUP BY hc.id, hc.name, hc.description, hc.address, hc.postal_code, hc.latitude, hc.longitude, hc.opening_hours, hc.closing_hours, hc.operating_days, hc.total_stalls, hc.rating, hc.total_reviews, hc.image_url, hc.facilities, hc.contact_phone, hc.managed_by, hc.status, hc.created_at, hc.updated_at
-            `;
+            const { data: stalls, error: stallsErr } = await supabase.from('stalls').select('*, cuisine_types!inner(name, icon, color)').eq('hawker_centre_id', id).eq('status','Active').order('rating', {ascending: false});
+            if (stallsErr) throw stallsErr;
 
-            const stallsQuery = `
-                SELECT 
-                    s.*,
-                    ct.name as cuisine_name,
-                    ct.icon as cuisine_icon,
-                    ct.color as cuisine_color
-                FROM stalls s
-                LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                WHERE s.hawker_centre_id = @id AND s.status = 'Active'
-                ORDER BY s.rating DESC
-            `;
-
-            const [hawkerResult, stallsResult] = await Promise.all([
-                request.query(hawkerQuery),
-                request.query(stallsQuery)
-            ]);
-
-            if (hawkerResult.recordset.length === 0) {
-                return null;
-            }
-
-            const hawkerCentre = hawkerResult.recordset[0];
-            hawkerCentre.stalls = stallsResult.recordset;
-
-            return hawkerCentre;
+            centre.stalls = stalls || [];
+            return centre;
         } catch (error) {
             throw new Error(`Error fetching hawker centre: ${error.message}`);
         }
@@ -99,38 +62,11 @@ class HawkerCentreModel {
     // Get hawker centres within a radius (simplified version using basic coordinate math)
     static async getNearbyHawkerCentres(latitude, longitude, radiusKm = 5) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            
-            request.input('latitude', sql.Decimal(10, 8), latitude);
-            request.input('longitude', sql.Decimal(11, 8), longitude);
-            request.input('radius', sql.Float, radiusKm);
+            const { data: centres, error } = await supabase.from('hawker_centres').select('*').eq('status','Active');
+            if (error) throw error;
 
-            // Simple distance calculation (for more accuracy, use proper geospatial functions)
-            const query = `
-                SELECT 
-                    hc.*,
-                    COUNT(DISTINCT s.id) as active_stalls,
-                    STRING_AGG(DISTINCT ct.name, ', ') as available_cuisines,
-                    AVG(CAST(s.rating as FLOAT)) as average_stall_rating,
-                    (
-                        6371 * acos(
-                            cos(radians(@latitude)) * cos(radians(hc.latitude)) *
-                            cos(radians(hc.longitude) - radians(@longitude)) +
-                            sin(radians(@latitude)) * sin(radians(hc.latitude))
-                        )
-                    ) AS distance_km
-                FROM hawker_centres hc
-                LEFT JOIN stalls s ON hc.id = s.hawker_centre_id AND s.status = 'Active'
-                LEFT JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                WHERE hc.status = 'Active'
-                GROUP BY hc.id, hc.name, hc.description, hc.address, hc.postal_code, hc.latitude, hc.longitude, hc.opening_hours, hc.closing_hours, hc.operating_days, hc.total_stalls, hc.rating, hc.total_reviews, hc.image_url, hc.facilities, hc.contact_phone, hc.managed_by, hc.status, hc.created_at, hc.updated_at
-                HAVING distance_km <= @radius
-                ORDER BY distance_km, hc.rating DESC
-            `;
-
-            const result = await request.query(query);
-            return result.recordset;
+            const withDistance = (centres || []).map(c => ({ ...c, distance_km: haversine(latitude, longitude, Number(c.latitude), Number(c.longitude)) }));
+            return withDistance.filter(c => c.distance_km <= radiusKm).sort((a,b) => a.distance_km - b.distance_km);
         } catch (error) {
             throw new Error(`Error fetching nearby hawker centres: ${error.message}`);
         }
@@ -139,13 +75,9 @@ class HawkerCentreModel {
     // Get all cuisine types
     static async getAllCuisineTypes() {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `
-                SELECT * FROM cuisine_types 
-                ORDER BY name
-            `;
-            const result = await pool.request().query(query);
-            return result.recordset;
+            const { data, error } = await supabase.from('cuisine_types').select('*').order('name');
+            if (error) throw error;
+            return data;
         } catch (error) {
             throw new Error(`Error fetching cuisine types: ${error.message}`);
         }
@@ -154,27 +86,20 @@ class HawkerCentreModel {
     // Get popular dishes from a hawker centre
     static async getPopularDishes(hawkerCentreId, limit = 10) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const request = pool.request();
-            request.input('hawkerCentreId', sql.Int, hawkerCentreId);
-            request.input('limit', sql.Int, limit);
+            // Get stalls for this hawker centre
+            const { data: stalls } = await supabase.from('stalls').select('id').eq('hawker_centre_id', hawkerCentreId).eq('status','Active');
+            const stallIds = (stalls || []).map(s => s.id);
+            if (stallIds.length === 0) return [];
 
-            const query = `
-                SELECT TOP (@limit)
-                    fi.*,
-                    s.stall_name,
-                    ct.name as cuisine_name
-                FROM food_items fi
-                JOIN stalls s ON fi.stall_id = s.id
-                JOIN cuisine_types ct ON s.cuisine_type_id = ct.id
-                WHERE s.hawker_centre_id = @hawkerCentreId 
-                    AND fi.is_available = 1
-                    AND s.status = 'Active'
-                ORDER BY fi.is_popular DESC, fi.price ASC
-            `;
-
-            const result = await request.query(query);
-            return result.recordset;
+            const { data, error } = await supabase.from('food_items')
+                .select('*, stalls!inner(stall_name), cuisine_types!inner(name)')
+                .in('stall_id', stallIds)
+                .eq('is_available', true)
+                .order('is_popular', { ascending: false })
+                .order('price', { ascending: true })
+                .limit(limit);
+            if (error) throw error;
+            return data;
         } catch (error) {
             throw new Error(`Error fetching popular dishes: ${error.message}`);
         }
@@ -183,17 +108,13 @@ class HawkerCentreModel {
     // Get hawker centre statistics
     static async getHawkerCentreStats() {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `
-                SELECT 
-                    COUNT(*) as total_hawker_centres,
-                    AVG(CAST(rating as FLOAT)) as average_rating,
-                    SUM(total_stalls) as total_stalls,
-                    COUNT(CASE WHEN status = 'Active' THEN 1 END) as active_centres
-                FROM hawker_centres
-            `;
-            const result = await pool.request().query(query);
-            return result.recordset[0];
+            const { data: centres, error } = await supabase.from('hawker_centres').select('*');
+            if (error) throw error;
+            const total = (centres || []).length;
+            const average_rating = (centres || []).reduce((s,c) => s + (Number(c.rating)||0), 0) / Math.max(1, total);
+            const total_stalls = (centres || []).reduce((s,c) => s + (Number(c.total_stalls)||0), 0);
+            const active_centres = (centres || []).filter(c => c.status === 'Active').length;
+            return { total_hawker_centres: total, average_rating, total_stalls, active_centres };
         } catch (error) {
             throw new Error(`Error fetching hawker centre statistics: ${error.message}`);
         }

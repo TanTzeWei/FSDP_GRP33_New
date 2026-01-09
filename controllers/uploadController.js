@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const UploadModel = require('../models/uploadModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
+const ImageAIValidation = require('../utils/imageAIValidation');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -84,6 +85,58 @@ class UploadController {
         });
       }
 
+      // === AI VALIDATION ===
+      // Validate image using AI before uploading to Cloudinary
+      console.log('Starting AI validation...');
+      
+      const enableAIValidation = process.env.ENABLE_AI_VALIDATION === 'true';
+      const strictMode = process.env.AI_VALIDATION_STRICT === 'true';
+      
+      if (enableAIValidation && ImageAIValidation.isConfigured()) {
+        try {
+          const validationResult = await ImageAIValidation.validate(req.file.buffer, {
+            strictMode: strictMode
+          });
+
+          console.log('AI Validation Result:', {
+            isValid: validationResult.isValid,
+            message: validationResult.message,
+            confidence: validationResult.confidence
+          });
+
+          // If validation fails and we're in strict mode, reject the upload
+          if (!validationResult.isValid) {
+            console.log('AI validation FAILED - rejecting upload');
+            return res.status(400).json({
+              success: false,
+              message: validationResult.message || 'Image validation failed',
+              validationDetails: {
+                isFoodRelated: validationResult.isFoodRelated,
+                hasInappropriateContent: validationResult.hasInappropriateContent,
+                confidence: validationResult.confidence,
+                foodType: validationResult.foodType
+              }
+            });
+          }
+
+          // Add validation info to response later
+          req.aiValidation = validationResult;
+          
+        } catch (validationError) {
+          console.error('AI validation error (non-blocking):', validationError.message);
+          // Continue with upload even if validation fails (unless strict mode)
+          if (strictMode) {
+            return res.status(500).json({
+              success: false,
+              message: 'Image validation service unavailable'
+            });
+          }
+        }
+      } else {
+        console.log('AI validation skipped (not enabled or not configured)');
+      }
+      // === END AI VALIDATION ===
+
       console.log('Uploading to Cloudinary...');
 
       // Upload to Cloudinary
@@ -129,7 +182,13 @@ class UploadController {
           id: savedPhoto.id,
           imageUrl: photoData.imageUrl,
           dishName: photoData.dishName,
-          createdAt: savedPhoto.created_at
+          createdAt: savedPhoto.created_at,
+          // Include AI validation info if available
+          aiValidation: req.aiValidation ? {
+            validated: true,
+            foodType: req.aiValidation.foodType,
+            confidence: req.aiValidation.confidence
+          } : null
         }
       });
 
@@ -199,9 +258,9 @@ class UploadController {
         id: photo.id,
         imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
-        stallName: photo.stall_name || photo.hawker_centre_name,
-        likes: photo.likes_count,
-        username: photo.name, // Single name field from users table
+        stallName: photo.stalls?.stall_name || photo.hawker_centres?.name || 'Unknown Stall',
+        likes: photo.likes_count || 0,
+        username: photo.users?.name || 'Anonymous', // Nested object from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
@@ -241,9 +300,9 @@ class UploadController {
         id: photo.id,
         imageUrl: photo.image_url || photo.file_path, // Use actual Cloudinary URL from database
         dishName: photo.dish_name,
-        stallName: photo.stall_name,
-        likes: photo.likes_count,
-        username: photo.name, // Single name field from users table
+        stallName: photo.stalls?.stall_name || 'Unknown Stall',
+        likes: photo.likes_count || 0,
+        username: photo.users?.name || 'Anonymous', // Nested object from users table
         description: photo.description,
         createdAt: photo.created_at
       }));
@@ -268,7 +327,11 @@ class UploadController {
   static async likePhoto(req, res) {
     try {
       const { photoId } = req.params;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
 
       if (!photoId) {
         return res.status(400).json({
@@ -310,7 +373,11 @@ class UploadController {
   static async unlikePhoto(req, res) {
     try {
       const { photoId } = req.params;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
 
       if (!photoId) {
         return res.status(400).json({
@@ -345,6 +412,19 @@ class UploadController {
         message: 'Failed to unlike photo',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
+    }
+  }
+
+  // Get list of photo IDs liked by current user
+  static async getLikedPhotos(req, res) {
+    try {
+      const userId = req.user?.user_id || req.user?.userId || req.user?.id;
+      if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+      const likedIds = await UploadModel.getLikedPhotoIds(parseInt(userId));
+      res.status(200).json({ success: true, data: likedIds });
+    } catch (error) {
+      console.error('Error fetching liked photos:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch liked photos' });
     }
   }
 
@@ -397,6 +477,95 @@ class UploadController {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch photo details',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // Get community photos by stall (for stall owner dashboard)
+  static async getPhotosByStall(req, res) {
+    try {
+      const { stallId } = req.params;
+      const { limit = 50 } = req.query;
+
+      if (!stallId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Stall ID is required'
+        });
+      }
+
+      const photos = await UploadModel.getPhotosByStall(parseInt(stallId), parseInt(limit));
+
+      const formattedPhotos = photos.map(photo => {
+        // Map is_approved to approvalStatus for frontend compatibility
+        let approvalStatus = 'pending';
+        if (photo.is_approved === true) approvalStatus = 'approved';
+        else if (photo.is_approved === false) approvalStatus = 'rejected';
+        
+        return {
+          id: photo.id,
+          imageUrl: photo.image_url || photo.file_path,
+          dishName: photo.dish_name,
+          description: photo.description,
+          likes: photo.likes_count,
+          isApproved: photo.is_approved,
+          approvalStatus: approvalStatus,
+          username: photo.users?.name || 'Anonymous',
+          hawkerCentreName: photo.hawker_centres?.name,
+          createdAt: photo.created_at
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: formattedPhotos,
+        total: formattedPhotos.length
+      });
+
+    } catch (error) {
+      console.error('Error fetching photos by stall:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch photos',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // Update photo approval status
+  static async updateApprovalStatus(req, res) {
+    try {
+      const { photoId } = req.params;
+      const { status } = req.body;
+
+      if (!photoId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Photo ID is required'
+        });
+      }
+
+      if (!['approved', 'rejected', 'pending'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status. Must be approved, rejected, or pending'
+        });
+      }
+
+      const updatedPhoto = await UploadModel.updateApprovalStatus(parseInt(photoId), status);
+
+      res.status(200).json({
+        success: true,
+        message: `Photo ${status} successfully`,
+        data: updatedPhoto
+      });
+
+    } catch (error) {
+      console.error('Error updating photo approval status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update photo approval status',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }

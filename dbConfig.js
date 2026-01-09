@@ -1,12 +1,19 @@
-module.exports = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_DATABASE,
-    trustServerCertificate: true,
-    options: {
-      // Use provided DB_PORT or default to 1433 (standard SQL Server port)
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 1433,
-      connectionTimeout: 60000, // Connection timeout in milliseconds
-    },
-  };
+// Ensure environment variables from .env are loaded when this module is required directly
+try {
+  require('dotenv').config({ path: '.env' });
+} catch (e) {
+  // ignore if dotenv not available; process.env may already be set by the runtime
+}
+
+const { createClient } = require('@supabase/supabase-js');
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('Missing Supabase configuration. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) in your .env file.');
+}
+
+const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '');
+
+module.exports = supabase;

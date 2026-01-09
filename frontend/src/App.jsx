@@ -5,6 +5,11 @@ import './App.css';
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import ProfilePage from "./pages/ProfilePage";
+// StallLogin component removed in favor of single login page
+import StallDashboard from "./pages/stallDashboard";
+import DashboardStallOwner from "./pages/DashboardStallOwner";
+import DashboardAdmin from "./pages/DashboardAdmin";
+import AdminApprovals from "./pages/AdminApprovals";
 import Header from './components/Header';
 import Menu from './components/Menu';
 import MenuPage from './pages/menupage';
@@ -78,8 +83,14 @@ function App() {
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
+        
+        <Route path="/stall/dashboard" element={<StallDashboard />} />
+        <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />
+        <Route path="/dashboard/admin" element={<DashboardAdmin />} />
+        <Route path="/admin/approvals" element={<AdminApprovals />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/points" element={<PointsSystem />} />
         <Route path="/nets-qr" element={<NetsQrSamplePage />} />
         <Route path="/nets-qr/success" element={<TxnNetsSuccessStatusLayout />} />

@@ -47,11 +47,22 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     try {
       const response = await fetch('http://localhost:3000/api/hawker-centres');
       const result = await response.json();
-      if (result.success) {
+      
+      console.log('Hawker centres fetch result:', result); // Debug log
+      
+      if (result.success && Array.isArray(result.data)) {
         setHawkerCentres(result.data);
+      } else {
+        console.warn('No hawker centres found in database');
+        setHawkerCentres([]);
       }
     } catch (error) {
       console.error('Error fetching hawker centres:', error);
+      setHawkerCentres([]);
+      setUploadState(prev => ({ 
+        ...prev, 
+        error: 'Could not load hawker centres. Please check if the server is running.' 
+      }));
     }
   };
 
@@ -59,11 +70,25 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     try {
       const response = await fetch(`http://localhost:3000/api/hawker-centres/${hawkerCentreId}`);
       const result = await response.json();
-      if (result.success && result.data.stalls) {
+      
+      console.log('Stalls fetch result:', result); // Debug log
+      
+      if (result.success && result.data && Array.isArray(result.data.stalls)) {
+        // Use the stalls from the database
         setStalls(result.data.stalls);
+      } else {
+        // No stalls found for this hawker centre
+        console.warn('No stalls found for hawker centre:', hawkerCentreId);
+        setStalls([]);
       }
     } catch (error) {
       console.error('Error fetching stalls:', error);
+      // On error, set empty array and let user know
+      setStalls([]);
+      setUploadState(prev => ({ 
+        ...prev, 
+        error: 'Could not load stalls. Please check if the server is running.' 
+      }));
     }
   };
 

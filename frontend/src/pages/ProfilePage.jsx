@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
@@ -14,6 +14,12 @@ function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    photosUploaded: 0,
+    totalLikes: 0,
+    pointsBalance: 0
+  });
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -24,6 +30,29 @@ function ProfilePage() {
     confirmPassword: '',
   });
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+
+  // Fetch user stats on component mount
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (!token) return;
+      
+      try {
+        const res = await axios.get('http://localhost:3000/profile/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (res.data.success) {
+          setStats(res.data.stats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user stats:', error);
+      }
+    };
+
+    fetchUserStats();
+  }, [token]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -150,15 +179,17 @@ function ProfilePage() {
         onCartClick={() => navigate('/cart')}
       />
       
-      <div className="profile-container">
-        {/* Header Section */}
+      {/* Green Banner */}
+      <div className="profile-page-banner">
         <div className="profile-header">
           <button className="back-btn" onClick={() => navigate('/')}>
             ← Back to Home
           </button>
           <h1>My Profile</h1>
         </div>
+      </div>
 
+      <div className="profile-container">
         {/* Profile Card */}
         <div className="profile-card">
           <div className="profile-avatar-section">
@@ -301,22 +332,29 @@ function ProfilePage() {
               <div className="stat-card">
                 <span className="stat-icon">🛒</span>
                 <div className="stat-info">
-                  <span className="stat-value">0</span>
+                  <span className="stat-value">{stats.totalOrders}</span>
                   <span className="stat-label">Total Orders</span>
                 </div>
               </div>
               <div className="stat-card">
                 <span className="stat-icon">📸</span>
                 <div className="stat-info">
-                  <span className="stat-value">0</span>
+                  <span className="stat-value">{stats.photosUploaded}</span>
                   <span className="stat-label">Photos Uploaded</span>
                 </div>
               </div>
               <div className="stat-card">
                 <span className="stat-icon">❤️</span>
                 <div className="stat-info">
-                  <span className="stat-value">0</span>
+                  <span className="stat-value">{stats.totalLikes}</span>
                   <span className="stat-label">Total Likes</span>
+                </div>
+              </div>
+              <div className="stat-card">
+                <span className="stat-icon">🎁</span>
+                <div className="stat-info">
+                  <span className="stat-value">{stats.pointsBalance}</span>
+                  <span className="stat-label">Reward Points</span>
                 </div>
               </div>
             </div>

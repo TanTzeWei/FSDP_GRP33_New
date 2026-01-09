@@ -1,36 +1,40 @@
-const sql = require("mssql");
 const bcrypt = require("bcrypt");
-const dbConfig = require("../dbConfig");
+const supabase = require('../dbConfig');
 
 class UserModel {
     // Create new user (signup)
     static async createUser(userData) {
         try {
-            const pool = await sql.connect(dbConfig);
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
-            const query = `
-                INSERT INTO Users (name, email, password)
-                OUTPUT INSERTED.userId, INSERTED.name, INSERTED.email
-                VALUES (@name, @email, @password)
-            `;
+            const insertRow = {
+                name: userData.name,
+                email: userData.email,
+                password: hashedPassword,
+                role: userData.role || 'customer',
+                is_stall_owner: userData.is_stall_owner || false,
+                stall_id: userData.stall_id || null,
+                owner_verified: userData.owner_verified || false,
+                approval_status: userData.approval_status || 'none'
+            };
 
-            const request = pool.request();
-            request.input("name", sql.NVarChar(100), userData.name);
-            request.input("email", sql.NVarChar(100), userData.email);
-            request.input("password", sql.NVarChar(255), hashedPassword);
-            // role column removed for now; set roles later via migrations or separate admin flow
+            const { data, error, status } = await supabase
+                .from('users')
+                .insert([insertRow])
+                .select('user_id, name, email, role, is_stall_owner, stall_id, owner_verified, approval_status')
+                .limit(1)
+                .maybeSingle();
 
-            console.log("Executing query:", query);
-            const result = await request.query(query);
-
-            return { success: true, user: result.recordset[0] };
-        } catch (error) {
-            if (error.number === 2627) {
-                // Unique constraint (duplicate email)
-                return { success: false, message: "Email already exists" };
+            if (error) {
+                // unique violation handling may vary; return friendly message
+                if (status === 409) return { success: false, message: 'Email already exists' };
+                throw error;
             }
+
+            if (data) data.userId = data.user_id || data.userId;
+            return { success: true, user: data };
+        } catch (error) {
             throw error;
         }
     }
@@ -38,18 +42,15 @@ class UserModel {
     // Find user by email (for login)
     static async findUserByEmail(email) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `
-                SELECT userId, name, email, password
-                FROM Users 
-                WHERE email = @Email
-            `;
+            const { data, error } = await supabase
+                .from('users')
+                .select('user_id, name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status')
+                .eq('email', email)
+                .maybeSingle();
 
-            const request = pool.request();
-            request.input("Email", sql.NVarChar(100), email);
-
-            const result = await request.query(query);
-            return result.recordset[0] || null;
+            if (error) throw error;
+            if (data) data.userId = data.user_id || data.userId;
+            return data || null;
         } catch (error) {
             throw error;
         }
@@ -75,21 +76,16 @@ class UserModel {
     // Update user profile (optional)
     static async updateUser(userId, updateData) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `
-                UPDATE Users
-                SET name = @name
-                OUTPUT INSERTED.userId, INSERTED.name, INSERTED.email
-                WHERE userId = @userId
-            `;
+            const { data, error } = await supabase
+                .from('users')
+                .update({ name: updateData.name })
+                .eq('user_id', userId)
+                .select('user_id, name, email')
+                .single();
 
-            const request = pool.request();
-            request.input("userId", sql.Int, userId);
-            request.input("name", sql.NVarChar(100), updateData.name);
-            // role update omitted for now
-
-            const result = await request.query(query);
-            return { success: true, user: result.recordset[0] };
+            if (error) throw error;
+            if (data) data.userId = data.user_id || data.userId;
+            return { success: true, user: data };
         } catch (error) {
             throw error;
         }
@@ -98,13 +94,8 @@ class UserModel {
     // Delete user (optional)
     static async deleteUser(userId) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `DELETE FROM Users WHERE userId = @userId`;
-
-            const request = pool.request();
-            request.input("userId", sql.Int, userId);
-
-            await request.query(query);
+            const { error } = await supabase.from('users').delete().eq('user_id', userId);
+            if (error) throw error;
             return { success: true };
         } catch (error) {
             throw error;
@@ -114,18 +105,12 @@ class UserModel {
     // Update password
     static async updatePassword(userId, hashedPassword) {
         try {
-            const pool = await sql.connect(dbConfig);
-            const query = `
-                UPDATE Users
-                SET password = @password
-                WHERE userId = @userId
-            `;
+            const { error } = await supabase
+                .from('users')
+                .update({ password: hashedPassword })
+                .eq('user_id', userId);
 
-            const request = pool.request();
-            request.input("userId", sql.Int, userId);
-            request.input("password", sql.NVarChar(255), hashedPassword);
-
-            await request.query(query);
+            if (error) throw error;
             return { success: true };
         } catch (error) {
             throw error;

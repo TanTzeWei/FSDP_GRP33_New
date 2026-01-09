@@ -1,89 +1,96 @@
 // components/Menu.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import './Menu.css';
+import { AuthContext } from '../context/AuthContext';
 
 const Menu = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [featuredPhotos, setFeaturedPhotos] = useState([]);
   const [communityPhotos, setCommunityPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [likedPhotos, setLikedPhotos] = useState([]); // local set of photo IDs this client has liked
+  const [pendingLikes, setPendingLikes] = useState({}); // track in-flight like requests by photoId
   const [selectedStallFilter, setSelectedStallFilter] = useState('All');
   const [selectedDishFilter, setSelectedDishFilter] = useState('All');
-  const stallItems = [
-    {
-      id: 1,
-      name: "Ah Lim's Chinese Stall",
-      description: "Authentic Chinese dishes • Wonton noodles, Char Siu Rice, Fried Rice",
-      rating: "4.8",
-      deliveryTime: "25-35 mins",
-      distance: "1.2 km",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&q=80",
-      category: "chinese",
-      stallIcon: "🏮"
-    },
-    {
-      id: 2,
-      name: "Warung Pak Hasan",
-      description: "Traditional Malay cuisine • Nasi Lemak, Rendang, Satay, Mee Goreng",
-      rating: "4.6",
-      deliveryTime: "20-30 mins", 
-      distance: "0.8 km",
-      image: "https://images.unsplash.com/photo-1596040217128-87dbcc687ec0?w=400&h=300&fit=crop&q=80",
-      category: "malay",
-      stallIcon: "🌙"
-    },
-    {
-      id: 3,
-      name: "Mumbai Spice Corner",
-      description: "North & South Indian food • Biryani, Curry, Roti Prata, Tandoori",
-      rating: "4.7",
-      deliveryTime: "30-40 mins",
-      distance: "1.5 km", 
-      image: "https://images.unsplash.com/photo-1585937421456-de714db1eb1b?w=400&h=300&fit=crop&q=80",
-      category: "indian",
-      stallIcon: "🇮🇳"
-    },
-    {
-      id: 4,
-      name: "Peranakan Kitchen",
-      description: "Nyonya heritage cuisine • Laksa, Kueh, Ayam Buah Keluak",
-      rating: "4.9",
-      deliveryTime: "35-45 mins",
-      distance: "2.1 km",
-      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606631/peranakan_stall_h5rson.jpg", 
-      category: "peranakan",
-      stallIcon: "🏺"
-    },
-    {
-      id: 5,
-      name: "Western Grill House",
-      description: "Western comfort food • Burgers, Steaks, Fish & Chips, Pasta",
-      rating: "4.4",
-      deliveryTime: "25-35 mins",
-      distance: "1.8 km",
-      image: "https://res.cloudinary.com/djz1ltnhc/image/upload/v1763606719/download_1_qv81cd.jpg",
-      category: "western",
-      stallIcon: "🍔"
-    },
-    {
-      id: 6,
-      name: "Fresh Drinks Bar",
-      description: "Refreshing beverages • Fresh Juice, Bubble Tea, Coffee, Smoothies",
-      rating: "4.5",
-      deliveryTime: "15-25 mins",
-      distance: "0.5 km",
-      image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=300&fit=crop&q=80",
-      category: "drinks",
-      stallIcon: "🥤"
-    }
-  ];
+  const [failedImages, setFailedImages] = useState(new Set());
+  const [dbStalls, setDbStalls] = useState([]); // Stalls from database for filtering
+  const [loadingStalls, setLoadingStalls] = useState(true);
 
-  const categories = ["All", "Chinese", "Malay", "Indian", "Peranakan", "Western", "Drinks"];
+  // Handle image load error
+  const handleImageError = (stallId) => {
+    setFailedImages(prev => new Set([...prev, stallId]));
+  };
 
-  // Get unique stalls from community photos
-  const uniqueStalls = ['All', ...new Set(communityPhotos.map(p => p.stallName || 'Unknown Stall'))];
+  // Helper function to get cuisine icon based on cuisine type
+  const getCuisineIcon = (cuisineType) => {
+    const cuisineName = cuisineType?.toLowerCase() || '';
+    const iconMap = {
+      'chinese': '🏮',
+      'malay': '🌙',
+      'indian': '🍛',
+      'peranakan': '🏺',
+      'western': '🍔',
+      'drinks': '🥤',
+      'beverages': '🥤',
+      'japanese': '🍣',
+      'korean': '🍜',
+      'thai': '🌶️',
+      'vietnamese': '🍲',
+      'seafood': '🦐',
+      'vegetarian': '🥬',
+      'halal': '☪️',
+      'desserts': '🍰',
+      'snacks': '🍿'
+    };
+    return iconMap[cuisineName] || '🍽️';
+  };
+
+  // Helper function to get default image based on cuisine type
+  const getDefaultImage = (cuisineType) => {
+    const cuisineName = cuisineType?.toLowerCase() || '';
+    const imageMap = {
+      'chinese': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop',
+      'malay': 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=500&h=350&fit=crop',
+      'indian': 'https://images.unsplash.com/photo-1585937421612-232d3d67d529?w=500&h=350&fit=crop',
+      'peranakan': 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=500&h=350&fit=crop',
+      'western': 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&h=350&fit=crop',
+      'drinks': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop',
+      'beverages': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop',
+      'japanese': 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&h=350&fit=crop',
+      'korean': 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&h=350&fit=crop',
+      'thai': 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=500&h=350&fit=crop'
+    };
+    return imageMap[cuisineName] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&h=350&fit=crop';
+  };
+
+  // Fetch stalls from database
+  useEffect(() => {
+    const fetchStalls = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/stalls');
+        const data = await response.json();
+        if (data.success) {
+          setDbStalls(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching stalls:', error);
+      } finally {
+        setLoadingStalls(false);
+      }
+    };
+    fetchStalls();
+  }, []);
+
+  // Get unique categories from database stalls
+  const categories = ['All', ...new Set(dbStalls
+    .map(stall => stall.cuisine_types?.name)
+    .filter(Boolean)
+  )];
+
+  // Get stalls from database for filtering (with "All" option)
+  const stallFilterOptions = ['All', ...dbStalls.map(s => s.name || s.stall_name)];
 
   // Get unique dishes from community photos (for selected stall)
   const filteredByStall = selectedStallFilter === 'All' 
@@ -104,6 +111,65 @@ const Menu = () => {
     const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
     return stallMatch && dishMatch;
   });
+
+  // Update likes count for a photo across featured/community lists
+  const updatePhotoLikes = (photoId, newCount) => {
+    setFeaturedPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
+    setCommunityPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
+  };
+
+  const { token } = useContext(AuthContext);
+
+  // Toggle like/unlike for a photo
+  const toggleLike = async (photoId) => {
+    const isLiked = likedPhotos.includes(photoId);
+    // Prevent duplicate requests
+    if (pendingLikes[photoId]) return;
+
+    try {
+      setPendingLikes(prev => ({ ...prev, [photoId]: true }));
+
+      // Optimistic UI update
+      if (!isLiked) {
+        setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
+        updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
+      } else {
+        setLikedPhotos(prev => prev.filter(id => id !== photoId));
+        updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
+      }
+
+      const method = isLiked ? 'DELETE' : 'POST';
+      const headers = { Accept: 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method, headers, credentials: 'include' });
+      const json = await res.json().catch(() => ({}));
+
+      if (res.ok && json.data) {
+        updatePhotoLikes(photoId, json.data.likesCount);
+        // ensure likedPhotos matches server authoritative state
+        setLikedPhotos(prev => isLiked ? prev.filter(id => id !== photoId) : Array.from(new Set([...prev, photoId])));
+      } else {
+        console.warn('Like/Unlike failed', res.status, json);
+        // rollback optimistic update on failure
+        if (!isLiked) {
+          setLikedPhotos(prev => prev.filter(id => id !== photoId));
+          // decrement rollback
+          updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
+        } else {
+          setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
+          updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setPendingLikes(prev => {
+        const copy = { ...prev };
+        delete copy[photoId];
+        return copy;
+      });
+    }
+  };
 
   // Fetch menu photos from API
   useEffect(() => {
@@ -151,6 +217,22 @@ const Menu = () => {
           setCommunityPhotos(communityData.data || []);
           console.log('Community photos set:', communityData.data);
         }
+
+        // Fetch liked photo ids for current user (optional - will fallback to empty)
+        try {
+          if (token) {
+            const likedRes = await fetch('http://localhost:3000/api/photos/liked', { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, credentials: 'include' });
+            const likedJson = await likedRes.json();
+            if (likedRes.ok && likedJson.success) {
+              setLikedPhotos(likedJson.data || []);
+            }
+          } else {
+            setLikedPhotos([]);
+          }
+        
+        } catch (e) {
+          console.warn('Could not fetch liked photo ids:', e);
+        }
       } catch (error) {
         console.error('Error fetching photos:', error);
         // Set fallback mock data if API fails
@@ -174,11 +256,12 @@ const Menu = () => {
     fetchPhotos();
   }, []);
 
-
-
+  // Filter stalls by selected category
   const filteredStalls = selectedCategory === 'All' 
-    ? stallItems 
-    : stallItems.filter(stall => stall.category === selectedCategory.toLowerCase());
+    ? dbStalls 
+    : dbStalls.filter(stall => 
+        stall.cuisine_types?.name?.toLowerCase() === selectedCategory.toLowerCase()
+      );
 
   return (
     <div className="menu-container">
@@ -192,12 +275,14 @@ const Menu = () => {
         </div>
 
         {/* Stall and Dish Filters */}
-        {communityPhotos.length > 0 && (
-          <div className="photo-filters">
-            <div className="filter-group">
-              <label className="filter-label">Filter by Stall:</label>
-              <div className="filter-buttons">
-                {uniqueStalls.map(stall => (
+        <div className="photo-filters">
+          <div className="filter-group">
+            <label className="filter-label">Filter by Stall:</label>
+            <div className="filter-buttons">
+              {loadingStalls ? (
+                <span className="filter-loading">Loading stalls...</span>
+              ) : stallFilterOptions.length > 1 ? (
+                stallFilterOptions.map(stall => (
                   <button
                     key={stall}
                     className={`filter-btn stall-filter-btn ${selectedStallFilter === stall ? 'active' : ''}`}
@@ -208,11 +293,14 @@ const Menu = () => {
                   >
                     {stall}
                   </button>
-                ))}
-              </div>
+                ))
+              ) : (
+                <span className="filter-empty">No stalls available</span>
+              )}
             </div>
+          </div>
 
-            {uniqueDishes.length > 1 && (
+          {uniqueDishes.length > 1 && (
               <div className="filter-group">
                 <label className="filter-label">Filter by Dish:</label>
                 <div className="filter-buttons">
@@ -227,9 +315,8 @@ const Menu = () => {
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
         
         {loadingPhotos ? (
           <div className="photos-loading">
@@ -245,7 +332,15 @@ const Menu = () => {
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge">
-                        <span className="heart-icon">❤️</span>
+                        <span
+                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}
+                          onClick={() => token ? toggleLike(photo.id) : null}
+                          role="button"
+                          tabIndex={0}
+                          title={!token ? 'Login to like photos' : 'Like'}
+                        >
+                          ❤️
+                        </span>
                         <span className="likes-count">{photo.likes}</span>
                       </div>
                     </div>
@@ -291,17 +386,31 @@ const Menu = () => {
                 <div key={photo.id} className="community-photo-card">
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
-                    <div className="photo-overlay">
-                      <div className="likes-badge small">
-                        <span className="heart-icon">❤️</span>
-                        <span className="likes-count">{photo.likes}</span>
-                      </div>
-                    </div>
                   </div>
                   <div className="photo-info">
                     <h5 className="dish-name">{photo.dishName}</h5>
                     <p className="stall-name">{photo.stallName}</p>
-                    <span className="username">@{photo.username}</span>
+                    <div className="photo-meta-row">
+                      <span className="username">@{photo.username}</span>
+                      <div 
+                        className="like-button-container"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (token) toggleLike(photo.id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && token) toggleLike(photo.id);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        title={!token ? 'Login to like photos' : (likedPhotos.includes(photo.id) ? 'Unlike' : 'Like')}
+                      >
+                        <span className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}>
+                          {likedPhotos.includes(photo.id) ? '❤️' : '🤍'}
+                        </span>
+                        <span className="likes-count">{photo.likes || 0}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))
@@ -340,28 +449,75 @@ const Menu = () => {
       </div>
 
       <div className="stalls-grid">
-        {filteredStalls.map(stall => (
-          <Link
-            key={stall.id}
-            to={`/menu?stall=${stall.id}`}
-            className="stall-card"
-          >
-            <div className="stall-image">
-              <img src={stall.image} alt={stall.name} />
-              <div className="stall-icon">{stall.stallIcon}</div>
-            </div>
-            <div className="stall-content">
-              <h3>{stall.name}</h3>
-              <p className="stall-description">{stall.description}</p>
-              <div className="stall-meta">
-                <span className="rating">⭐ {stall.rating}</span>
-                <span className="delivery-time">🕐 {stall.deliveryTime}</span>
-                <span className="distance">📍 {stall.distance}</span>
-              </div>
-              <div className="view-menu-btn">View Menu</div>
-            </div>
-          </Link>
-        ))}
+        {loadingStalls ? (
+          <div className="stalls-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading stalls...</p>
+          </div>
+        ) : filteredStalls.length > 0 ? (
+          filteredStalls.map(stall => {
+            const stallName = stall.name || stall.stall_name;
+            const cuisineType = stall.cuisine_types?.name || 'Food';
+            const stallIcon = getCuisineIcon(cuisineType);
+            const stallImage = stall.image_url || getDefaultImage(cuisineType);
+            const hawkerCentre = stall.hawker_centres?.name || '';
+            
+            return (
+              <Link
+                key={stall.id}
+                to={`/menu?stall=${stall.id}`}
+                className="stall-card"
+              >
+                <div className={`stall-image ${failedImages.has(stall.id) ? 'image-failed' : ''}`}>
+                  {!failedImages.has(stall.id) ? (
+                    <img 
+                      src={stallImage} 
+                      alt={stallName}
+                      onError={() => handleImageError(stall.id)}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="stall-image-placeholder">
+                      <span className="placeholder-icon">{stallIcon}</span>
+                    </div>
+                  )}
+                  <div className="stall-icon">{stallIcon}</div>
+                  <div className="stall-image-overlay">
+                    <div className="stall-name-badge">
+                      <span className="badge-icon">{stallIcon}</span>
+                      <span className="badge-name">{stallName}</span>
+                    </div>
+                    <div className="stall-rating-badge">
+                      <span>⭐ {stall.rating || '4.5'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="stall-content">
+                  <p className="stall-description">{stall.description || `${cuisineType} cuisine`}</p>
+                  <div className="stall-meta">
+                    <span className="meta-item">
+                      <span className="meta-icon">🍽️</span>
+                      {cuisineType}
+                    </span>
+                    {hawkerCentre && (
+                      <span className="meta-item">
+                        <span className="meta-icon">📍</span>
+                        {hawkerCentre}
+                      </span>
+                    )}
+                  </div>
+                  <button className="view-menu-btn">View Menu →</button>
+                </div>
+              </Link>
+            );
+          })
+        ) : (
+          <div className="no-stalls-message">
+            <span className="no-stalls-icon">🏪</span>
+            <h4>No stalls found</h4>
+            <p>Try selecting a different category or check back later!</p>
+          </div>
+        )}
       </div>
       </div>
 

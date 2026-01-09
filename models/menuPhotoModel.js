@@ -1,199 +1,130 @@
 // models/menuPhotoModel.js
-const sql = require('mssql');
-const dbConfig = require('../dbConfig');
+const supabase = require('../dbConfig');
 
 class MenuPhotoModel {
   // Save a dish with photo (creates or updates dish and stores photo metadata)
   static async saveDishWithPhoto(photoData) {
     try {
-      const pool = await sql.connect(dbConfig);
-      const request = pool.request();
+      // Check if dish exists for this stall
+      const { data: existingDish, error: existErr } = await supabase
+        .from('food_items')
+        .select('id')
+        .eq('stall_id', photoData.stallId)
+        .eq('name', photoData.dishName)
+        .eq('is_available', true)
+        .limit(1)
+        .maybeSingle();
 
-      // Check if dish already exists with same name for this stall
-      const existingDish = await request
-        .input('stallId', sql.Int, photoData.stallId)
-        .input('dishName', sql.NVarChar, photoData.dishName)
-        .query(`
-          SELECT id FROM food_items 
-          WHERE stall_id = @stallId AND name = @dishName AND is_available = 1
-          LIMIT 1
-        `);
+      if (existErr) throw existErr;
 
-      let dishId;
+      if (existingDish && existingDish.id) {
+        const dishId = existingDish.id;
+        const payload = {
+          description: photoData.description,
+          price: photoData.price,
+          image_url: photoData.imageUrl,
+          public_id: photoData.publicId,
+          category: photoData.category,
+          spice_level: photoData.spiceLevel,
+          dietary_info: photoData.dietaryInfo ? JSON.stringify(photoData.dietaryInfo) : null,
+          updated_at: new Date().toISOString()
+        };
 
-      if (existingDish.recordset.length > 0) {
-        // Update existing dish
-        dishId = existingDish.recordset[0].id;
-        await request
-          .input('id', sql.Int, dishId)
-          .input('description', sql.NVarChar, photoData.description)
-          .input('price', sql.Decimal(8, 2), photoData.price)
-          .input('imageUrl', sql.NVarChar, photoData.imageUrl) // Cloudinary URL
-          .input('publicId', sql.NVarChar, photoData.publicId) // Cloudinary public ID
-          .input('category', sql.NVarChar, photoData.category)
-          .input('spiceLevel', sql.NVarChar, photoData.spiceLevel)
-          .input('dietaryInfo', sql.NVarChar, JSON.stringify(photoData.dietaryInfo))
-          .query(`
-            UPDATE food_items
-            SET description = @description,
-                price = @price,
-                image_url = @imageUrl,
-                public_id = @publicId,
-                category = @category,
-                spice_level = @spiceLevel,
-                dietary_info = @dietaryInfo,
-                updated_at = GETDATE()
-            WHERE id = @id
-          `);
+        await supabase.from('food_items').update(payload).eq('id', dishId);
+        const { data: final } = await supabase.from('food_items').select('id, created_at').eq('id', dishId).maybeSingle();
+        return final;
       } else {
-        // Create new dish
-        const createResult = await request
-          .input('stallId', sql.Int, photoData.stallId)
-          .input('dishName', sql.NVarChar, photoData.dishName)
-          .input('description', sql.NVarChar, photoData.description)
-          .input('price', sql.Decimal(8, 2), photoData.price)
-          .input('imageUrl', sql.NVarChar, photoData.imageUrl) // Cloudinary URL
-          .input('publicId', sql.NVarChar, photoData.publicId) // Cloudinary public ID
-          .input('category', sql.NVarChar, photoData.category)
-          .input('spiceLevel', sql.NVarChar, photoData.spiceLevel)
-          .input('dietaryInfo', sql.NVarChar, JSON.stringify(photoData.dietaryInfo))
-          .query(`
-            INSERT INTO food_items 
-            (stall_id, name, description, price, image_url, public_id, category, spice_level, dietary_info, is_available)
-            OUTPUT INSERTED.id, INSERTED.created_at
-            VALUES 
-            (@stallId, @dishName, @description, @price, @imageUrl, @publicId, @category, @spiceLevel, @dietaryInfo, 1)
-          `);
+        const payload = {
+          stall_id: photoData.stallId,
+          name: photoData.dishName,
+          description: photoData.description,
+          price: photoData.price,
+          image_url: photoData.imageUrl,
+          public_id: photoData.publicId,
+          category: photoData.category,
+          spice_level: photoData.spiceLevel,
+          dietary_info: photoData.dietaryInfo ? JSON.stringify(photoData.dietaryInfo) : null,
+          is_available: true
+        };
 
-        dishId = createResult.recordset[0].id;
-        return createResult.recordset[0];
+        const { data: created, error } = await supabase.from('food_items').insert([payload]).select('id, created_at').single();
+        if (error) throw error;
+        return created;
       }
-
-      // Get the updated dish
-      const finalResult = await request
-        .input('dishId', sql.Int, dishId)
-        .query(`SELECT id, created_at FROM food_items WHERE id = @dishId`);
-
-      return finalResult.recordset[0];
-
     } catch (error) {
       console.error('Error in saveDishWithPhoto:', error.message);
       throw error;
     }
   }
 
-  // Get photos by stall
   static async getPhotosByStall(stallId) {
     try {
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('stallId', sql.Int, stallId)
-        .query(`
-          SELECT 
-            fi.id, fi.name, fi.description, fi.price, fi.image_url as file_path,
-            fi.category, fi.spice_level, fi.dietary_info, fi.created_at, fi.updated_at,
-            s.stall_name
-          FROM food_items fi
-          LEFT JOIN stalls s ON fi.stall_id = s.id
-          WHERE fi.stall_id = @stallId AND fi.is_available = 1
-          ORDER BY fi.created_at DESC
-        `);
-
-      return result.recordset;
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name)')
+        .eq('stall_id', stallId)
+        .eq('is_available', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Error fetching photos by stall:', error);
       throw error;
     }
   }
 
-  // Get photos by hawker centre
   static async getPhotosByHawkerCentre(hawkerCentreId, limit = 50) {
     try {
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('hawkerCentreId', sql.Int, hawkerCentreId)
-        .input('limit', sql.Int, limit)
-        .query(`
-          SELECT TOP (@limit)
-            fi.id, fi.name, fi.description, fi.price, fi.image_url as file_path,
-            fi.category, fi.spice_level, fi.dietary_info, fi.created_at, fi.updated_at,
-            s.stall_name, hc.name as hawker_centre_name
-          FROM food_items fi
-          LEFT JOIN stalls s ON fi.stall_id = s.id
-          LEFT JOIN hawker_centres hc ON s.hawker_centre_id = hc.id
-          WHERE s.hawker_centre_id = @hawkerCentreId AND fi.is_available = 1
-          ORDER BY fi.created_at DESC
-        `);
+      const { data: stalls } = await supabase.from('stalls').select('id').eq('hawker_centre_id', hawkerCentreId);
+      const stallIds = (stalls || []).map(s => s.id);
+      if (stallIds.length === 0) return [];
 
-      return result.recordset;
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
+        .in('stall_id', stallIds)
+        .eq('is_available', true)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Error fetching photos by hawker centre:', error);
       throw error;
     }
   }
 
-  // Get photo/dish by ID
   static async getPhotoById(dishId) {
     try {
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('dishId', sql.Int, dishId)
-        .query(`
-          SELECT 
-            fi.id, fi.name, fi.description, fi.price, fi.image_url as file_path,
-            fi.category, fi.spice_level, fi.dietary_info, fi.created_at, fi.updated_at,
-            s.stall_name, hc.name as hawker_centre_name
-          FROM food_items fi
-          LEFT JOIN stalls s ON fi.stall_id = s.id
-          LEFT JOIN hawker_centres hc ON s.hawker_centre_id = hc.id
-          WHERE fi.id = @dishId
-        `);
-
-      return result.recordset[0] || null;
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
+        .eq('id', dishId)
+        .maybeSingle();
+      if (error) throw error;
+      return data || null;
     } catch (error) {
       console.error('Error fetching photo by ID:', error);
       throw error;
     }
   }
 
-  // Delete photo (soft delete - marks dish as unavailable)
   static async deletePhoto(dishId) {
     try {
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('dishId', sql.Int, dishId)
-        .query(`
-          UPDATE food_items
-          SET is_available = 0, updated_at = GETDATE()
-          WHERE id = @dishId
-          SELECT @@ROWCOUNT as rowsAffected
-        `);
-
-      return result.recordset[0].rowsAffected > 0;
+      const { data, error } = await supabase.from('food_items').update({ is_available: false, updated_at: new Date().toISOString() }).eq('id', dishId).select();
+      if (error) throw error;
+      return (data && data.length > 0);
     } catch (error) {
       console.error('Error deleting photo:', error);
       throw error;
     }
   }
 
-  // Get photo by file path (for serving images)
   static async getPhotoByPath(filePath) {
     try {
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('filePath', sql.NVarChar, filePath)
-        .query(`
-          SELECT id, name, image_url as file_path 
-          FROM food_items 
-          WHERE image_url = @filePath
-        `);
-
-      return result.recordset[0] || null;
+      const { data, error } = await supabase.from('food_items').select('id, name, image_url').eq('image_url', filePath).maybeSingle();
+      if (error) throw error;
+      return data || null;
     } catch (error) {
       console.error('Error fetching photo by path:', error);
       throw error;

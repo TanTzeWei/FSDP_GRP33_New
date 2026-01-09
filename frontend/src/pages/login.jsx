@@ -27,11 +27,16 @@ function Login() {
         // token will be stored together with user by AuthContext.login
       }
   // store user+token in auth context/localStorage
-  login({ user, token });
-  setLoading(false);
-  // show success toast and navigate to main menu page
-  showToast(res.data?.message || "Login successful!", { type: "success", duration: 2500 });
-  navigate("/");
+      login({ user, token });
+      setLoading(false);
+      // show success toast and navigate to role-based dashboard
+      showToast(res.data?.message || "Login successful!", { type: "success", duration: 2500 });
+      // role-based routing
+      // Stall owners should go to the Stall Owner Dashboard page
+      const role = user?.role || (user?.is_stall_owner ? 'stall_owner' : 'customer');
+      if (role === 'admin') return navigate('/dashboard/admin');
+      if (role === 'stall_owner') return navigate('/stall/dashboard');
+      return navigate('/');
     } catch (err) {
       setLoading(false);
       setError(err.response?.data?.message || "Login failed");
