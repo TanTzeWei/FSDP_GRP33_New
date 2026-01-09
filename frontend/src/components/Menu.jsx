@@ -23,6 +23,48 @@ const Menu = () => {
     setFailedImages(prev => new Set([...prev, stallId]));
   };
 
+  // Helper function to get cuisine icon based on cuisine type
+  const getCuisineIcon = (cuisineType) => {
+    const cuisineName = cuisineType?.toLowerCase() || '';
+    const iconMap = {
+      'chinese': '🏮',
+      'malay': '🌙',
+      'indian': '🍛',
+      'peranakan': '🏺',
+      'western': '🍔',
+      'drinks': '🥤',
+      'beverages': '🥤',
+      'japanese': '🍣',
+      'korean': '🍜',
+      'thai': '🌶️',
+      'vietnamese': '🍲',
+      'seafood': '🦐',
+      'vegetarian': '🥬',
+      'halal': '☪️',
+      'desserts': '🍰',
+      'snacks': '🍿'
+    };
+    return iconMap[cuisineName] || '🍽️';
+  };
+
+  // Helper function to get default image based on cuisine type
+  const getDefaultImage = (cuisineType) => {
+    const cuisineName = cuisineType?.toLowerCase() || '';
+    const imageMap = {
+      'chinese': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop',
+      'malay': 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=500&h=350&fit=crop',
+      'indian': 'https://images.unsplash.com/photo-1585937421612-232d3d67d529?w=500&h=350&fit=crop',
+      'peranakan': 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=500&h=350&fit=crop',
+      'western': 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&h=350&fit=crop',
+      'drinks': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop',
+      'beverages': 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop',
+      'japanese': 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&h=350&fit=crop',
+      'korean': 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&h=350&fit=crop',
+      'thai': 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=500&h=350&fit=crop'
+    };
+    return imageMap[cuisineName] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&h=350&fit=crop';
+  };
+
   // Fetch stalls from database
   useEffect(() => {
     const fetchStalls = async () => {
@@ -41,79 +83,14 @@ const Menu = () => {
     fetchStalls();
   }, []);
 
-  const stallItems = [
-    {
-      id: 1,
-      name: "Ah Lim's Chinese Stall",
-      description: "Authentic Chinese dishes • Wonton noodles, Char Siu Rice, Fried Rice",
-      rating: "4.8",
-      deliveryTime: "25-35 mins",
-      distance: "1.2 km",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop",
-      category: "chinese",
-      stallIcon: "🏮"
-    },
-    {
-      id: 2,
-      name: "Warung Pak Hasan",
-      description: "Traditional Malay cuisine • Nasi Lemak, Rendang, Satay, Mee Goreng",
-      rating: "4.6",
-      deliveryTime: "20-30 mins", 
-      distance: "0.8 km",
-      image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=500&h=350&fit=crop",
-      category: "malay",
-      stallIcon: "🌙"
-    },
-    {
-      id: 3,
-      name: "Mumbai Spice Corner",
-      description: "North & South Indian food • Biryani, Curry, Roti Prata, Tandoori",
-      rating: "4.7",
-      deliveryTime: "30-40 mins",
-      distance: "1.5 km", 
-      image: "https://images.unsplash.com/photo-1585937421612-232d3d67d529?w=500&h=350&fit=crop",
-      category: "indian",
-      stallIcon: "🇮🇳"
-    },
-    {
-      id: 4,
-      name: "Peranakan Kitchen",
-      description: "Nyonya heritage cuisine • Laksa, Kueh, Ayam Buah Keluak",
-      rating: "4.9",
-      deliveryTime: "35-45 mins",
-      distance: "2.1 km",
-      image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=500&h=350&fit=crop", 
-      category: "peranakan",
-      stallIcon: "🏺"
-    },
-    {
-      id: 5,
-      name: "Western Grill House",
-      description: "Western comfort food • Burgers, Steaks, Fish & Chips, Pasta",
-      rating: "4.4",
-      deliveryTime: "25-35 mins",
-      distance: "1.8 km",
-      image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&h=350&fit=crop",
-      category: "western",
-      stallIcon: "🍔"
-    },
-    {
-      id: 6,
-      name: "Fresh Drinks Bar",
-      description: "Refreshing beverages • Fresh Juice, Bubble Tea, Coffee, Smoothies",
-      rating: "4.5",
-      deliveryTime: "15-25 mins",
-      distance: "0.5 km",
-      image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=500&h=350&fit=crop",
-      category: "drinks",
-      stallIcon: "🥤"
-    }
-  ];
-
-  const categories = ["All", "Chinese", "Malay", "Indian", "Peranakan", "Western", "Drinks"];
+  // Get unique categories from database stalls
+  const categories = ['All', ...new Set(dbStalls
+    .map(stall => stall.cuisine_types?.name)
+    .filter(Boolean)
+  )];
 
   // Get stalls from database for filtering (with "All" option)
-  const stallFilterOptions = ['All', ...dbStalls.map(s => s.name)];
+  const stallFilterOptions = ['All', ...dbStalls.map(s => s.name || s.stall_name)];
 
   // Get unique dishes from community photos (for selected stall)
   const filteredByStall = selectedStallFilter === 'All' 
@@ -279,11 +256,12 @@ const Menu = () => {
     fetchPhotos();
   }, []);
 
-
-
+  // Filter stalls by selected category
   const filteredStalls = selectedCategory === 'All' 
-    ? stallItems 
-    : stallItems.filter(stall => stall.category === selectedCategory.toLowerCase());
+    ? dbStalls 
+    : dbStalls.filter(stall => 
+        stall.cuisine_types?.name?.toLowerCase() === selectedCategory.toLowerCase()
+      );
 
   return (
     <div className="menu-container">
@@ -408,25 +386,31 @@ const Menu = () => {
                 <div key={photo.id} className="community-photo-card">
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
-                    <div className="photo-overlay">
-                      <div className="likes-badge small">
-                        <span
-                          className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}
-                          onClick={() => token ? toggleLike(photo.id) : null}
-                          role="button"
-                          tabIndex={0}
-                          title={!token ? 'Login to like photos' : 'Like'}
-                        >
-                          ❤️
-                        </span>
-                        <span className="likes-count">{photo.likes}</span>
-                      </div>
-                    </div>
                   </div>
                   <div className="photo-info">
                     <h5 className="dish-name">{photo.dishName}</h5>
                     <p className="stall-name">{photo.stallName}</p>
-                    <span className="username">@{photo.username}</span>
+                    <div className="photo-meta-row">
+                      <span className="username">@{photo.username}</span>
+                      <div 
+                        className="like-button-container"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (token) toggleLike(photo.id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && token) toggleLike(photo.id);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        title={!token ? 'Login to like photos' : (likedPhotos.includes(photo.id) ? 'Unlike' : 'Like')}
+                      >
+                        <span className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}>
+                          {likedPhotos.includes(photo.id) ? '❤️' : '🤍'}
+                        </span>
+                        <span className="likes-count">{photo.likes || 0}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))
@@ -465,52 +449,75 @@ const Menu = () => {
       </div>
 
       <div className="stalls-grid">
-        {filteredStalls.map(stall => (
-          <Link
-            key={stall.id}
-            to={`/menu?stall=${stall.id}`}
-            className="stall-card"
-          >
-            <div className={`stall-image ${failedImages.has(stall.id) ? 'image-failed' : ''}`}>
-              {!failedImages.has(stall.id) ? (
-                <img 
-                  src={stall.image} 
-                  alt={stall.name}
-                  onError={() => handleImageError(stall.id)}
-                  loading="lazy"
-                />
-              ) : (
-                <div className="stall-image-placeholder">
-                  <span className="placeholder-icon">{stall.stallIcon}</span>
+        {loadingStalls ? (
+          <div className="stalls-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading stalls...</p>
+          </div>
+        ) : filteredStalls.length > 0 ? (
+          filteredStalls.map(stall => {
+            const stallName = stall.name || stall.stall_name;
+            const cuisineType = stall.cuisine_types?.name || 'Food';
+            const stallIcon = getCuisineIcon(cuisineType);
+            const stallImage = stall.image_url || getDefaultImage(cuisineType);
+            const hawkerCentre = stall.hawker_centres?.name || '';
+            
+            return (
+              <Link
+                key={stall.id}
+                to={`/menu?stall=${stall.id}`}
+                className="stall-card"
+              >
+                <div className={`stall-image ${failedImages.has(stall.id) ? 'image-failed' : ''}`}>
+                  {!failedImages.has(stall.id) ? (
+                    <img 
+                      src={stallImage} 
+                      alt={stallName}
+                      onError={() => handleImageError(stall.id)}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="stall-image-placeholder">
+                      <span className="placeholder-icon">{stallIcon}</span>
+                    </div>
+                  )}
+                  <div className="stall-icon">{stallIcon}</div>
+                  <div className="stall-image-overlay">
+                    <div className="stall-name-badge">
+                      <span className="badge-icon">{stallIcon}</span>
+                      <span className="badge-name">{stallName}</span>
+                    </div>
+                    <div className="stall-rating-badge">
+                      <span>⭐ {stall.rating || '4.5'}</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div className="stall-icon">{stall.stallIcon}</div>
-              <div className="stall-image-overlay">
-                <div className="stall-name-badge">
-                  <span className="badge-icon">{stall.stallIcon}</span>
-                  <span className="badge-name">{stall.name}</span>
+                <div className="stall-content">
+                  <p className="stall-description">{stall.description || `${cuisineType} cuisine`}</p>
+                  <div className="stall-meta">
+                    <span className="meta-item">
+                      <span className="meta-icon">🍽️</span>
+                      {cuisineType}
+                    </span>
+                    {hawkerCentre && (
+                      <span className="meta-item">
+                        <span className="meta-icon">📍</span>
+                        {hawkerCentre}
+                      </span>
+                    )}
+                  </div>
+                  <button className="view-menu-btn">View Menu →</button>
                 </div>
-                <div className="stall-rating-badge">
-                  <span>⭐ {stall.rating}</span>
-                </div>
-              </div>
-            </div>
-            <div className="stall-content">
-              <p className="stall-description">{stall.description}</p>
-              <div className="stall-meta">
-                <span className="meta-item">
-                  <span className="meta-icon">🕐</span>
-                  {stall.deliveryTime}
-                </span>
-                <span className="meta-item">
-                  <span className="meta-icon">📍</span>
-                  {stall.distance}
-                </span>
-              </div>
-              <button className="view-menu-btn">View Menu →</button>
-            </div>
-          </Link>
-        ))}
+              </Link>
+            );
+          })
+        ) : (
+          <div className="no-stalls-message">
+            <span className="no-stalls-icon">🏪</span>
+            <h4>No stalls found</h4>
+            <p>Try selecting a different category or check back later!</p>
+          </div>
+        )}
       </div>
       </div>
 
