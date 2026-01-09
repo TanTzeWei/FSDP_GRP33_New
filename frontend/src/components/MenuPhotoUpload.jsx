@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { PointsContext } from '../context/PointsContext';
 import './MenuPhotoUpload.css';
 
 const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const { user } = useContext(AuthContext);
+  const { addPhotoUploadPoints } = useContext(PointsContext);
   const [uploadState, setUploadState] = useState({
     file: null,
     preview: null,
@@ -234,11 +236,16 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       }
 
       if (result.success) {
+        // Award points if points were earned
+        if (result.points && result.points.pointsEarned) {
+          alert(`🎉 Menu item photo uploaded successfully! You earned ${result.points.pointsEarned} points!`);
+        } else {
+          alert('🎉 Menu item photo uploaded successfully!');
+        }
+
         if (onUploadSuccess) {
           onUploadSuccess(result.data);
         }
-        
-        alert('🎉 Menu item photo uploaded successfully!');
         
         setUploadState({
           file: null,

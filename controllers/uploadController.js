@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const UploadModel = require('../models/uploadModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
+const PointsModel = require('../models/pointsModel');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -277,15 +278,39 @@ class UploadController {
         });
       }
 
-      const newLikesCount = await UploadModel.likePhoto(parseInt(userId), parseInt(photoId));
+      const result = await UploadModel.likePhoto(parseInt(userId), parseInt(photoId));
+
+      // Award points to the photo owner (not the liker)
+      let pointsAwarded = null;
+      if (result.photoOwnerId && result.photoOwnerId !== 1) { // Skip guest user
+        try {
+          const itemDetails = {
+            stallName: result.stallName,
+            dishName: result.dishName,
+            photoId: parseInt(photoId),
+            item: `${result.dishName} - ${result.stallName}`
+          };
+          const pointsResult = await PointsModel.addUpvotePoints(result.photoOwnerId, itemDetails);
+          if (pointsResult.success) {
+            pointsAwarded = {
+              pointsEarned: pointsResult.pointsEarned,
+              newBalance: pointsResult.newBalance
+            };
+          }
+        } catch (pointsError) {
+          console.error('Error awarding upvote points:', pointsError);
+          // Don't fail the like if points award fails
+        }
+      }
 
       res.status(200).json({
         success: true,
         message: 'Photo liked successfully',
         data: {
           photoId: parseInt(photoId),
-          likesCount: newLikesCount
-        }
+          likesCount: result.likesCount
+        },
+        points: pointsAwarded
       });
 
     } catch (error) {

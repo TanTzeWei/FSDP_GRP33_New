@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const MenuPhotoModel = require('../models/menuPhotoModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
+const PointsModel = require('../models/pointsModel');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -104,6 +105,41 @@ class MenuPhotoController {
       // Save to database
       const savedDish = await MenuPhotoModel.saveDishWithPhoto(photoData);
 
+      // Get stall name for points history
+      let stallName = 'Unknown Stall';
+      try {
+        const StallModel = require('../models/stallModel');
+        const stallData = await StallModel.getStallById(photoData.stallId);
+        if (stallData) {
+          stallName = stallData.stall_name;
+        }
+      } catch (err) {
+        console.log('Could not get stall name:', err.message);
+      }
+
+      // Award points for photo upload (only for authenticated users, not guests)
+      let pointsAwarded = null;
+      if (userId && userId !== 1) { // Skip guest user (id = 1)
+        try {
+          const itemDetails = {
+            stallName: stallName,
+            dishName: photoData.dishName,
+            photoId: savedDish.id,
+            item: `${photoData.dishName} - ${stallName}`
+          };
+          const pointsResult = await PointsModel.addPhotoUploadPoints(userId, itemDetails);
+          if (pointsResult.success) {
+            pointsAwarded = {
+              pointsEarned: pointsResult.pointsEarned,
+              newBalance: pointsResult.newBalance
+            };
+          }
+        } catch (pointsError) {
+          console.error('Error awarding points:', pointsError);
+          // Don't fail the upload if points award fails
+        }
+      }
+
       res.status(201).json({
         success: true,
         message: 'Menu item photo uploaded successfully!',
@@ -114,7 +150,8 @@ class MenuPhotoController {
           price: photoData.price,
           category: photoData.category,
           createdAt: savedDish.created_at
-        }
+        },
+        points: pointsAwarded
       });
 
     } catch (error) {
