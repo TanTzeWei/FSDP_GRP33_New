@@ -1,9 +1,11 @@
 import React, { useState, useRef, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { PointsContext } from '../context/PointsContext';
 import './PhotoUpload.css';
 
 const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const { user } = useContext(AuthContext);
+  const { fetchPointsData } = useContext(PointsContext) || {};
   const [uploadState, setUploadState] = useState({
     file: null,
     preview: null,
@@ -205,9 +207,30 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       // Update status
       setUploadState(prev => ({ ...prev, uploadStatus: 'Uploading photo...' }));
 
+      // Get auth token from localStorage
+      const getAuthToken = () => {
+        try {
+          const stored = localStorage.getItem('authUser');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return parsed.token;
+          }
+        } catch (e) {
+          console.error('Error getting auth token:', e);
+        }
+        return null;
+      };
+
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Upload to backend
       const response = await fetch('http://localhost:3000/api/photos/upload', {
         method: 'POST',
+        headers: headers,
         body: formData
       });
 
@@ -237,8 +260,17 @@ const PhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
           onUploadSuccess(result.data);
         }
         
-        // Show success message with AI validation info
+        // Show success message with points and AI validation info
         let successMsg = '🎉 Photo uploaded successfully!';
+        
+        if (result.points && result.points.pointsEarned) {
+          successMsg += `\n\n🎯 You earned ${result.points.pointsEarned} points!`;
+          // Refresh points data if context is available
+          if (fetchPointsData) {
+            fetchPointsData();
+          }
+        }
+        
         if (result.data.aiValidation?.foodType) {
           successMsg += `\n\n🤖 AI detected: ${result.data.aiValidation.foodType}`;
         }
