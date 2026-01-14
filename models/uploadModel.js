@@ -155,6 +155,11 @@ class UploadModel {
       console.log('[likePhoto] existing:', existing);
       if (existing) throw new Error('User has already liked this photo');
 
+      // Get photo information including the owner
+      const { data: photoInfo, error: photoErr } = await supabase.from('photos').select('user_id, dish_name, stall_id, stalls(stall_name)').eq('id', photoId).maybeSingle();
+      if (photoErr) throw photoErr;
+      if (!photoInfo) throw new Error('Photo not found');
+
       // Insert like record
       console.log(`[likePhoto] Inserting like record user=${userId} photo=${photoId}`);
       const { data: inserted, error: insertErr } = await supabase.from('photo_likes').insert([{ user_id: userId, photo_id: photoId }]).select().maybeSingle();
@@ -170,7 +175,13 @@ class UploadModel {
       const { data, error } = await supabase.from('photos').update({ likes_count: newCount }).eq('id', photoId).select('likes_count').maybeSingle();
       console.log('[likePhoto] update result:', { data, error });
       if (error) throw error;
-      return data ? data.likes_count : newCount;
+      
+      return {
+        likesCount: data ? data.likes_count : newCount,
+        photoOwnerId: photoInfo.user_id,
+        dishName: photoInfo.dish_name,
+        stallName: photoInfo.stalls?.stall_name || 'Unknown Stall'
+      };
     } catch (error) {
       console.error('Error liking photo:', error);
       throw error;
