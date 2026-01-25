@@ -53,6 +53,7 @@ class UploadController {
       // Validate required fields
       const { dishName, description, hawkerCentreId, stallId } = req.body;
       // Extract user ID from auth middleware (supports multiple formats)
+      console.log('req.user object:', JSON.stringify(req.user, null, 2));
       const userId = req.user?.userId || req.user?.user_id || req.user?.id || 1;
       
       console.log('Form data extracted:');
@@ -192,8 +193,11 @@ class UploadController {
 
       // Award points for photo upload (only for authenticated users)
       let pointsAwarded = null;
-      console.log('Checking points eligibility - userId:', userId, 'is not guest?', userId !== 1);
-      if (userId && userId !== 1) { // Skip guest user (id = 1)
+      // Check if user is authenticated by verifying req.user exists and has a valid userId
+      // Note: userId === 1 is NOT necessarily a guest - it's just the first user in the database
+      const isAuthenticated = req.user && (req.user.userId || req.user.user_id);
+      console.log('Checking points eligibility - userId:', userId, 'isAuthenticated:', isAuthenticated);
+      if (isAuthenticated && userId) {
         try {
           console.log('Awarding points to user:', userId);
           const itemDetails = {
@@ -216,7 +220,7 @@ class UploadController {
           // Don't fail the upload if points award fails
         }
       } else {
-        console.log('⚠️ Points NOT awarded - User is guest or not authenticated');
+        console.log('⚠️ Points NOT awarded - User is not authenticated');
       }
 
       console.log('=== UPLOAD SUCCESS ===');

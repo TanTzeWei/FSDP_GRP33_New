@@ -102,6 +102,22 @@
   width: 100%;
 }
 
+/* Ensure Leaflet container renders properly */
+.real-map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+/* Fix for Leaflet tiles not loading */
+.leaflet-tile-pane {
+  z-index: 1;
+}
+
+.leaflet-tile {
+  visibility: visible !important;
+}
+
 /* Custom marker styles */
 .custom-hawker-marker {
   background: transparent !important;

@@ -96,9 +96,29 @@ const createUserLocationIcon = () => {
   });
 };
 
-// Component to handle map events
+// Component to handle map events and fix size issues
 const MapController = ({ center, zoom }) => {
   const map = useMap();
+  
+  // Fix for map not loading tiles when initially hidden or container resizes
+  useEffect(() => {
+    // Small delay to ensure container is fully rendered
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    
+    // Also handle window resize events
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
   
   useEffect(() => {
     if (center) {
@@ -118,6 +138,7 @@ const LocationMap = ({ onHawkerSelect }) => {
   const [zoom, setZoom] = useState(11);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [mapKey, setMapKey] = useState(Date.now()); // Key to force map remount
   const navigate = useNavigate();
 
   // Mock hawker centre data (in real app, this would come from API)
@@ -271,7 +292,14 @@ const LocationMap = ({ onHawkerSelect }) => {
         const response = await fetch('http://localhost:3000/api/hawker-centres');
         if (response.ok) {
           const data = await response.json();
-          setHawkerCentres(data);
+          // Handle both array response and object with data property
+          const hawkerData = Array.isArray(data) ? data : (data.data || data.hawkerCentres || []);
+          if (hawkerData.length > 0) {
+            setHawkerCentres(hawkerData);
+          } else {
+            // Fallback to mock data if API returns empty
+            setHawkerCentres(mockHawkerData);
+          }
         } else {
           // Fallback to mock data if API fails
           setHawkerCentres(mockHawkerData);
@@ -282,6 +310,10 @@ const LocationMap = ({ onHawkerSelect }) => {
         setHawkerCentres(mockHawkerData);
       } finally {
         setLoading(false);
+        // Force map remount after data is loaded to ensure tiles render
+        setTimeout(() => {
+          setMapKey(Date.now());
+        }, 100);
       }
     };
 
@@ -390,10 +422,17 @@ const LocationMap = ({ onHawkerSelect }) => {
             <div className="map-area">
               <div className="real-map-container">
                 <MapContainer
+                  key={mapKey}
                   center={[mapCenter.lat, mapCenter.lng]}
                   zoom={zoom}
                   style={{ height: '500px', width: '100%', borderRadius: '12px' }}
                   zoomControl={true}
+                  whenReady={(map) => {
+                    // Force invalidateSize after map is ready
+                    setTimeout(() => {
+                      map.target.invalidateSize();
+                    }, 250);
+                  }}
                 >
                   <MapController center={mapCenter} zoom={zoom} />
                   
@@ -465,7 +504,17 @@ const LocationMap = ({ onHawkerSelect }) => {
               <div className="hawker-list">
                 <h3>📍 Nearby Hawker Centres ({hawkerCentres.length})</h3>
                 <div className="hawker-items">
-                  {hawkerCentres.map((hawker) => (
+                  {hawkerCentres.map((hawker) => {
+                    // Handle both API and mock data field names
+                    const cuisines = hawker.cuisines || hawker.available_cuisines || [];
+                    const cuisineList = Array.isArray(cuisines) ? cuisines : (typeof cuisines === 'string' ? cuisines.split(', ').filter(c => c) : []);
+                    const totalStalls = hawker.totalStalls || hawker.active_stalls || 0;
+                    const totalReviews = hawker.totalReviews || hawker.total_reviews || 0;
+                    const openingHours = hawker.openingHours || hawker.opening_hours || 'N/A';
+                    const priceRange = hawker.priceRange || hawker.price_range || '$';
+                    const distance = hawker.distance || (hawker.distance_km ? `${hawker.distance_km.toFixed(1)} km` : 'N/A');
+                    
+                    return (
                     <div 
                       key={hawker.id}
                       className={`hawker-item ${selectedHawker?.id === hawker.id ? 'selected' : ''}`}
@@ -474,28 +523,30 @@ const LocationMap = ({ onHawkerSelect }) => {
                       <div className="hawker-info">
                         <div className="hawker-header">
                           <h4>{hawker.name}</h4>
-                          <div className="hawker-distance">{hawker.distance}</div>
+                          <div className="hawker-distance">{distance}</div>
                         </div>
                         
                         <div className="hawker-rating">
-                          <span className="stars">{getRatingStars(hawker.rating)}</span>
-                          <span className="rating-text">{hawker.rating} ({hawker.totalReviews} reviews)</span>
+                          <span className="stars">{getRatingStars(hawker.rating || 0)}</span>
+                          <span className="rating-text">{hawker.rating || 0} ({totalReviews} reviews)</span>
                         </div>
 
                         <div className="hawker-meta">
-                          <span className="stalls">📊 {hawker.totalStalls} stalls</span>
-                          <span className="price">{hawker.priceRange}</span>
-                          <span className="hours">🕐 {hawker.openingHours}</span>
+                          <span className="stalls">📊 {totalStalls} stalls</span>
+                          <span className="price">{priceRange}</span>
+                          <span className="hours">🕐 {openingHours}</span>
                         </div>
 
+                        {cuisineList.length > 0 && (
                         <div className="hawker-cuisines">
-                          {hawker.cuisines.slice(0, 3).map((cuisine, idx) => (
+                          {cuisineList.slice(0, 3).map((cuisine, idx) => (
                             <span key={idx} className="cuisine-tag">{cuisine}</span>
                           ))}
-                          {hawker.cuisines.length > 3 && (
-                            <span className="cuisine-more">+{hawker.cuisines.length - 3} more</span>
+                          {cuisineList.length > 3 && (
+                            <span className="cuisine-more">+{cuisineList.length - 3} more</span>
                           )}
                         </div>
+                        )}
 
                         {/* Manually-entered menu preview shown on the bottom of the stall card */}
                         {hawker.menu && hawker.menu.length > 0 && (
@@ -524,7 +575,8 @@ const LocationMap = ({ onHawkerSelect }) => {
                         <span>👆</span>
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
             </div>
