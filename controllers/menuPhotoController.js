@@ -122,8 +122,10 @@ class MenuPhotoController {
 
       // Award points for photo upload (only for authenticated users)
       let pointsAwarded = null;
-      console.log('Checking points eligibility - userId:', userId, 'is not guest?', userId !== 1);
-      if (userId && userId !== 1) { // Skip guest user (id = 1)
+      // Check if user is authenticated by verifying req.user exists and has a valid userId
+      const isAuthenticated = req.user && (req.user.userId || req.user.user_id);
+      console.log('Checking points eligibility - userId:', userId, 'isAuthenticated:', isAuthenticated);
+      if (isAuthenticated && userId) {
         try {
           console.log('Awarding points to user:', userId);
           const itemDetails = {
@@ -146,7 +148,7 @@ class MenuPhotoController {
           // Don't fail the upload if points award fails
         }
       } else {
-        console.log('⚠️ Points NOT awarded - User is guest or not authenticated');
+        console.log('⚠️ Points NOT awarded - User is not authenticated');
       }
 
       res.status(201).json({
