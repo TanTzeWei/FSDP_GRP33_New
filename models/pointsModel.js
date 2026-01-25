@@ -29,23 +29,40 @@ class PointsModel {
     // Add points for photo upload
     static async addPhotoUploadPoints(userId, itemDetails) {
         try {
+            console.log('addPhotoUploadPoints called with userId:', userId, 'itemDetails:', itemDetails);
             const pointsEarned = 10;
-            // Add to points history
-            const { data: history, error: histErr } = await supabase.from('points_history').insert([{ user_id: userId, transaction_type: 'upload', points: pointsEarned, description: 'Photo uploaded', reference_type: 'photo', item_details: JSON.stringify(itemDetails) }]).select().single();
+            // Add to points history (item_details is JSONB, pass object directly)
+            const { data: history, error: histErr } = await supabase.from('points_history').insert([{ user_id: userId, transaction_type: 'upload', points: pointsEarned, description: 'Photo uploaded', reference_type: 'photo', item_details: itemDetails }]).select().single();
+            console.log('Points history insert result:', { history, histErr });
             if (histErr) throw histErr;
 
             // Update or initialize user points
             const { data: userPoints, error: upErr } = await supabase.from('user_points').select('total_points').eq('user_id', userId).maybeSingle();
+            console.log('Existing user points:', { userPoints, upErr });
             if (upErr) throw upErr;
 
+            let newTotal;
+            let updated;
+
             if (!userPoints) {
-                await this.initializeUserPoints(userId);
+                // User has no points record - create with earned points directly
+                newTotal = pointsEarned;
+                console.log('Creating new user_points record with total:', newTotal);
+                const { data: insertedPoints, error: insertErr } = await supabase.from('user_points').insert([{ user_id: userId, total_points: newTotal }]).select().single();
+                console.log('Insert result:', { insertedPoints, insertErr });
+                if (insertErr) throw insertErr;
+                updated = insertedPoints;
+            } else {
+                // User has existing points - add to total
+                newTotal = userPoints.total_points + pointsEarned;
+                console.log('Updating user_points to new total:', newTotal);
+                const { data: updatedPoints, error: updErr } = await supabase.from('user_points').update({ total_points: newTotal, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single();
+                console.log('Update result:', { updatedPoints, updErr });
+                if (updErr) throw updErr;
+                updated = updatedPoints;
             }
 
-            const newTotal = ((userPoints && userPoints.total_points) || 0) + pointsEarned;
-            const { data: updated, error: updErr } = await supabase.from('user_points').update({ total_points: newTotal, updated_at: new Date().toISOString() }).eq('user_id', userId).select().maybeSingle();
-            if (updErr) throw updErr;
-
+            console.log('Final result - updated:', updated);
             return { success: true, pointsEarned, newBalance: updated.total_points, transaction: history };
         } catch (error) {
             console.error("Error adding photo upload points:", error);
@@ -56,17 +73,32 @@ class PointsModel {
     // Add points for receiving upvote
     static async addUpvotePoints(userId, itemDetails) {
         try {
+            console.log('addUpvotePoints called with userId:', userId, 'itemDetails:', itemDetails);
             const pointsEarned = 5;
-            const { data: history, error: histErr } = await supabase.from('points_history').insert([{ user_id: userId, transaction_type: 'upvote', points: pointsEarned, description: 'Upvote received', reference_type: 'review', item_details: JSON.stringify(itemDetails) }]).select().single();
+            // item_details is JSONB, pass object directly
+            const { data: history, error: histErr } = await supabase.from('points_history').insert([{ user_id: userId, transaction_type: 'upvote', points: pointsEarned, description: 'Upvote received', reference_type: 'review', item_details: itemDetails }]).select().single();
+            console.log('Upvote points history insert result:', { history, histErr });
             if (histErr) throw histErr;
 
             const { data: userPoints, error: upErr } = await supabase.from('user_points').select('total_points').eq('user_id', userId).maybeSingle();
             if (upErr) throw upErr;
-            if (!userPoints) await this.initializeUserPoints(userId);
 
-            const newTotal = ((userPoints && userPoints.total_points) || 0) + pointsEarned;
-            const { data: updated, error: updErr } = await supabase.from('user_points').update({ total_points: newTotal, updated_at: new Date().toISOString() }).eq('user_id', userId).select().maybeSingle();
-            if (updErr) throw updErr;
+            let newTotal;
+            let updated;
+
+            if (!userPoints) {
+                // User has no points record - create with earned points directly
+                newTotal = pointsEarned;
+                const { data: insertedPoints, error: insertErr } = await supabase.from('user_points').insert([{ user_id: userId, total_points: newTotal }]).select().single();
+                if (insertErr) throw insertErr;
+                updated = insertedPoints;
+            } else {
+                // User has existing points - add to total
+                newTotal = userPoints.total_points + pointsEarned;
+                const { data: updatedPoints, error: updErr } = await supabase.from('user_points').update({ total_points: newTotal, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single();
+                if (updErr) throw updErr;
+                updated = updatedPoints;
+            }
 
             return { success: true, pointsEarned, newBalance: updated.total_points, transaction: history };
         } catch (error) {
