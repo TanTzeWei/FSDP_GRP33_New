@@ -104,7 +104,10 @@ class PointsModel {
     static async getAllVouchers() {
         try {
             const { data, error } = await supabase.from('vouchers').select('id, name, description, voucher_type, discount_value, minimum_purchase, points_required, validity_days, is_active, terms_conditions, created_at').eq('is_active', true).order('points_required', { ascending: true });
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error fetching vouchers:', error);
+                throw error;
+            }
             const vouchers = (data || []).map(v => {
                 let terms = [];
                 if (v.terms_conditions) {
