@@ -196,7 +196,8 @@ export const PointsProvider = ({ children }) => {
     addUpvotePoints,
     redeemVoucher,
     useVoucher,
-    refreshPoints
+    refreshPoints,
+    fetchPointsData
   };
 
   return (

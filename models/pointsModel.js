@@ -80,7 +80,19 @@ class PointsModel {
         try {
             const { data, error } = await supabase.from('points_history').select('id, user_id, transaction_type, points, description, reference_type, reference_id, item_details, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(limit);
             if (error) throw error;
-            const history = (data || []).map(record => ({ ...record, item_details: record.item_details ? JSON.parse(record.item_details) : null }));
+            const history = (data || []).map(record => {
+                let itemDetails = null;
+                if (record.item_details) {
+                    try {
+                        // If it's already an object, use it directly
+                        itemDetails = typeof record.item_details === 'string' ? JSON.parse(record.item_details) : record.item_details;
+                    } catch (parseError) {
+                        console.warn('Could not parse item_details:', parseError);
+                        itemDetails = null;
+                    }
+                }
+                return { ...record, item_details: itemDetails };
+            });
             return { success: true, data: history };
         } catch (error) {
             console.error("Error getting points history:", error);
@@ -93,7 +105,19 @@ class PointsModel {
         try {
             const { data, error } = await supabase.from('vouchers').select('id, name, description, voucher_type, discount_value, minimum_purchase, points_required, validity_days, is_active, terms_conditions, created_at').eq('is_active', true).order('points_required', { ascending: true });
             if (error) throw error;
-            const vouchers = (data || []).map(v => ({ ...v, terms_conditions: v.terms_conditions ? JSON.parse(v.terms_conditions) : [] }));
+            const vouchers = (data || []).map(v => {
+                let terms = [];
+                if (v.terms_conditions) {
+                    // Try to parse as JSON, if it fails, treat as plain text
+                    try {
+                        terms = JSON.parse(v.terms_conditions);
+                    } catch (parseError) {
+                        // If it's not valid JSON, treat it as a single string item
+                        terms = [v.terms_conditions];
+                    }
+                }
+                return { ...v, terms_conditions: terms };
+            });
             return { success: true, data: vouchers };
         } catch (error) {
             console.error("Error getting vouchers:", error);

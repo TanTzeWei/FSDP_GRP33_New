@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const UploadModel = require('../models/uploadModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
 const ImageAIValidation = require('../utils/imageAIValidation');
+const PointsModel = require('../models/pointsModel');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -51,8 +52,9 @@ class UploadController {
 
       // Validate required fields
       const { dishName, description, hawkerCentreId, stallId } = req.body;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
-
+      // Extract user ID from auth middleware (supports multiple formats)
+      const userId = req.user?.userId || req.user?.user_id || req.user?.id || 1;
+      
       console.log('Form data extracted:');
       console.log('- Dish name:', dishName);
       console.log('- Description:', description);
@@ -149,7 +151,7 @@ class UploadController {
 
       // Prepare photo data for database
       const photoData = {
-        userId: 1, // Fixed user ID to avoid foreign key issues temporarily
+        userId: userId, // Use authenticated user ID
         hawkerCentreId: parseInt(hawkerCentreId),
         stallId: stallId ? parseInt(stallId) : null,
         foodItemId: null, // Can be linked later
@@ -173,6 +175,50 @@ class UploadController {
       const savedPhoto = await UploadModel.savePhotoRecord(photoData);
 
       console.log('Database save successful:', savedPhoto);
+
+      // Get stall name for points history
+      let stallName = 'Unknown Stall';
+      if (stallId) {
+        try {
+          const StallModel = require('../models/stallModel');
+          const stallData = await StallModel.getStallById(parseInt(stallId));
+          if (stallData && stallData.stall_name) {
+            stallName = stallData.stall_name;
+          }
+        } catch (err) {
+          console.log('Could not get stall name:', err.message);
+        }
+      }
+
+      // Award points for photo upload (only for authenticated users)
+      let pointsAwarded = null;
+      console.log('Checking points eligibility - userId:', userId, 'is not guest?', userId !== 1);
+      if (userId && userId !== 1) { // Skip guest user (id = 1)
+        try {
+          console.log('Awarding points to user:', userId);
+          const itemDetails = {
+            stallName: stallName,
+            dishName: photoData.dishName,
+            photoId: savedPhoto.id,
+            item: `${photoData.dishName} - ${stallName}`
+          };
+          const pointsResult = await PointsModel.addPhotoUploadPoints(userId, itemDetails);
+          console.log('Points result:', pointsResult);
+          if (pointsResult.success) {
+            pointsAwarded = {
+              pointsEarned: pointsResult.pointsEarned,
+              newBalance: pointsResult.newBalance
+            };
+            console.log('✅ Points awarded successfully:', pointsAwarded);
+          }
+        } catch (pointsError) {
+          console.error('❌ Error awarding points:', pointsError);
+          // Don't fail the upload if points award fails
+        }
+      } else {
+        console.log('⚠️ Points NOT awarded - User is guest or not authenticated');
+      }
+
       console.log('=== UPLOAD SUCCESS ===');
 
       res.status(201).json({
@@ -189,7 +235,8 @@ class UploadController {
             foodType: req.aiValidation.foodType,
             confidence: req.aiValidation.confidence
           } : null
-        }
+        },
+        points: pointsAwarded
       });
 
     } catch (error) {
@@ -340,15 +387,39 @@ class UploadController {
         });
       }
 
-      const newLikesCount = await UploadModel.likePhoto(parseInt(userId), parseInt(photoId));
+      const result = await UploadModel.likePhoto(parseInt(userId), parseInt(photoId));
+
+      // Award points to the photo owner (not the liker)
+      let pointsAwarded = null;
+      if (result.photoOwnerId && result.photoOwnerId !== 1) { // Skip guest user
+        try {
+          const itemDetails = {
+            stallName: result.stallName,
+            dishName: result.dishName,
+            photoId: parseInt(photoId),
+            item: `${result.dishName} - ${result.stallName}`
+          };
+          const pointsResult = await PointsModel.addUpvotePoints(result.photoOwnerId, itemDetails);
+          if (pointsResult.success) {
+            pointsAwarded = {
+              pointsEarned: pointsResult.pointsEarned,
+              newBalance: pointsResult.newBalance
+            };
+          }
+        } catch (pointsError) {
+          console.error('Error awarding upvote points:', pointsError);
+          // Don't fail the like if points award fails
+        }
+      }
 
       res.status(200).json({
         success: true,
         message: 'Photo liked successfully',
         data: {
           photoId: parseInt(photoId),
-          likesCount: newLikesCount
-        }
+          likesCount: result.likesCount
+        },
+        points: pointsAwarded
       });
 
     } catch (error) {

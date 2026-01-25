@@ -142,8 +142,8 @@ if (HawkerCentreController) {
 
 // Photo Upload Routes - BLOB Storage (photos stored IN database)
 if (UploadController) {
-    // Upload photo (stores as BLOB in database)
-    app.post('/api/photos/upload', UploadController.uploadMiddleware, UploadController.uploadPhoto);
+    // Upload photo (stores as BLOB in database) - requires authentication
+    app.post('/api/photos/upload', authMiddleware, UploadController.uploadMiddleware, UploadController.uploadPhoto);
     
     // Serve photo image from database
     app.get('/api/photos/:id/image', UploadController.getPhotoImage);

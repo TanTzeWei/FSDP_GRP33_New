@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { PointsContext } from '../context/PointsContext';
 import './MenuPhotoUpload.css';
 
 const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const { user } = useContext(AuthContext);
+  const { fetchPointsData } = useContext(PointsContext) || {};
   const [uploadState, setUploadState] = useState({
     file: null,
     preview: null,
@@ -217,7 +219,7 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     }
 
     if (!uploadState.stallId) {
-      setUploadState(prev => ({
+      setUpload,cState(prev => ({
         ...prev,
         error: 'Please select a stall'
       }));
@@ -246,8 +248,29 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       formData.append('stallId', uploadState.stallId);
       formData.append('dietaryInfo', JSON.stringify(uploadState.dietaryInfo));
 
+      // Get auth token from localStorage
+      const getAuthToken = () => {
+        try {
+          const stored = localStorage.getItem('authUser');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return parsed.token;
+          }
+        } catch (e) {
+          console.error('Error getting auth token:', e);
+        }
+        return null;
+      };
+
+      const token = getAuthToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('http://localhost:3000/api/menu-photos/upload', {
         method: 'POST',
+        headers: headers,
         body: formData
       });
 
@@ -259,11 +282,20 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
       }
 
       if (result.success) {
+        // Award points if points were earned
+        if (result.points && result.points.pointsEarned) {
+          alert(`🎉 Menu item photo uploaded successfully! You earned ${result.points.pointsEarned} points!`);
+          // Refresh points data if context is available
+          if (fetchPointsData) {
+            fetchPointsData();
+          }
+        } else {
+          alert('🎉 Menu item photo uploaded successfully!');
+        }
+
         if (onUploadSuccess) {
           onUploadSuccess(result.data);
         }
-        
-        alert('🎉 Menu item photo uploaded successfully!');
         
         setUploadState({
           file: null,

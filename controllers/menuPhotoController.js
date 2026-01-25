@@ -3,6 +3,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const MenuPhotoModel = require('../models/menuPhotoModel');
 const CloudinaryUpload = require('../utils/cloudinaryUpload');
+const PointsModel = require('../models/pointsModel');
 
 // Configure multer to store files in memory (will be uploaded to Cloudinary)
 const storage = multer.memoryStorage();
@@ -44,7 +45,10 @@ class MenuPhotoController {
         stallId,
         dietaryInfo
       } = req.body;
-      const userId = req.user?.id || 1; // TODO: Get from auth middleware
+      // Extract user ID from auth middleware (supports multiple formats)
+      const userId = req.user?.userId || req.user?.user_id || req.user?.id || 1;
+      
+      console.log('Upload - User ID:', userId, 'User object:', req.user);
 
       // Validate required fields
       if (!dishName || !hawkerCentreId || !stallId || !price || !category) {
@@ -104,6 +108,47 @@ class MenuPhotoController {
       // Save to database
       const savedDish = await MenuPhotoModel.saveDishWithPhoto(photoData);
 
+      // Get stall name for points history
+      let stallName = 'Unknown Stall';
+      try {
+        const StallModel = require('../models/stallModel');
+        const stallData = await StallModel.getStallById(photoData.stallId);
+        if (stallData && stallData.stall_name) {
+          stallName = stallData.stall_name;
+        }
+      } catch (err) {
+        console.log('Could not get stall name:', err.message);
+      }
+
+      // Award points for photo upload (only for authenticated users)
+      let pointsAwarded = null;
+      console.log('Checking points eligibility - userId:', userId, 'is not guest?', userId !== 1);
+      if (userId && userId !== 1) { // Skip guest user (id = 1)
+        try {
+          console.log('Awarding points to user:', userId);
+          const itemDetails = {
+            stallName: stallName,
+            dishName: photoData.dishName,
+            photoId: savedDish.id,
+            item: `${photoData.dishName} - ${stallName}`
+          };
+          const pointsResult = await PointsModel.addPhotoUploadPoints(userId, itemDetails);
+          console.log('Points result:', pointsResult);
+          if (pointsResult.success) {
+            pointsAwarded = {
+              pointsEarned: pointsResult.pointsEarned,
+              newBalance: pointsResult.newBalance
+            };
+            console.log('✅ Points awarded successfully:', pointsAwarded);
+          }
+        } catch (pointsError) {
+          console.error('❌ Error awarding points:', pointsError);
+          // Don't fail the upload if points award fails
+        }
+      } else {
+        console.log('⚠️ Points NOT awarded - User is guest or not authenticated');
+      }
+
       res.status(201).json({
         success: true,
         message: 'Menu item photo uploaded successfully!',
@@ -114,7 +159,8 @@ class MenuPhotoController {
           price: photoData.price,
           category: photoData.category,
           createdAt: savedDish.created_at
-        }
+        },
+        points: pointsAwarded
       });
 
     } catch (error) {

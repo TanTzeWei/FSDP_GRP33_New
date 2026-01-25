@@ -14,19 +14,29 @@ const HawkerPointsSystem = () => {
   const [voucherDetails, setVoucherDetails] = useState(null);
   const [availableVouchers, setAvailableVouchers] = useState([]);
   const [loadingVouchers, setLoadingVouchers] = useState(false);
-  const { userPoints, pointsHistory, redeemVoucher } = useContext(PointsContext);
+  const { userPoints, pointsHistory, redeemVoucher, fetchPointsData } = useContext(PointsContext);
 
-  // Fetch available vouchers on component mount
+  // Fetch available vouchers on component mount and when screen changes
   useEffect(() => {
+    console.log('PointsSystem - User Points:', userPoints);
+    console.log('PointsSystem - Points History:', pointsHistory);
     fetchVouchers();
-  }, []);
+    // Refresh points data when component mounts or screen changes
+    if (fetchPointsData) {
+      console.log('Refreshing points data...');
+      fetchPointsData();
+    }
+  }, [currentScreen]);
 
   const fetchVouchers = async () => {
     try {
       setLoadingVouchers(true);
+      console.log('Fetching vouchers...');
       const result = await pointsService.getAllVouchers();
+      console.log('Vouchers result:', result);
       if (result.success) {
         setAvailableVouchers(result.data);
+        console.log('Available vouchers set:', result.data);
       }
     } catch (error) {
       console.error('Error fetching vouchers:', error);
