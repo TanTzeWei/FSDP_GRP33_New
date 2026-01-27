@@ -1,0 +1,58 @@
+.closure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.closure-badge.closed {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.closure-badge.closing-soon {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  border: 1px solid #ffb74d;
+}
+
+.closure-badge.open {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+.closure-badge-icon {
+  font-size: 14px;
+}
+
+.closure-badge-text {
+  font-size: 12px;
+}
+
+/* Large badge variant */
+.closure-badge.large {
+  padding: 10px 16px;
+  font-size: 15px;
+}
+
+.closure-badge.large .closure-badge-icon {
+  font-size: 18px;
+}
+
+.closure-badge.large .closure-badge-text {
+  font-size: 14px;
+}
+
+/* Detailed closure info */
+.closure-details {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}

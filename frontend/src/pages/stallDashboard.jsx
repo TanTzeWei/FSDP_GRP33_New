@@ -7,6 +7,8 @@ import PhotoUploadModal from '../components/PhotoUploadModal';
 import MenuItemCard from '../components/MenuItemCard';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import CommunityPhotoGallery from '../components/CommunityPhotoGallery';
+import StallClosureSchedule from '../components/StallClosureSchedule';
+import ClosureBadge from '../components/ClosureBadge';
 import './stallDashboard.css';
 
 /**
@@ -102,7 +104,7 @@ function StallDashboard() {
   const [actionErrors, setActionErrors] = useState({});
   const [sortBy, setSortBy] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'community'
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu', 'community', or 'closures'
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedItems, setSelectedItems] = useState(new Set());
 
@@ -644,6 +646,12 @@ function StallDashboard() {
             </span>
           )}
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'closures' ? 'active' : ''}`}
+          onClick={() => setActiveTab('closures')}
+        >
+          🔒 Closure Schedule
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -759,7 +767,7 @@ function StallDashboard() {
             </div>
           )}
         </>
-      ) : (
+      ) : activeTab === 'community' ? (
         /* Community Photos Tab */
         <CommunityPhotoGallery
           photos={communityPhotos}
@@ -770,6 +778,9 @@ function StallDashboard() {
           onSetAsOfficialPhoto={handleSetCommunityPhotoAsOfficial}
           updatingPhotoIds={updatingPhotoIds}
         />
+      ) : (
+        /* Closure Schedule Tab */
+        <StallClosureSchedule stallId={getUserStallId()} />
       )}
 
       {/* Modals */}
