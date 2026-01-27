@@ -22,6 +22,7 @@ let UserController, HawkerCentreController, UploadController, authMiddleware;
 let DishController;
 let StallController;
 let MenuPhotoController;
+let StallClosureController;
 
 try {
     UserController = require('./controllers/userController');
@@ -77,6 +78,13 @@ try {
     console.log('✅ StallController loaded');
 } catch (error) {
     console.error('❌ Error loading StallController:', error.message);
+}
+
+try {
+    StallClosureController = require('./controllers/stallClosureController');
+    console.log('✅ StallClosureController loaded');
+} catch (error) {
+    console.error('❌ Error loading StallClosureController:', error.message);
 }
 
 // Create Express app
@@ -244,7 +252,24 @@ if (StallController) {
     if (authMiddleware) {
         // Upload stall image
         app.post('/api/stalls/:id/image', authMiddleware, authMiddleware.requireStallOwner, StallController.uploadMiddleware, StallController.uploadStallImage);
-        // Update stall details
+ 
+
+// Stall Closure Routes (Temporary Closure / Holiday Scheduling)
+if (StallClosureController && authMiddleware) {
+    // Public: get closure status
+    app.get('/api/stalls/:id/closure-status', StallClosureController.getClosureStatus);
+    app.get('/api/stalls/:id/active-closures', StallClosureController.getActiveClosures);
+    
+    // Protected: manage closures (stall owners only)
+    app.post('/api/stalls/:id/closures', authMiddleware, authMiddleware.requireStallOwner, StallClosureController.createClosure);
+    app.get('/api/stalls/:id/closures', authMiddleware, authMiddleware.requireStallOwner, StallClosureController.getStallClosures);
+    app.put('/api/stalls/:id/closures/:closureId', authMiddleware, authMiddleware.requireStallOwner, StallClosureController.updateClosure);
+    app.delete('/api/stalls/:id/closures/:closureId', authMiddleware, authMiddleware.requireStallOwner, StallClosureController.deleteClosure);
+    
+    console.log('✅ Stall closure routes configured');
+} else {
+    console.log('⚠️  Stall closure routes disabled (missing StallClosureController or authMiddleware)');
+}       // Update stall details
         app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
     }
     

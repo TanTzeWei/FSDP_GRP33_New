@@ -13,11 +13,36 @@ class StallModel {
                 .order('stall_name', { ascending: true });
             
             if (error) throw error;
-            // Map stall_name to name for frontend consistency
-            return (data || []).map(stall => ({
+            
+            // Map stall_name to name for frontend consistency and add closure status
+            const stalls = (data || []).map(stall => ({
                 ...stall,
                 name: stall.stall_name
             }));
+
+            // Add closure status for each stall
+            const StallClosureModel = require('./stallClosureModel');
+            const stallsWithStatus = await Promise.all(
+                stalls.map(async (stall) => {
+                    try {
+                        const closureStatus = await StallClosureModel.isStallClosed(stall.id);
+                        return {
+                            ...stall,
+                            is_currently_closed: closureStatus.isClosed,
+                            closure_info: closureStatus.closureInfo
+                        };
+                    } catch (error) {
+                        console.error(`Error checking closure for stall ${stall.id}:`, error);
+                        return {
+                            ...stall,
+                            is_currently_closed: false,
+                            closure_info: null
+                        };
+                    }
+                })
+            );
+
+            return stallsWithStatus;
         } catch (error) {
             throw new Error(`Error fetching stalls: ${error.message}`);
         }
@@ -27,7 +52,22 @@ class StallModel {
         try {
             const { data, error } = await supabase.from('stalls').select('*, cuisine_types(name), hawker_centres(name)').eq('id', id).maybeSingle();
             if (error) throw error;
-            return data || null;
+            
+            if (!data) return null;
+
+            // Add closure status
+            try {
+                const StallClosureModel = require('./stallClosureModel');
+                const closureStatus = await StallClosureModel.isStallClosed(id);
+                data.is_currently_closed = closureStatus.isClosed;
+                data.closure_info = closureStatus.closureInfo;
+            } catch (error) {
+                console.error(`Error checking closure for stall ${id}:`, error);
+                data.is_currently_closed = false;
+                data.closure_info = null;
+            }
+
+            return data;
         } catch (error) {
             throw new Error(`Error fetching stall: ${error.message}`);
         }
