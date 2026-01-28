@@ -23,6 +23,7 @@ let DishController;
 let StallController;
 let MenuPhotoController;
 let StallClosureController;
+let ReviewController;
 
 try {
     UserController = require('./controllers/userController');
@@ -85,6 +86,13 @@ try {
     console.log('✅ StallClosureController loaded');
 } catch (error) {
     console.error('❌ Error loading StallClosureController:', error.message);
+}
+
+try {
+    ReviewController = require('./controllers/reviewController');
+    console.log('✅ ReviewController loaded');
+} catch (error) {
+    console.error('❌ Error loading ReviewController:', error.message);
 }
 
 // Create Express app
@@ -303,6 +311,47 @@ if (PointsController && authMiddleware) {
 } else {
     console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
 }
+
+// Reviews Routes
+if (ReviewController) {
+    // Public: get reviews by hawker centre
+    app.get('/api/reviews/hawker/:hawkerCentreId', ReviewController.getReviewsByHawkerCentre);
+    
+    // Public: get reviews by stall
+    app.get('/api/reviews/stall/:stallId', ReviewController.getReviewsByStall);
+    
+    // Public: get reviews by food item
+    app.get('/api/reviews/food/:foodItemId', ReviewController.getReviewsByFoodItem);
+    
+    // Public: get rating stats for hawker centre
+    app.get('/api/reviews/stats/hawker/:hawkerCentreId', ReviewController.getHawkerCentreRatingStats);
+    
+    // Public: get rating stats for stall
+    app.get('/api/reviews/stats/stall/:stallId', ReviewController.getStallRatingStats);
+    
+    // Public: get rating stats for food item
+    app.get('/api/reviews/stats/food/:foodItemId', ReviewController.getFoodItemRatingStats);
+    
+    // Public: get single review
+    app.get('/api/reviews/:reviewId', ReviewController.getReview);
+    
+    // Protected: create review
+    app.post('/api/reviews', authMiddleware, ReviewController.createReview);
+    
+    // Protected: get user's reviews
+    app.get('/api/reviews/user/my-reviews', authMiddleware, ReviewController.getUserReviews);
+    
+    // Protected: update review
+    app.put('/api/reviews/:reviewId', authMiddleware, ReviewController.updateReview);
+    
+    // Protected: delete review
+    app.delete('/api/reviews/:reviewId', authMiddleware, ReviewController.deleteReview);
+    
+    console.log('✅ Review routes configured');
+} else {
+    console.log('⚠️  Review routes disabled (missing ReviewController)');
+}
+
 // Simple health route
 app.get('/', (req, res) => {
 	res.send('Server is running');
