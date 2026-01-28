@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
+import ClosureBadge from './ClosureBadge';
 import './Menu.css';
 import { AuthContext } from '../context/AuthContext';
 
@@ -493,6 +494,17 @@ const Menu = () => {
                   </div>
                 </div>
                 <div className="stall-content">
+                  {/* Closure Badge */}
+                  {stall.is_currently_closed !== undefined && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <ClosureBadge
+                        isClosed={stall.is_currently_closed}
+                        closureInfo={stall.closure_info}
+                        size="normal"
+                      />
+                    </div>
+                  )}
+                  
                   <p className="stall-description">{stall.description || `${cuisineType} cuisine`}</p>
                   <div className="stall-meta">
                     <span className="meta-item">

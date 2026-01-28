@@ -289,6 +289,36 @@ CREATE INDEX IF NOT EXISTS idx_photo_user ON photos(user_id);
 CREATE INDEX IF NOT EXISTS idx_photo_likes ON photos(likes_count DESC);
 
 -- =========================================
+-- STALL CLOSURES
+-- =========================================
+CREATE TABLE IF NOT EXISTS stall_closures (
+  id BIGSERIAL PRIMARY KEY,
+  stall_id BIGINT NOT NULL REFERENCES stalls(id) ON DELETE CASCADE,
+  closure_type TEXT NOT NULL 
+    CHECK (closure_type IN ('off_day', 'maintenance', 'public_holiday', 'custom', 'emergency')),
+  start_date TIMESTAMPTZ NOT NULL,
+  end_date TIMESTAMPTZ NOT NULL,
+  is_recurring BOOLEAN DEFAULT FALSE,
+  recurrence_pattern JSONB, -- JSON object for recurring patterns, e.g., {"day_of_week": 1} for every Monday
+  reason TEXT,
+  created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT TRUE, -- Soft delete flag
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Constraint: end_date must be after start_date
+  CONSTRAINT chk_end_after_start CHECK (end_date > start_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stall_closures_stall ON stall_closures(stall_id);
+CREATE INDEX IF NOT EXISTS idx_stall_closures_dates ON stall_closures(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_stall_closures_active ON stall_closures(is_active);
+CREATE INDEX IF NOT EXISTS idx_stall_closures_type ON stall_closures(closure_type);
+
+COMMENT ON TABLE stall_closures IS 
+  'Stores temporary closure schedules for stalls including off days, maintenance periods, and public holidays';
+
+-- =========================================
 -- VIEW: HAWKER CENTRE SUMMARY
 -- =========================================
 CREATE OR REPLACE VIEW hawker_centre_summary AS

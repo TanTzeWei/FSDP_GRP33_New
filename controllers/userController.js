@@ -9,14 +9,18 @@ class UserController {
     static async signup(req, res) {
         try {
             console.log('Signup payload:', req.body);
-            const { name, email, password, role, stall_id, stall_name, invite_code } = req.body;
+            const { name, email, password, role, stall_id, stall_name, hawker_centre_id, invite_code } = req.body;
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'All fields are required' });
             }
 
             // If signing up as stall owner, mark as pending approval and optionally create a stall record
             let createData = { name, email, password };
-            if (role === 'stall_owner') {
+            
+            // Handle admin role
+            if (role === 'admin') {
+                createData.role = 'admin';
+            } else if (role === 'stall_owner') {
                 createData.role = 'stall_owner';
                 createData.is_stall_owner = true;
                 createData.approval_status = 'pending';
@@ -25,12 +29,47 @@ class UserController {
                 // If a stall_name is provided, create a pending stall and associate it
                 if (stall_name) {
                     const supabase = require('../dbConfig');
+                    
+                    // Get hawker_centre_id - either from request or use first available hawker centre
+                    let hawkerCentreId = hawker_centre_id;
+                    
+                    if (!hawkerCentreId) {
+                        // Get the first hawker centre as default
+                        const { data: hawkerCentres, error: hawkerErr } = await supabase
+                            .from('hawker_centres')
+                            .select('id')
+                            .limit(1)
+                            .single();
+                        
+                        if (hawkerErr || !hawkerCentres) {
+                            return res.status(400).json({ 
+                                success: false, 
+                                message: 'No hawker centres available. Please contact admin or select a hawker centre.' 
+                            });
+                        }
+                        
+                        hawkerCentreId = hawkerCentres.id;
+                        console.log('Using default hawker centre ID:', hawkerCentreId);
+                    }
+                    
                     const { data: stallData, error: stallErr } = await supabase
                         .from('stalls')
-                        .insert([{ stall_name: stall_name, hawker_centre_id: stall_id || null, status: 'Pending' }])
+                        .insert([{ 
+                            stall_name: stall_name, 
+                            hawker_centre_id: hawkerCentreId, 
+                            status: 'Temporarily Closed' // New stalls start as closed until approved
+                        }])
                         .select('id')
                         .maybeSingle();
-                    if (stallErr) console.warn('Failed to create stall during owner signup', stallErr);
+                    
+                    if (stallErr) {
+                        console.error('Failed to create stall during owner signup', stallErr);
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'Failed to create stall: ' + stallErr.message 
+                        });
+                    }
+                    
                     if (stallData) createData.stall_id = stallData.id;
                 } else if (stall_id) {
                     createData.stall_id = stall_id;

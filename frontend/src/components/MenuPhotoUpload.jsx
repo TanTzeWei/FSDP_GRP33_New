@@ -13,7 +13,7 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
     description: '',
     price: '',
     category: '',
-    spiceLevel: 'mild',
+    spiceLevel: 'Mild',
     hawkerCentreId: '',
     stallId: '',
     dietaryInfo: [],
@@ -27,7 +27,7 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
   const dropZoneRef = useRef(null);
 
   const dietaryOptions = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'No Pork'];
-  const spiceLevels = ['mild', 'medium', 'hot', 'very hot'];
+  const spiceLevels = ['None', 'Mild', 'Medium', 'Hot', 'Extra Hot'];
   const categories = ['Rice', 'Noodles', 'Soup', 'Seafood', 'Meat', 'Vegetable', 'Dessert', 'Beverage', 'Other'];
 
   // Fetch hawker centres on mount
@@ -304,7 +304,7 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
           description: '',
           price: '',
           category: '',
-          spiceLevel: 'mild',
+          spiceLevel: 'Mild',
           hawkerCentreId: '',
           stallId: '',
           dietaryInfo: [],
@@ -506,7 +506,7 @@ const MenuPhotoUpload = ({ onUploadSuccess, onClose, embedded = false }) => {
               >
                 {spiceLevels.map(level => (
                   <option key={level} value={level}>
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                    {level}
                   </option>
                 ))}
               </select>

@@ -3,6 +3,7 @@ import { ShoppingCart, Star, Clock, MapPin, Search, ImageOff } from 'lucide-reac
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from '../components/Header';
 import { CartContext } from '../context/CartContext';
+import ClosureBadge from '../components/ClosureBadge';
 import './menupage.css';
 
 const MenuPage = () => {
@@ -26,7 +27,9 @@ const MenuPage = () => {
     deliveryTime: '',
     distance: '',
     image: '',
-    categories: []
+    categories: [],
+    is_currently_closed: false,
+    closure_info: null
   });
 
   // Filter menu items by search term
@@ -87,7 +90,9 @@ const MenuPage = () => {
             deliveryTime: s.opening_hours ? `${s.opening_hours} - ${s.closing_hours}` : '',
             distance: '',
             image: s.image_url || s.image || '',
-            categories: s.specialties || []
+            categories: s.specialties || [],
+            is_currently_closed: s.is_currently_closed || false,
+            closure_info: s.closure_info || null
           });
         }
       })
@@ -159,6 +164,16 @@ const MenuPage = () => {
           </div>
 
           <div className="stall-info">
+            {/* Closure Status Badge */}
+            <div style={{ marginBottom: '15px' }}>
+              <ClosureBadge
+                isClosed={stall.is_currently_closed}
+                closureInfo={stall.closure_info}
+                showDetails={true}
+                size="large"
+              />
+            </div>
+
             <h2 className="stall-name">{stall.name}</h2>
 
             <ul className="stall-details">
@@ -270,8 +285,10 @@ const MenuPage = () => {
                         <button 
                           className="add-button"
                           onClick={() => addToCart(item)}
+                          disabled={stall.is_currently_closed}
+                          title={stall.is_currently_closed ? 'Stall is currently closed' : 'Add to cart'}
                         >
-                          Add
+                          {stall.is_currently_closed ? 'Closed' : 'Add'}
                         </button>
                       </div>
                     </li>

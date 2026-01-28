@@ -241,7 +241,7 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
               }}
             >
               <option value="">Not specified</option>
-              <option value="Not Spicy">🟢 Not Spicy</option>
+              <option value="None">🟢 None</option>
               <option value="Mild">🟡 Mild</option>
               <option value="Medium">🟠 Medium</option>
               <option value="Hot">🔴 Hot</option>

@@ -168,7 +168,7 @@ class PointsController {
                 });
             }
         } catch (error) {
-            console.error("Error in getAllVouchers:", error);
+            console.error("Error in getAllVouchers:", error.message);
             return res.status(500).json({
                 success: false,
                 message: "Error retrieving vouchers",
