@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from '../components/Header';
 import { CartContext } from '../context/CartContext';
 import ClosureBadge from '../components/ClosureBadge';
+import SocialShare from '../components/SocialShare';
+import SocialMediaLinks from '../components/SocialMediaLinks';
 import './menupage.css';
 
 const MenuPage = () => {
@@ -201,6 +203,24 @@ const MenuPage = () => {
         </div>
       </section>
 
+      {/* SOCIAL MEDIA LINKS - Display stall's social profiles */}
+      {(stall.facebook_url || stall.instagram_url || stall.twitter_url || stall.tiktok_url || stall.website_url) && (
+        <section className="stall-social-section">
+          <div className="stall-container">
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#495057' }}>Follow Us:</h3>
+            <SocialMediaLinks 
+              facebook={stall.facebook_url}
+              instagram={stall.instagram_url}
+              twitter={stall.twitter_url}
+              tiktok={stall.tiktok_url}
+              website={stall.website_url}
+              size="medium"
+              showLabels={true}
+            />
+          </div>
+        </section>
+      )}
+
       {/* SEARCH */}
       <section className="search-section">
         <div className="search-container">
@@ -297,6 +317,20 @@ const MenuPage = () => {
               </div>
             );
           })}
+        </section>
+      )}
+
+      {/* SOCIAL SHARE - Let visitors share this stall */}
+      {!loading && stall.name !== 'Loading...' && (
+        <section className="share-section" style={{ padding: '1rem', background: '#f8f9fa', marginTop: '2rem' }}>
+          <div className="stall-container">
+            <SocialShare 
+              url={window.location.href}
+              title={`Check out ${stall.name}!`}
+              description={`Delicious food at ${stall.name}. Order now!`}
+              imageUrl={stall.image}
+            />
+          </div>
         </section>
       )}
 

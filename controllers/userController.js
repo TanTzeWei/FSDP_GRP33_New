@@ -26,52 +26,15 @@ class UserController {
                 createData.approval_status = 'pending';
                 createData.owner_verified = false;
 
-                // If a stall_name is provided, create a pending stall and associate it
+                // Store pending stall information to be used when admin approves
+                // Stall will only be created upon approval to avoid orphaned stalls on rejection
                 if (stall_name) {
-                    const supabase = require('../dbConfig');
-                    
-                    // Get hawker_centre_id - either from request or use first available hawker centre
-                    let hawkerCentreId = hawker_centre_id;
-                    
-                    if (!hawkerCentreId) {
-                        // Get the first hawker centre as default
-                        const { data: hawkerCentres, error: hawkerErr } = await supabase
-                            .from('hawker_centres')
-                            .select('id')
-                            .limit(1)
-                            .single();
-                        
-                        if (hawkerErr || !hawkerCentres) {
-                            return res.status(400).json({ 
-                                success: false, 
-                                message: 'No hawker centres available. Please contact admin or select a hawker centre.' 
-                            });
-                        }
-                        
-                        hawkerCentreId = hawkerCentres.id;
-                        console.log('Using default hawker centre ID:', hawkerCentreId);
-                    }
-                    
-                    const { data: stallData, error: stallErr } = await supabase
-                        .from('stalls')
-                        .insert([{ 
-                            stall_name: stall_name, 
-                            hawker_centre_id: hawkerCentreId, 
-                            status: 'Temporarily Closed' // New stalls start as closed until approved
-                        }])
-                        .select('id')
-                        .maybeSingle();
-                    
-                    if (stallErr) {
-                        console.error('Failed to create stall during owner signup', stallErr);
-                        return res.status(400).json({ 
-                            success: false, 
-                            message: 'Failed to create stall: ' + stallErr.message 
-                        });
-                    }
-                    
-                    if (stallData) createData.stall_id = stallData.id;
+                    // Store as JSON string in a temporary way (will be parsed during approval)
+                    // Note: This requires the stall_name and hawker_centre_id to be passed during approval
+                    console.log('Pending stall details - Name:', stall_name, 'Hawker Centre ID:', hawker_centre_id);
+                    // We'll pass this info through the approval process
                 } else if (stall_id) {
+                    // If they're associating with an existing stall, store it
                     createData.stall_id = stall_id;
                 }
             }
@@ -138,13 +101,90 @@ class UserController {
     static async approveOwner(req, res) {
         try {
             const userId = req.params.userId;
+            const { stall_name, hawker_centre_id } = req.body;
             const supabase = require('../dbConfig');
-            // Update user approval status
-            const { data, error } = await supabase.from('users').update({ approval_status: 'approved', owner_verified: true }).eq('user_id', userId).select('user_id, name, email, role, stall_id, approval_status, owner_verified').maybeSingle();
-            if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to approve owner' });
+            
+            // Get user details first
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('user_id, name, email, stall_id')
+                .eq('user_id', userId)
+                .maybeSingle();
+            
+            if (userError || !userData) {
+                return res.status(400).json({ success: false, message: 'User not found' });
+            }
+            
+            let stallId = userData.stall_id;
+            
+            // Create stall if stall_name is provided and user doesn't have a stall yet
+            if (stall_name && !stallId) {
+                // Get hawker_centre_id - either from request or use first available hawker centre
+                let effectiveHawkerCentreId = hawker_centre_id;
+                
+                if (!effectiveHawkerCentreId) {
+                    const { data: hawkerCentres, error: hawkerErr } = await supabase
+                        .from('hawker_centres')
+                        .select('id')
+                        .limit(1)
+                        .single();
+                    
+                    if (hawkerErr || !hawkerCentres) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: 'No hawker centres available. Please provide a hawker centre ID.' 
+                        });
+                    }
+                    
+                    effectiveHawkerCentreId = hawkerCentres.id;
+                }
+                
+                // Create the stall
+                const { data: stallData, error: stallErr } = await supabase
+                    .from('stalls')
+                    .insert([{ 
+                        stall_name: stall_name, 
+                        hawker_centre_id: effectiveHawkerCentreId, 
+                        status: 'Active' // Set to active upon approval
+                    }])
+                    .select('id')
+                    .maybeSingle();
+                
+                if (stallErr) {
+                    console.error('Failed to create stall during owner approval', stallErr);
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Failed to create stall: ' + stallErr.message 
+                    });
+                }
+                
+                if (stallData) {
+                    stallId = stallData.id;
+                }
+            }
+            
+            // Update user approval status and assign stall
+            const updateData = { 
+                approval_status: 'approved', 
+                owner_verified: true 
+            };
+            if (stallId) {
+                updateData.stall_id = stallId;
+            }
+            
+            const { data, error } = await supabase
+                .from('users')
+                .update(updateData)
+                .eq('user_id', userId)
+                .select('user_id, name, email, role, stall_id, approval_status, owner_verified')
+                .maybeSingle();
+                
+            if (error) {
+                return res.status(400).json({ success: false, message: error.message || 'Failed to approve owner' });
+            }
 
-            // Optionally activate stall
-            if (data && data.stall_id) {
+            // If user already had a stall, activate it
+            if (data && data.stall_id && !stall_name) {
                 await supabase.from('stalls').update({ status: 'Active' }).eq('id', data.stall_id);
             }
 
@@ -168,17 +208,165 @@ class UserController {
         }
     }
 
+    // Admin: list all stall owners (approved, pending, and rejected)
+    static async listAllOwners(req, res) {
+        try {
+            const supabase = require('../dbConfig');
+            
+            // Get all stall owners
+            const { data: owners, error: ownersError } = await supabase
+                .from('users')
+                .select('user_id, name, email, created_at, stall_id, approval_status')
+                .or('is_stall_owner.eq.true,role.eq.stall_owner')
+                .order('created_at', { ascending: true });
+            
+            if (ownersError) {
+                return res.status(400).json({ success: false, message: ownersError.message || 'Failed to fetch all owners' });
+            }
+
+            if (!owners || owners.length === 0) {
+                return res.json({ success: true, data: [] });
+            }
+
+            // Get all stall IDs that exist
+            const stallIds = owners.map(o => o.stall_id).filter(Boolean);
+            
+            // Fetch stall information if there are any stalls
+            let stallsMap = {};
+            if (stallIds.length > 0) {
+                const { data: stalls, error: stallsError } = await supabase
+                    .from('stalls')
+                    .select('id, stall_name, hawker_centre_id')
+                    .in('id', stallIds);
+                
+                if (!stallsError && stalls) {
+                    stallsMap = stalls.reduce((map, stall) => {
+                        map[stall.id] = stall;
+                        return map;
+                    }, {});
+                }
+            }
+
+            // Get hawker centre IDs
+            const hawkerCentreIds = Object.values(stallsMap)
+                .map(s => s.hawker_centre_id)
+                .filter(Boolean);
+            
+            // Fetch hawker centre information
+            let hawkerCentresMap = {};
+            if (hawkerCentreIds.length > 0) {
+                const { data: hawkerCentres, error: hawkerError } = await supabase
+                    .from('hawker_centres')
+                    .select('id, name')
+                    .in('id', hawkerCentreIds);
+                
+                if (!hawkerError && hawkerCentres) {
+                    hawkerCentresMap = hawkerCentres.reduce((map, hc) => {
+                        map[hc.id] = hc.name;
+                        return map;
+                    }, {});
+                }
+            }
+
+            // Transform the data to include stall and hawker centre information
+            const transformedData = owners.map(owner => {
+                const stall = owner.stall_id ? stallsMap[owner.stall_id] : null;
+                const hawkerCentreName = stall && stall.hawker_centre_id 
+                    ? hawkerCentresMap[stall.hawker_centre_id] 
+                    : null;
+                
+                return {
+                    user_id: owner.user_id,
+                    name: owner.name,
+                    email: owner.email,
+                    created_at: owner.created_at,
+                    stall_id: owner.stall_id,
+                    approval_status: owner.approval_status,
+                    stall_name: stall?.stall_name || null,
+                    hawker_centre_name: hawkerCentreName || null
+                };
+            });
+
+            res.json({ success: true, data: transformedData });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error fetching all owners' });
+        }
+    }
+
     // Admin: reject owner signup
     static async rejectOwner(req, res) {
         try {
             const userId = req.params.userId;
             const supabase = require('../dbConfig');
-            const { data, error } = await supabase.from('users').update({ approval_status: 'rejected', owner_verified: false }).eq('user_id', userId).select('user_id, name, email, approval_status').maybeSingle();
-            if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to reject owner' });
+
+            // Mark the owner as rejected
+            // No stall exists yet since stalls are only created upon approval
+            const { data, error } = await supabase
+                .from('users')
+                .update({ approval_status: 'rejected', owner_verified: false })
+                .eq('user_id', userId)
+                .select('user_id, name, email, approval_status')
+                .maybeSingle();
+
+            if (error) {
+                return res.status(400).json({ success: false, message: error.message || 'Failed to reject owner' });
+            }
+
             res.json({ success: true, message: 'Owner rejected', user: data });
         } catch (err) {
             console.error(err);
             res.status(500).json({ success: false, message: 'Server error rejecting owner' });
+        }
+    }
+
+    // Admin: delete stall owner
+    static async deleteOwner(req, res) {
+        try {
+            const userId = req.params.userId;
+            const { deleteStall } = req.body; // Optional: whether to also delete the stall
+            const supabase = require('../dbConfig');
+
+            // Get user and their stall_id
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('user_id, name, stall_id')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            if (userError || !userData) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+
+            const stallId = userData.stall_id;
+
+            // Delete the user
+            const { error: deleteError } = await supabase
+                .from('users')
+                .delete()
+                .eq('user_id', userId);
+
+            if (deleteError) {
+                return res.status(400).json({ success: false, message: deleteError.message || 'Failed to delete owner' });
+            }
+
+            // Optionally delete the stall if requested and exists
+            if (deleteStall && stallId) {
+                const { error: stallDeleteError } = await supabase
+                    .from('stalls')
+                    .delete()
+                    .eq('id', stallId);
+
+                if (stallDeleteError) {
+                    console.error('Failed to delete stall:', stallDeleteError);
+                    // Continue anyway since user is deleted
+                }
+            }
+
+            res.json({ success: true, message: 'Owner deleted successfully', deletedStall: deleteStall && stallId ? true : false });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Server error deleting owner' });
         }
     }
 

@@ -241,6 +241,9 @@ export default function DashboardAdmin() {
                 <Link to="/admin/approvals" className="quick-action-btn primary">
                   👥 Review Pending Approvals
                 </Link>
+                <Link to="/admin/stalls" className="quick-action-btn primary">
+                  🏪 Manage Stalls
+                </Link>
                 <Link to="/" className="quick-action-btn secondary">
                   🏠 View Public Site
                 </Link>

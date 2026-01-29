@@ -37,7 +37,7 @@ function Signup() {
       const user = res.data?.user;
       // If owner signup is pending, backend returns token=null
       if (!token) {
-        showToast(res.data?.message || 'Signup submitted — pending approval', { type: 'success' });
+        showToast(res.data?.message || 'Application submitted! Your stall will be created once approved by admin.', { type: 'success', duration: 4000 });
         navigate('/');
         return;
       }

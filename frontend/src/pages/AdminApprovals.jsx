@@ -13,6 +13,8 @@ export default function AdminApprovals() {
   const [actionLoading, setActionLoading] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ show: false, type: '', owner: null });
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [hawkerCentres, setHawkerCentres] = useState([]);
+  const [approvalForm, setApprovalForm] = useState({ stallName: '', hawkerCentreId: '' });
 
   // Redirect if not admin
   useEffect(() => {
@@ -41,20 +43,36 @@ export default function AdminApprovals() {
     }
   };
 
+  const fetchHawkerCentres = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/hawker-centres');
+      setHawkerCentres(res.data?.data || []);
+    } catch (err) {
+      console.error('Failed to fetch hawker centres:', err);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchPending();
+      fetchHawkerCentres();
     }
   }, [token]);
 
   const handleApprove = async (owner) => {
     setActionLoading(owner.user_id);
     try {
-      await axios.post(`http://localhost:3000/admin/owners/${owner.user_id}/approve`, {}, {
+      const payload = {
+        stall_name: approvalForm.stallName || owner.stall_name,
+        hawker_centre_id: approvalForm.hawkerCentreId ? parseInt(approvalForm.hawkerCentreId) : undefined
+      };
+      
+      await axios.post(`http://localhost:3000/admin/owners/${owner.user_id}/approve`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast(`${owner.name} has been approved as a stall owner!`, 'success');
       fetchPending();
+      setApprovalForm({ stallName: '', hawkerCentreId: '' });
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to approve owner', 'error');
     } finally {
@@ -79,8 +97,33 @@ export default function AdminApprovals() {
     }
   };
 
+  const handleDelete = async (owner) => {
+    setActionLoading(owner.user_id);
+    try {
+      const deleteStall = confirmModal.deleteStall || false;
+      await axios.delete(`http://localhost:3000/admin/owners/${owner.user_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { deleteStall }
+      });
+      showToast(`${owner.name} has been permanently deleted.`, 'success');
+      fetchPending();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to delete owner', 'error');
+    } finally {
+      setActionLoading(null);
+      setConfirmModal({ show: false, type: '', owner: null, deleteStall: false });
+    }
+  };
+
   const openConfirmModal = (type, owner) => {
-    setConfirmModal({ show: true, type, owner });
+    setConfirmModal({ show: true, type, owner, deleteStall: false });
+    if (type === 'approve') {
+      // Pre-fill form with owner's stall name if available
+      setApprovalForm({
+        stallName: owner.stall_name || '',
+        hawkerCentreId: owner.hawker_centre_id || ''
+      });
+    }
   };
 
   const getInitials = (name) => {
@@ -189,21 +232,15 @@ export default function AdminApprovals() {
               <div className="stall-info">
                 <div className="stall-info-row">
                   <div className="stall-info-item">
-                    <span className="label">Stall Name</span>
+                    <span className="label">Requested Stall Name</span>
                     <span className="value highlight">
-                      {owner.stall_name || 'Not specified'}
+                      {owner.stall_name || 'Not specified - will be set during approval'}
                     </span>
                   </div>
                   <div className="stall-info-item">
-                    <span className="label">Stall Number</span>
+                    <span className="label">Status</span>
                     <span className="value">
-                      {owner.stall_number || 'Not assigned'}
-                    </span>
-                  </div>
-                  <div className="stall-info-item">
-                    <span className="label">Hawker Centre</span>
-                    <span className="value">
-                      {owner.hawker_centre_name || 'Not assigned'}
+                      Pending stall creation
                     </span>
                   </div>
                 </div>
@@ -235,6 +272,18 @@ export default function AdminApprovals() {
                 >
                   ✓ Approve
                 </button>
+                <button
+                  className="btn btn-delete"
+                  onClick={() => openConfirmModal('delete', owner)}
+                  disabled={actionLoading === owner.user_id}
+                  style={{ 
+                    backgroundColor: '#f5f5f5', 
+                    color: '#d32f2f',
+                    border: '1px solid #d32f2f'
+                  }}
+                >
+                  🗑️ Delete
+                </button>
               </div>
             </div>
           ))}
@@ -249,13 +298,79 @@ export default function AdminApprovals() {
               <>
                 <h3>✅ Approve Stall Owner</h3>
                 <p>
-                  Are you sure you want to approve <span className="owner-name">{confirmModal.owner?.name}</span> as a stall owner
-                  {confirmModal.owner?.stall_name && (
-                    <> for <strong>{confirmModal.owner.stall_name}</strong></>
-                  )}
-                  ?
+                  Approve <span className="owner-name">{confirmModal.owner?.name}</span> as a stall owner
                 </p>
-                <p>They will be able to manage their stall and menu items immediately.</p>
+                
+                {/* Stall Details Form */}
+                <div className="form-group" style={{ marginTop: '20px', textAlign: 'left' }}>
+                  <label htmlFor="stallName">Stall Name *</label>
+                  <input
+                    id="stallName"
+                    type="text"
+                    placeholder="Enter stall name"
+                    value={approvalForm.stallName}
+                    onChange={(e) => setApprovalForm({ ...approvalForm, stallName: e.target.value })}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      marginTop: '5px'
+                    }}
+                  />
+                </div>
+                
+                <div className="form-group" style={{ marginTop: '15px', textAlign: 'left' }}>
+                  <label htmlFor="hawkerCentreId">Hawker Centre *</label>
+                  <select
+                    id="hawkerCentreId"
+                    value={approvalForm.hawkerCentreId}
+                    onChange={(e) => setApprovalForm({ ...approvalForm, hawkerCentreId: e.target.value })}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      marginTop: '5px'
+                    }}
+                  >
+                    <option value="">Select Hawker Centre</option>
+                    {hawkerCentres.map((hc) => (
+                      <option key={hc.id} value={hc.id}>
+                        {hc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <p style={{ marginTop: '15px', fontSize: '13px', color: '#666' }}>
+                  The stall will be created with "Active" status upon approval.
+                </p>
+              </>
+            ) : confirmModal.type === 'delete' ? (
+              <>
+                <h3>🗑️ Delete Stall Owner</h3>
+                <p>
+                  Are you sure you want to permanently delete <span className="owner-name">{confirmModal.owner?.name}</span>?
+                </p>
+                <p style={{ color: '#d32f2f', fontWeight: '500' }}>⚠️ This action cannot be undone!</p>
+                
+                {confirmModal.owner?.stall_id && (
+                  <div className="form-group" style={{ marginTop: '15px', textAlign: 'left' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={confirmModal.deleteStall}
+                        onChange={(e) => setConfirmModal({ ...confirmModal, deleteStall: e.target.checked })}
+                      />
+                      <span>Also delete associated stall</span>
+                    </label>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -277,9 +392,18 @@ export default function AdminApprovals() {
                 <button
                   className="btn btn-approve"
                   onClick={() => handleApprove(confirmModal.owner)}
-                  disabled={actionLoading}
+                  disabled={actionLoading || !approvalForm.stallName || !approvalForm.hawkerCentreId}
                 >
-                  {actionLoading ? 'Approving...' : 'Approve'}
+                  {actionLoading ? 'Approving...' : 'Approve & Create Stall'}
+                </button>
+              ) : confirmModal.type === 'delete' ? (
+                <button
+                  className="btn btn-reject"
+                  onClick={() => handleDelete(confirmModal.owner)}
+                  disabled={actionLoading}
+                  style={{ backgroundColor: '#d32f2f' }}
+                >
+                  {actionLoading ? 'Deleting...' : 'Delete Permanently'}
                 </button>
               ) : (
                 <button
