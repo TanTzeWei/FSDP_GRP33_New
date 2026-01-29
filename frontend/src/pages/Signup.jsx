@@ -105,7 +105,6 @@ function Signup() {
             <select id="role" value={role} onChange={(e)=>setRole(e.target.value)}>
               <option value="customer">Customer</option>
               <option value="stall_owner">Stall Owner</option>
-              <option value="admin">Admin</option>
             </select>
           </div>
 

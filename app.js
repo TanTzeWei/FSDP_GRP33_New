@@ -136,6 +136,7 @@ if (UserController && authMiddleware) {
     // Admin: approve owner accounts
     app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
     app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);
+    app.get('/admin/owners/all', authMiddleware, authMiddleware.requireAdmin, UserController.listAllOwners);
     app.post('/admin/owners/:userId/reject', authMiddleware, authMiddleware.requireAdmin, UserController.rejectOwner);
     console.log('✅ User routes configured');
 } else {
