@@ -9,6 +9,7 @@ import LoadingSkeleton from '../components/LoadingSkeleton';
 import CommunityPhotoGallery from '../components/CommunityPhotoGallery';
 import StallClosureSchedule from '../components/StallClosureSchedule';
 import ClosureBadge from '../components/ClosureBadge';
+import SocialMediaManager from '../components/SocialMediaManager';
 import './stallDashboard.css';
 
 /**
@@ -652,6 +653,12 @@ function StallDashboard() {
         >
           🔒 Closure Schedule
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'social' ? 'active' : ''}`}
+          onClick={() => setActiveTab('social')}
+        >
+          📱 Social Media
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -778,10 +785,21 @@ function StallDashboard() {
           onSetAsOfficialPhoto={handleSetCommunityPhotoAsOfficial}
           updatingPhotoIds={updatingPhotoIds}
         />
-      ) : (
+      ) : activeTab === 'closures' ? (
         /* Closure Schedule Tab */
         <StallClosureSchedule stallId={getUserStallId()} />
-      )}
+      ) : activeTab === 'social' ? (
+        /* Social Media Tab */
+        <div className="social-tab-content">
+          <SocialMediaManager 
+            stallId={getUserStallId()} 
+            onUpdate={() => {
+              // Refresh stall data after social media update
+              fetchStallData();
+            }}
+          />
+        </div>
+      ) : null}
 
       {/* Modals */}
       <MenuItemModal
