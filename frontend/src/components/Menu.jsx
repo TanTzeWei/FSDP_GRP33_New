@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import PromoBanner from './PromoBanner';
 import ClosureBadge from './ClosureBadge';
+import PhotoModal from './PhotoModal';
 import './Menu.css';
 import { AuthContext } from '../context/AuthContext';
 
@@ -18,6 +19,8 @@ const Menu = () => {
   const [failedImages, setFailedImages] = useState(new Set());
   const [dbStalls, setDbStalls] = useState([]); // Stalls from database for filtering
   const [loadingStalls, setLoadingStalls] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState(null); // Selected photo for modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Handle image load error
   const handleImageError = (stallId) => {
@@ -117,6 +120,27 @@ const Menu = () => {
   const updatePhotoLikes = (photoId, newCount) => {
     setFeaturedPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
     setCommunityPhotos(prev => prev.map(p => p.id === photoId ? { ...p, likes: newCount } : p));
+    // Update selected photo if modal is open
+    if (selectedPhoto && selectedPhoto.id === photoId) {
+      setSelectedPhoto(prev => ({ ...prev, likes: newCount }));
+    }
+  };
+
+  // Handle photo click to open modal
+  const handlePhotoClick = (photo) => {
+    setSelectedPhoto(photo);
+    setIsModalOpen(true);
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedPhoto(null);
+  };
+
+  // Handle like from modal
+  const handleModalLike = (photoId) => {
+    toggleLike(photoId);
   };
 
   const { token } = useContext(AuthContext);
@@ -328,14 +352,21 @@ const Menu = () => {
           <div className="featured-photos-grid">
             {filteredFeaturedPhotos.length > 0 ? (
               filteredFeaturedPhotos.map(photo => (
-                <div key={photo.id} className="featured-photo-card">
+                <div 
+                  key={photo.id} 
+                  className="featured-photo-card"
+                  onClick={() => handlePhotoClick(photo)}
+                >
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                     <div className="photo-overlay">
                       <div className="likes-badge">
                         <span
                           className={`heart-icon ${likedPhotos.includes(photo.id) ? 'liked' : ''} ${!token ? 'disabled' : ''}`}
-                          onClick={() => token ? toggleLike(photo.id) : null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (token) toggleLike(photo.id);
+                          }}
                           role="button"
                           tabIndex={0}
                           title={!token ? 'Login to like photos' : 'Like'}
@@ -384,7 +415,11 @@ const Menu = () => {
           <div className="community-photos-grid">
             {filteredCommunityPhotos.length > 0 ? (
               filteredCommunityPhotos.map(photo => (
-                <div key={photo.id} className="community-photo-card">
+                <div 
+                  key={photo.id} 
+                  className="community-photo-card"
+                  onClick={() => handlePhotoClick(photo)}
+                >
                   <div className="photo-container">
                     <img src={photo.imageUrl} alt={photo.dishName} className="photo-image" />
                   </div>
@@ -533,7 +568,15 @@ const Menu = () => {
       </div>
       </div>
 
-
+      {/* Photo Modal */}
+      <PhotoModal
+        photo={selectedPhoto}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onLike={handleModalLike}
+        isLiked={selectedPhoto ? likedPhotos.includes(selectedPhoto.id) : false}
+        token={token}
+      />
     </div>
   );
 };
