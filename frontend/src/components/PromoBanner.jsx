@@ -26,7 +26,18 @@ const PromoBanner = () => {
           const stallPromos = promosResponse.data.data || [];
           
           if (stallPromos.length > 0) {
-            stallPromos.forEach(promo => {
+            for (const promo of stallPromos) {
+              // Fetch food item price
+              let itemPrice = null;
+              try {
+                const foodItemResponse = await axios.get(`/api/dishes/${promo.food_item_id}`);
+                if (foodItemResponse.data.success && foodItemResponse.data.data) {
+                  itemPrice = parseFloat(foodItemResponse.data.data.price);
+                }
+              } catch (err) {
+                console.warn(`Failed to fetch food item ${promo.food_item_id}:`, err);
+              }
+
               allPromos.push({
                 id: promo.id,
                 title: stall.stall_name || stall.name,
@@ -35,11 +46,17 @@ const PromoBanner = () => {
                 time: stall.estimated_delivery_time || 30,
                 distance: stall.distance_km || 1.0,
                 offer: formatPromoOffer(promo),
+                promoName: promo.promo_name || 'Special Offer',
+                endDate: promo.end_date,
+                discountType: promo.discount_type,
+                discountValue: promo.discount_value,
+                originalPrice: itemPrice,
+                discountedPrice: calculateDiscountedPrice(itemPrice, promo),
                 image: stall.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop&q=80',
                 alt: `${stall.stall_name || stall.name} - Promotion`,
                 stallId: stall.id
               });
-            });
+            }
           }
         } catch (error) {
           console.error(`Error loading promos for stall ${stall.id}:`, error);
@@ -62,6 +79,26 @@ const PromoBanner = () => {
       return `$${promo.discount_value} Off`;
     }
     return promo.promo_name;
+  };
+
+  const calculateDiscountedPrice = (originalPrice, promo) => {
+    if (!originalPrice || !promo) return null;
+    
+    let discountedPrice = originalPrice;
+    
+    if (promo.discount_type === 'percentage') {
+      discountedPrice = originalPrice - (originalPrice * promo.discount_value / 100);
+    } else if (promo.discount_type === 'fixed_amount') {
+      discountedPrice = originalPrice - promo.discount_value;
+    }
+    
+    return Math.max(0, discountedPrice);
+  };
+
+  const formatEndDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-SG', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getFallbackPromoData = () => [
@@ -121,7 +158,6 @@ const PromoBanner = () => {
                   onClick={() => navigate(`/menu?stall=${promo.stallId}`)}
                   style={{ cursor: "pointer" }}
                 >
-                  <div className="promo-badge">Promo</div>
                   <div className="promo-image">
                     <img 
                       src={promo.image} 
@@ -135,21 +171,29 @@ const PromoBanner = () => {
                   </div>
                   <div className="promo-content">
                     <h3>{promo.title}</h3>
+                    <p className="promo-name">📌 {promo.promoName}</p>
                     <p className="promo-category">{promo.category}</p>
                     <div className="promo-meta">
                       <span className="rating">⭐ {promo.rating}</span>
                       <span className="delivery-time">⏰ {promo.time} mins</span>
                       <span className="distance">📍 {promo.distance} km</span>
                     </div>
-                    <div className="promo-offer">{promo.offer}</div>
+                    
+                    {promo.originalPrice && promo.discountedPrice !== null && (
+                      <div className="promo-pricing">
+                        <p className="original-price">${promo.originalPrice.toFixed(2)}</p>
+                        <p className="discounted-price">${promo.discountedPrice.toFixed(2)}</p>
+                      </div>
+                    )}
+                    
+                    <div className="promo-footer">
+                      <div className="promo-offer">{promo.offer}</div>
+                      <div className="promo-end-date">Ends: {formatEndDate(promo.endDate)}</div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-
-            <button className="see-all-btn" onClick={() => navigate('/menu')}>
-              See all promotions
-            </button>
           </>
         )}
       </div>

@@ -19,6 +19,7 @@ const MenuPage = () => {
   const [stallImageError, setStallImageError] = useState(false);
   const [itemImageErrors, setItemImageErrors] = useState({});
   const [activeSection, setActiveSection] = useState('menu');
+  const [promos, setPromos] = useState({});
   
   const [stall, setStall] = useState({
     name: 'Loading...',
@@ -49,6 +50,21 @@ const MenuPage = () => {
       ...prev,
       [itemId]: true
     }));
+  };
+
+  const calculateDiscountedPrice = (foodItemId, originalPrice) => {
+    if (!promos[foodItemId]) return null;
+    
+    const promo = promos[foodItemId];
+    let discountedPrice = originalPrice;
+    
+    if (promo.discount_type === 'percentage') {
+      discountedPrice = originalPrice - (originalPrice * promo.discount_value / 100);
+    } else if (promo.discount_type === 'fixed_amount') {
+      discountedPrice = originalPrice - promo.discount_value;
+    }
+    
+    return Math.max(0, discountedPrice);
   };
 
   // Fetch dishes from backend when component mounts or stallId changes
@@ -130,6 +146,30 @@ const MenuPage = () => {
         setMenuItems([]);
       })
       .finally(() => setLoading(false));
+
+    // Fetch active promos for this stall
+    fetch(`${apiBase}/api/promos/stall/${id}/active`)
+      .then(async res => {
+        if (!res.ok) return {};
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          // Create a map of food_item_id -> promo data
+          const promoMap = {};
+          data.data.forEach(promo => {
+            promoMap[promo.food_item_id] = {
+              discount_type: promo.discount_type,
+              discount_value: promo.discount_value,
+              promo_name: promo.promo_name
+            };
+          });
+          setPromos(promoMap);
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch promos:', err);
+      });
   }, [stallId]);
 
   return (
@@ -279,12 +319,30 @@ const MenuPage = () => {
                           </div>
 
                           <p className="item-description">{item.description}</p>
-                          <p className="item-price">${item.price.toFixed(2)}</p>
+                          <div className="item-price-container">
+                            {promos[item.id] ? (
+                              <>
+                                <p className="item-price original-price">${item.price.toFixed(2)}</p>
+                                <p className="item-price discounted-price">
+                                  ${calculateDiscountedPrice(item.id, item.price).toFixed(2)}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="item-price">${item.price.toFixed(2)}</p>
+                            )}
+                          </div>
                         </div>
 
                         <button 
                           className="add-button"
-                          onClick={() => addToCart(item)}
+                          onClick={() => {
+                            const itemToAdd = { ...item };
+                            if (promos[item.id]) {
+                              itemToAdd.price = calculateDiscountedPrice(item.id, item.price);
+                              itemToAdd.originalPrice = item.price;
+                            }
+                            addToCart(itemToAdd);
+                          }}
                           disabled={stall.is_currently_closed}
                           title={stall.is_currently_closed ? 'Stall is currently closed' : 'Add to cart'}
                         >
