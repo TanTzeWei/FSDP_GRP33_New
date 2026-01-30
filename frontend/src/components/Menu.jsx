@@ -110,11 +110,14 @@ const Menu = () => {
     return stallMatch && dishMatch;
   });
 
-  const filteredFeaturedPhotos = featuredPhotos.filter(photo => {
-    const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
-    const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
-    return stallMatch && dishMatch;
-  });
+  const filteredFeaturedPhotos = featuredPhotos
+    .filter(photo => {
+      const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
+      const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
+      return stallMatch && dishMatch;
+    })
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 9);
 
   // Update likes count for a photo across featured/community lists
   const updatePhotoLikes = (photoId, newCount) => {

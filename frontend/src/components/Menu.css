@@ -533,9 +533,10 @@ a.stall-card {
 /* Featured Photos Grid (Hall of Fame) */
 .featured-photos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
+  width: 100%;
 }
 
 .featured-photo-card {
@@ -949,7 +950,7 @@ a.stall-card {
 /* Responsive Design for Photo Sections */
 @media (max-width: 968px) {
   .featured-photos-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
   
@@ -968,7 +969,7 @@ a.stall-card {
   }
   
   .featured-photos-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .community-photos-grid {
@@ -991,7 +992,11 @@ a.stall-card {
     border-radius: 0;
   }
   
-  .featured-photos-grid,
+  .featured-photos-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
   .community-photos-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
