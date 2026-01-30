@@ -27,12 +27,16 @@ const PromoBanner = () => {
           
           if (stallPromos.length > 0) {
             for (const promo of stallPromos) {
-              // Fetch food item price
+              // Fetch food item price, image, and name
               let itemPrice = null;
+              let itemImage = null;
+              let itemName = null;
               try {
                 const foodItemResponse = await axios.get(`/api/dishes/${promo.food_item_id}`);
                 if (foodItemResponse.data.success && foodItemResponse.data.data) {
                   itemPrice = parseFloat(foodItemResponse.data.data.price);
+                  itemImage = foodItemResponse.data.data.image_url || foodItemResponse.data.data.image;
+                  itemName = foodItemResponse.data.data.name;
                 }
               } catch (err) {
                 console.warn(`Failed to fetch food item ${promo.food_item_id}:`, err);
@@ -41,6 +45,7 @@ const PromoBanner = () => {
               allPromos.push({
                 id: promo.id,
                 title: stall.stall_name || stall.name,
+                itemName: itemName || 'Special Item',
                 category: stall.cuisine_type || 'Hawker Food',
                 rating: stall.rating || 4.5,
                 time: stall.estimated_delivery_time || 30,
@@ -52,7 +57,7 @@ const PromoBanner = () => {
                 discountValue: promo.discount_value,
                 originalPrice: itemPrice,
                 discountedPrice: calculateDiscountedPrice(itemPrice, promo),
-                image: stall.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop&q=80',
+                image: itemImage || stall.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop&q=80',
                 alt: `${stall.stall_name || stall.name} - Promotion`,
                 stallId: stall.id
               });
@@ -171,6 +176,7 @@ const PromoBanner = () => {
                   </div>
                   <div className="promo-content">
                     <h3>{promo.title}</h3>
+                    <p className="promo-item-name">🍽️ {promo.itemName}</p>
                     <p className="promo-name">📌 {promo.promoName}</p>
                     <p className="promo-category">{promo.category}</p>
                     <div className="promo-meta">

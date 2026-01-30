@@ -843,10 +843,10 @@ function StallDashboard() {
           onSetAsOfficialPhoto={handleSetCommunityPhotoAsOfficial}
           updatingPhotoIds={updatingPhotoIds}
         />
-      ) : activeTab === 'closures' ? activeTab === 'closures' ? (
+      ) : activeTab === 'closures' ? (
         /* Closure Schedule Tab */
         <StallClosureSchedule stallId={getUserStallId()} />
-      ) : (
+      ) : activeTab === 'promos' ? (
         /* Promotions Tab */
         <PromoManagement stallId={getUserStallId()} />
       ) : activeTab === 'social' ? (
