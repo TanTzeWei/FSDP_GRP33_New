@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from '../components/Header';
 import { CartContext } from '../context/CartContext';
 import ClosureBadge from '../components/ClosureBadge';
+import SocialShare from '../components/SocialShare';
+import SocialMediaLinks from '../components/SocialMediaLinks';
 import './menupage.css';
 
 const MenuPage = () => {
@@ -19,6 +21,7 @@ const MenuPage = () => {
   const [stallImageError, setStallImageError] = useState(false);
   const [itemImageErrors, setItemImageErrors] = useState({});
   const [activeSection, setActiveSection] = useState('menu');
+  const [promos, setPromos] = useState({});
   
   const [stall, setStall] = useState({
     name: 'Loading...',
@@ -29,7 +32,12 @@ const MenuPage = () => {
     image: '',
     categories: [],
     is_currently_closed: false,
-    closure_info: null
+    closure_info: null,
+    facebook_url: '',
+    instagram_url: '',
+    twitter_url: '',
+    tiktok_url: '',
+    website_url: ''
   });
 
   // Filter menu items by search term
@@ -49,6 +57,21 @@ const MenuPage = () => {
       ...prev,
       [itemId]: true
     }));
+  };
+
+  const calculateDiscountedPrice = (foodItemId, originalPrice) => {
+    if (!promos[foodItemId]) return null;
+    
+    const promo = promos[foodItemId];
+    let discountedPrice = originalPrice;
+    
+    if (promo.discount_type === 'percentage') {
+      discountedPrice = originalPrice - (originalPrice * promo.discount_value / 100);
+    } else if (promo.discount_type === 'fixed_amount') {
+      discountedPrice = originalPrice - promo.discount_value;
+    }
+    
+    return Math.max(0, discountedPrice);
   };
 
   // Fetch dishes from backend when component mounts or stallId changes
@@ -92,7 +115,12 @@ const MenuPage = () => {
             image: s.image_url || s.image || '',
             categories: s.specialties || [],
             is_currently_closed: s.is_currently_closed || false,
-            closure_info: s.closure_info || null
+            closure_info: s.closure_info || null,
+            facebook_url: s.facebook_url || '',
+            instagram_url: s.instagram_url || '',
+            twitter_url: s.twitter_url || '',
+            tiktok_url: s.tiktok_url || '',
+            website_url: s.website_url || ''
           });
         }
       })
@@ -130,6 +158,30 @@ const MenuPage = () => {
         setMenuItems([]);
       })
       .finally(() => setLoading(false));
+
+    // Fetch active promos for this stall
+    fetch(`${apiBase}/api/promos/stall/${id}/active`)
+      .then(async res => {
+        if (!res.ok) return {};
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          // Create a map of food_item_id -> promo data
+          const promoMap = {};
+          data.data.forEach(promo => {
+            promoMap[promo.food_item_id] = {
+              discount_type: promo.discount_type,
+              discount_value: promo.discount_value,
+              promo_name: promo.promo_name
+            };
+          });
+          setPromos(promoMap);
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch promos:', err);
+      });
   }, [stallId]);
 
   return (
@@ -164,42 +216,72 @@ const MenuPage = () => {
           </div>
 
           <div className="stall-info">
-            {/* Closure Status Badge */}
-            <div style={{ marginBottom: '15px' }}>
-              <ClosureBadge
-                isClosed={stall.is_currently_closed}
-                closureInfo={stall.closure_info}
-                showDetails={true}
-                size="large"
-              />
-            </div>
+            {/* Closure Status Badge - Only show if closed */}
+            {stall.is_currently_closed && (
+              <div style={{ marginBottom: '1rem' }}>
+                <ClosureBadge
+                  isClosed={stall.is_currently_closed}
+                  closureInfo={stall.closure_info}
+                  showDetails={true}
+                  size="large"
+                />
+              </div>
+            )}
 
             <h2 className="stall-name">{stall.name}</h2>
 
             <ul className="stall-details">
-              <li className="stall-detail-item">
-                <Star className="icon icon-star" />
-                <span className="rating-value">{stall.rating}</span>
-                ({stall.reviews})
-              </li>
+              {stall.rating > 0 && (
+                <li className="stall-detail-item">
+                  <Star className="icon icon-star" />
+                  <span className="rating-value">{stall.rating.toFixed(1)}</span>
+                  <span>({stall.reviews})</span>
+                </li>
+              )}
 
-              <li className="stall-detail-item">
-                <Clock className="icon" /> {stall.deliveryTime}
-              </li>
+              {stall.deliveryTime && (
+                <li className="stall-detail-item">
+                  <Clock className="icon" /> 
+                  <span>{stall.deliveryTime}</span>
+                </li>
+              )}
 
-              <li className="stall-detail-item">
-                <MapPin className="icon" /> {stall.distance}
-              </li>
+              {stall.distance && (
+                <li className="stall-detail-item">
+                  <MapPin className="icon" /> 
+                  <span>{stall.distance}</span>
+                </li>
+              )}
             </ul>
 
-            <ul className="category-tags">
-              {stall.categories.map((c,i) => (
-                <li className="category-tag" key={i}>{c}</li>
-              ))}
-            </ul>
+            {stall.categories && stall.categories.length > 0 && (
+              <ul className="category-tags">
+                {stall.categories.map((c,i) => (
+                  <li className="category-tag" key={i}>{c}</li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </section>
+
+      {/* SOCIAL MEDIA LINKS - Display stall's social profiles */}
+      {(stall.facebook_url || stall.instagram_url || stall.twitter_url || stall.tiktok_url || stall.website_url) && (
+        <section className="stall-social-section">
+          <div className="stall-container">
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#495057' }}>Follow Us:</h3>
+            <SocialMediaLinks 
+              facebook={stall.facebook_url}
+              instagram={stall.instagram_url}
+              twitter={stall.twitter_url}
+              tiktok={stall.tiktok_url}
+              website={stall.website_url}
+              size="medium"
+              showLabels={true}
+            />
+          </div>
+        </section>
+      )}
 
       {/* SEARCH */}
       <section className="search-section">
@@ -217,7 +299,7 @@ const MenuPage = () => {
       </section>
 
       {/* ERROR MESSAGE */}
-      {error && (
+      {error && !loading && (
         <section className="error-section">
           <div className="error-message">{error}</div>
         </section>
@@ -269,22 +351,39 @@ const MenuPage = () => {
                         </div>
 
                         <div className="item-details">
-                          <div className="item-header">
-                            <h4 className="item-name">
-                              {item.name}
-                              {item.popular && (
-                                <span className="popular-badge">Popular</span>
-                              )}
-                            </h4>
+                          <h4 className="item-name">
+                            {item.name}
+                            {item.popular && (
+                              <span className="popular-badge">Popular</span>
+                            )}
+                          </h4>
+                          {item.description && (
+                            <p className="item-description">{item.description}</p>
+                          )}
+                          <div className="item-price-container">
+                            {promos[item.id] ? (
+                              <>
+                                <p className="item-price original-price">${item.price.toFixed(2)}</p>
+                                <p className="item-price discounted-price">
+                                  ${calculateDiscountedPrice(item.id, item.price).toFixed(2)}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="item-price">${item.price.toFixed(2)}</p>
+                            )}
                           </div>
-
-                          <p className="item-description">{item.description}</p>
-                          <p className="item-price">${item.price.toFixed(2)}</p>
                         </div>
 
                         <button 
                           className="add-button"
-                          onClick={() => addToCart(item)}
+                          onClick={() => {
+                            const itemToAdd = { ...item };
+                            if (promos[item.id]) {
+                              itemToAdd.price = calculateDiscountedPrice(item.id, item.price);
+                              itemToAdd.originalPrice = item.price;
+                            }
+                            addToCart(itemToAdd);
+                          }}
                           disabled={stall.is_currently_closed}
                           title={stall.is_currently_closed ? 'Stall is currently closed' : 'Add to cart'}
                         >
@@ -297,6 +396,20 @@ const MenuPage = () => {
               </div>
             );
           })}
+        </section>
+      )}
+
+      {/* SOCIAL SHARE - Let visitors share this stall */}
+      {!loading && stall.name !== 'Loading...' && (
+        <section className="share-section">
+          <div className="stall-container">
+            <SocialShare 
+              url={window.location.href}
+              title={`Check out ${stall.name}!`}
+              description={`Delicious food at ${stall.name}. Order now!`}
+              imageUrl={stall.image}
+            />
+          </div>
         </section>
       )}
 

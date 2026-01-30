@@ -10,6 +10,7 @@ import StallDashboard from "./pages/stallDashboard";
 import DashboardStallOwner from "./pages/DashboardStallOwner";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import AdminApprovals from "./pages/AdminApprovals";
+import AdminStalls from "./pages/AdminStalls";
 import Header from './components/Header';
 import Menu from './components/Menu';
 import MenuPage from './pages/menupage';
@@ -88,6 +89,7 @@ function App() {
         <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />
         <Route path="/dashboard/admin" element={<DashboardAdmin />} />
         <Route path="/admin/approvals" element={<AdminApprovals />} />
+        <Route path="/admin/stalls" element={<AdminStalls />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/profile" element={<ProfilePage />} />

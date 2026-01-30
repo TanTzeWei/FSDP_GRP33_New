@@ -12,12 +12,10 @@ class DishController {
 
             const dishes = await DishModel.getDishesByStall(parseInt(stallId));
 
-            const processed = dishes.map(d => ({
-                ...d,
-                dietary_info: d.dietary_info ? JSON.parse(d.dietary_info) : []
-            }));
+            // Handle null/undefined or ensure it's an array
+            const dishesArray = Array.isArray(dishes) ? dishes : [];
 
-            res.status(200).json({ success: true, data: processed, count: processed.length });
+            res.status(200).json({ success: true, data: dishesArray, count: dishesArray.length });
         } catch (error) {
             console.error('Error in listByStall:', error);
             res.status(500).json({ success: false, message: 'Failed to fetch dishes', error: error.message });
@@ -35,7 +33,6 @@ class DishController {
             const dish = await DishModel.getDishById(parseInt(id));
             if (!dish) return res.status(404).json({ success: false, message: 'Dish not found' });
 
-            dish.dietary_info = dish.dietary_info ? JSON.parse(dish.dietary_info) : [];
             res.status(200).json({ success: true, data: dish });
         } catch (error) {
             console.error('Error in getDish:', error);
@@ -59,7 +56,6 @@ class DishController {
             if (String(requester.stall_id) !== String(payload.stall_id)) return res.status(403).json({ success: false, message: 'Forbidden: you may only manage your own stall' });
 
             const created = await DishModel.createDish(payload);
-            created.dietary_info = created.dietary_info ? JSON.parse(created.dietary_info) : [];
 
             res.status(201).json({ success: true, data: created });
         } catch (error) {
@@ -87,7 +83,6 @@ class DishController {
             const updated = await DishModel.updateDish(parseInt(id), payload);
             if (!updated) return res.status(404).json({ success: false, message: 'Dish not found' });
 
-            updated.dietary_info = updated.dietary_info ? JSON.parse(updated.dietary_info) : [];
             res.status(200).json({ success: true, data: updated });
         } catch (error) {
             console.error('Error in updateDish:', error);

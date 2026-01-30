@@ -15,6 +15,11 @@ const CartPage = () => {
   const getSubtotal = () =>
     (itemsToRender || []).reduce((sum, i) => sum + (parseFloat(i.price) || 0) * (i.quantity || 0), 0);
 
+  const getOriginalSubtotal = () =>
+    (itemsToRender || []).reduce((sum, i) => sum + (i.originalPrice ? parseFloat(i.originalPrice) : parseFloat(i.price) || 0) * (i.quantity || 0), 0);
+
+  const getTotalSavings = () => getOriginalSubtotal() - getSubtotal();
+
   return (
     <main className="cart-page">
 
@@ -83,7 +88,16 @@ const CartPage = () => {
                         <div className="item-info">
                           <h3 className="item-name">{item.name}</h3>
                           <p className="item-stall">{item.stallName}</p>
-                          <p className="item-price">${item.price.toFixed(2)}</p>
+                          <div className="item-pricing">
+                            {item.originalPrice ? (
+                              <>
+                                <p className="item-price original-price">${item.originalPrice.toFixed(2)}</p>
+                                <p className="item-price discounted-price">${item.price.toFixed(2)}</p>
+                              </>
+                            ) : (
+                              <p className="item-price">${item.price.toFixed(2)}</p>
+                            )}
+                          </div>
                         </div>
 
                         <button
@@ -136,8 +150,24 @@ const CartPage = () => {
             <div className="price-breakdown">
               <div className="price-row">
                 <span className="price-label">Subtotal</span>
-                <span className="price-value">${getSubtotal().toFixed(2)}</span>
+                <div className="price-values">
+                  {getTotalSavings() > 0 ? (
+                    <>
+                      <span className="price-value original-price">${getOriginalSubtotal().toFixed(2)}</span>
+                      <span className="price-value discounted-price">${getSubtotal().toFixed(2)}</span>
+                    </>
+                  ) : (
+                    <span className="price-value">${getSubtotal().toFixed(2)}</span>
+                  )}
+                </div>
               </div>
+
+              {getTotalSavings() > 0 && (
+                <div className="price-row savings-row">
+                  <span className="price-label savings-label">You save</span>
+                  <span className="savings-value">-${getTotalSavings().toFixed(2)}</span>
+                </div>
+              )}
 
               <hr className="price-divider" />
 

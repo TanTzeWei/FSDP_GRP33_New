@@ -212,7 +212,11 @@ class UploadModel {
   // Get photo by ID with full details
   static async getPhotoById(photoId) {
     try {
-      const { data, error } = await supabase.from('photos').select('*, users(name,email), hawker_centres(name), stalls(name), food_items(name)').eq('id', photoId).maybeSingle();
+      const { data, error } = await supabase
+        .from('photos')
+        .select('*, users(name,email), hawker_centres(name), stalls(stall_name, name), food_items(name)')
+        .eq('id', photoId)
+        .maybeSingle();
       if (error) throw error;
       return data;
     } catch (error) {

@@ -67,29 +67,44 @@ function PhotoGrid({
     );
   }
 
-  // Group photos by approval status
-  const pendingPhotos = photos.filter(
-    (p) => p.raw?.approval_status === 'pending' || !p.raw?.approval_status
-  );
-  const approvedPhotos = photos.filter(
-    (p) => p.raw?.approval_status === 'approved'
-  );
-  const rejectedPhotos = photos.filter(
-    (p) => p.raw?.approval_status === 'rejected'
-  );
+  // Get top 3 most liked photos
+  // Sort by likes_count (from raw data) in descending order and take top 3
+  const topLikedPhotos = [...photos]
+    .sort((a, b) => {
+      const likesA = a.raw?.likes_count || a.raw?.likes || 0;
+      const likesB = b.raw?.likes_count || b.raw?.likes || 0;
+      return likesB - likesA;
+    })
+    .slice(0, 3);
+
+  if (topLikedPhotos.length === 0) {
+    return (
+      <div className="no-uploads-message">
+        <ImageIcon className="no-uploads-icon" />
+        <p className="no-uploads-text">No user uploads yet</p>
+      </div>
+    );
+  }
 
   return (
     <div className="photo-grid-container">
-      {/* Pending Photos Section */}
-      {pendingPhotos.length > 0 && (
-        <div className="photo-section">
-          <div className="photo-section-header">
-            <span className="photo-section-label">
-              Pending Review ({pendingPhotos.length})
-            </span>
-          </div>
-          <div className="user-photos-grid">
-            {pendingPhotos.map((photo) => (
+      <div className="photo-section">
+        <div className="photo-section-header">
+          <span className="photo-section-label">
+            Top Liked Photos
+          </span>
+        </div>
+        <div className="user-photos-grid top-liked-grid">
+          {topLikedPhotos.map((photo) => {
+            // Determine status from raw data
+            let status = 'pending';
+            if (photo.raw?.approval_status === 'approved' || photo.raw?.is_approved === true) {
+              status = 'approved';
+            } else if (photo.raw?.approval_status === 'rejected' || photo.raw?.is_approved === false) {
+              status = 'rejected';
+            }
+
+            return (
               <PhotoCard
                 key={photo.id}
                 photo={photo}
@@ -99,66 +114,12 @@ function PhotoGrid({
                 onApprove={onApprove}
                 onReject={onReject}
                 currentOfficialUrl={currentOfficialUrl}
-                status="pending"
+                status={status}
               />
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
-
-      {/* Approved Photos Section */}
-      {approvedPhotos.length > 0 && (
-        <div className="photo-section">
-          <div className="photo-section-header">
-            <span className="photo-section-label">
-              Approved ({approvedPhotos.length})
-            </span>
-          </div>
-          <div className="user-photos-grid">
-            {approvedPhotos.map((photo) => (
-              <PhotoCard
-                key={photo.id}
-                photo={photo}
-                dishId={dishId}
-                isUpdating={isUpdating}
-                onSetOfficial={onSetOfficial}
-                onApprove={onApprove}
-                onReject={onReject}
-                currentOfficialUrl={currentOfficialUrl}
-                status="approved"
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Rejected Photos Section (Collapsed by default) */}
-      {rejectedPhotos.length > 0 && (
-        <div className="photo-section">
-          <details className="photo-section-collapsible">
-            <summary className="photo-section-header">
-              <span className="photo-section-label">
-                Rejected ({rejectedPhotos.length})
-              </span>
-            </summary>
-            <div className="user-photos-grid">
-              {rejectedPhotos.map((photo) => (
-                <PhotoCard
-                  key={photo.id}
-                  photo={photo}
-                  dishId={dishId}
-                  isUpdating={isUpdating}
-                  onSetOfficial={onSetOfficial}
-                  onApprove={onApprove}
-                  onReject={onReject}
-                  currentOfficialUrl={currentOfficialUrl}
-                  status="rejected"
-                />
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -179,10 +140,19 @@ function PhotoCard({
   status,
 }) {
   const isOfficial = currentOfficialUrl === photo.imageUrl;
+  const likesCount = photo.raw?.likes_count || photo.raw?.likes || 0;
 
   return (
     <div className={`user-photo-item ${isUpdating ? 'updating' : ''} ${status}`}>
       <img src={photo.imageUrl} alt="" className="user-photo" />
+
+      {/* Like Count Badge */}
+      {likesCount > 0 && (
+        <div className="photo-likes-badge">
+          <span className="likes-icon">❤️</span>
+          <span className="likes-count">{likesCount}</span>
+        </div>
+      )}
 
       {isOfficial && (
         <div className="official-indicator">

@@ -524,19 +524,23 @@ class UploadController {
         });
       }
 
+      // Format photo data based on actual database structure
       const formattedPhoto = {
         id: photo.id,
-        imageUrl: photo.file_path,
+        imageUrl: photo.image_url || photo.file_path,
         dishName: photo.dish_name,
         description: photo.description,
-        likes: photo.likes_count,
+        likes: photo.likes_count || 0,
+        likes_count: photo.likes_count || 0,
         isFeatured: photo.is_featured,
-        hawkerCentre: photo.hawker_centre_name,
-        stallName: photo.stall_name,
-        foodItem: photo.food_item_name,
+        hawkerCentre: photo.hawker_centres?.name || null,
+        hawkerCentreName: photo.hawker_centres?.name || null,
+        stallName: photo.stalls?.stall_name || photo.stalls?.name || null,
+        foodItem: photo.food_items?.name || null,
+        username: photo.users?.name || 'Anonymous',
         uploader: {
-          name: `${photo.first_name} ${photo.last_name}`,
-          email: photo.email
+          name: photo.users?.name || 'Anonymous',
+          email: photo.users?.email || null
         },
         createdAt: photo.created_at,
         updatedAt: photo.updated_at

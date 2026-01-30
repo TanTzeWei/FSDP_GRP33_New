@@ -276,9 +276,28 @@
   margin-bottom: 0.25rem;
 }
 
+.item-pricing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .item-price {
   font-size: 0.875rem;
   color: #4b5563;
+  margin: 0;
+}
+
+.item-price.original-price {
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-size: 0.8rem;
+}
+
+.item-price.discounted-price {
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 0.95rem;
 }
 
 .remove-button {
@@ -467,10 +486,44 @@
   color: #6b7280;
 }
 
+.price-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .price-value {
   font-size: 0.875rem;
   color: #1f2937;
   font-weight: 500;
+}
+
+.price-value.original-price {
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-size: 0.8rem;
+}
+
+.price-value.discounted-price {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.savings-row {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
+}
+
+.savings-label {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.savings-value {
+  color: #10b981;
+  font-weight: bold;
 }
 
 .discount-row {
