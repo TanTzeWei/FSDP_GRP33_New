@@ -152,3 +152,4 @@ const PhotoModal = ({ photo, isOpen, onClose, onLike, isLiked, token }) => {
 export default PhotoModal;
 
 
+
