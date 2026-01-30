@@ -157,6 +157,22 @@
   color: white;
 }
 
+.loading-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+.no-promos-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
 @media (max-width: 768px) {
   .promo-title {
     font-size: 24px;

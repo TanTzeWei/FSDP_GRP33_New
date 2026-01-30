@@ -23,6 +23,8 @@ let DishController;
 let StallController;
 let MenuPhotoController;
 let StallClosureController;
+let PromoController;
+let PointsController;
 
 try {
     UserController = require('./controllers/userController');
@@ -85,6 +87,14 @@ try {
     console.log('✅ StallClosureController loaded');
 } catch (error) {
     console.error('❌ Error loading StallClosureController:', error.message);
+}
+
+try {
+    PromoController = require('./controllers/promoController');
+    console.log('✅ PromoController loaded');
+} catch (error) {
+    console.error('❌ Error loading PromoController:', error.message);
+    console.error('Full error:', error);
 }
 
 // Create Express app
@@ -304,14 +314,25 @@ if (PointsController && authMiddleware) {
     console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
 }
 
-
+// Promotion Routes (Discount/Promo Management)
+if (PromoController) {
+    // Public: get promotions
+    app.get('/api/promos/stall/:stallId', PromoController.getPromosByStall);
+    app.get('/api/promos/stall/:stallId/active', PromoController.getActivePromosByStall);
+    app.get('/api/promos/food-item/:foodItemId', PromoController.getActivePromoByFoodItem);
+    app.get('/api/promos/hawker-centre/:hawkerCentreId', PromoController.getPromosForHawkerCentre);
+    app.get('/api/promos/:promoId', PromoController.getPromoById);
     
-    // Hawker centre specific
-    app.get('/api/hawker-centres/:hawkerCentreId/tables', ReservationController.getHawkerCentreTables);
-    app.get('/api/hawker-centres/:hawkerCentreId/reservations', ReservationController.getHawkerCentreReservations);
-    app.get('/api/hawker-centres/:hawkerCentreId/reservation-stats', ReservationController.getHawkerCentreReservationStats);
+    // Protected: manage promotions (stall owners only)
+    app.post('/api/promos', authMiddleware, PromoController.createPromo);
+    app.put('/api/promos/:promoId', authMiddleware, PromoController.updatePromo);
+    app.delete('/api/promos/:promoId', authMiddleware, PromoController.deletePromo);
+    app.post('/api/promos/:promoId/deactivate', authMiddleware, PromoController.deactivatePromo);
     
-    console.log('✅ Reservation routes configured');
+    console.log('✅ Promotion routes configured');
+} else {
+    console.log('⚠️  Promotion routes disabled (missing PromoController)');
+}
 
 // Simple health route
 app.get('/', (req, res) => {

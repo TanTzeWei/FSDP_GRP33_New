@@ -1,0 +1,7 @@
+﻿BEGIN TRANSACTION;
+
+UPDATE promotions
+SET start_date = '2026-01-30T00:00:00+00:00'
+WHERE id IN (2, 3);
+
+COMMIT;
