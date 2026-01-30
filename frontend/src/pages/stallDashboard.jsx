@@ -10,6 +10,7 @@ import CommunityPhotoGallery from '../components/CommunityPhotoGallery';
 import StallClosureSchedule from '../components/StallClosureSchedule';
 import ClosureBadge from '../components/ClosureBadge';
 import PromoManagement from '../components/PromoManagement';
+import SocialMediaManager from '../components/SocialMediaManager';
 import './stallDashboard.css';
 
 /**
@@ -476,16 +477,69 @@ function StallDashboard() {
 
   const handleSaveMenuItem = async (formData) => {
     try {
+      let imageUrl = formData.image_url || null;
+      const stallId = getUserStallId();
+      const originalStallImage = stall?.image_url || null;
+
+      // If there's a new image file, upload it first
+      if (formData.imageFile) {
+        // Save current stall image to restore later
+        const imageFormData = new FormData();
+        imageFormData.append('stallImage', formData.imageFile);
+
+        const uploadRes = await axios.post(`/api/stalls/${stallId}/image`, imageFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (uploadRes.data?.success && uploadRes.data?.data?.imageUrl) {
+          imageUrl = uploadRes.data.data.imageUrl;
+          
+          // Restore original stall image if it was different
+          if (originalStallImage && originalStallImage !== imageUrl) {
+            try {
+              await axios.put(`/api/stalls/${stallId}`, { image_url: originalStallImage }, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+            } catch (restoreErr) {
+              console.warn('Could not restore stall image:', restoreErr);
+              // Not critical, continue with dish creation
+            }
+          }
+        } else {
+          throw new Error('Failed to upload image');
+        }
+      }
+
+      // Prepare dish data (remove imageFile, add image_url)
+      const { imageFile, ...dishData } = formData;
+      const payload = {
+        ...dishData,
+        image_url: imageUrl
+      };
+
       if (editingMenuItem) {
-        await axios.put(`/api/dishes/${editingMenuItem.id}`, formData);
+        await axios.put(`/api/dishes/${editingMenuItem.id}`, payload, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         setDishes((p) =>
           p.map((d) =>
-            d.id === editingMenuItem.id ? { ...d, ...formData } : d
+            d.id === editingMenuItem.id ? { ...d, ...payload } : d
           )
         );
         showSuccess('Menu item updated');
       } else {
-        const res = await axios.post('/api/dishes', formData);
+        const res = await axios.post('/api/dishes', payload, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         setDishes((p) => [res.data?.data || res.data, ...p]);
         showSuccess('Menu item added');
       }
@@ -493,8 +547,9 @@ function StallDashboard() {
       setMenuItemModalOpen(false);
       setEditingMenuItem(null);
     } catch (err) {
+      console.error('Error saving menu item:', err);
       showError(
-        editingMenuItem ? 'Failed to update item' : 'Failed to add item'
+        err.response?.data?.message || (editingMenuItem ? 'Failed to update item' : 'Failed to add item')
       );
     }
   };
@@ -659,6 +714,12 @@ function StallDashboard() {
         >
           🏷️ Promotions
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'social' ? 'active' : ''}`}
+          onClick={() => setActiveTab('social')}
+        >
+          📱 Social Media
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -759,10 +820,7 @@ function StallDashboard() {
                       setEditingMenuItem(item);
                       setMenuItemModalOpen(true);
                     }}
-                    onUpload={(item) => {
-                      setUploadingForMenuItem(item);
-                      setPhotoUploadModalOpen(true);
-                    }}
+                    onUpload={() => {}} // No longer used, but kept for component compatibility
                     onSetOfficial={handleSelectOfficialPhoto}
                     onApprovePhoto={handleApprovePhoto}
                     onRejectPhoto={handleRejectPhoto}
@@ -785,13 +843,24 @@ function StallDashboard() {
           onSetAsOfficialPhoto={handleSetCommunityPhotoAsOfficial}
           updatingPhotoIds={updatingPhotoIds}
         />
-      ) : activeTab === 'closures' ? (
+      ) : activeTab === 'closures' ? activeTab === 'closures' ? (
         /* Closure Schedule Tab */
         <StallClosureSchedule stallId={getUserStallId()} />
       ) : (
         /* Promotions Tab */
         <PromoManagement stallId={getUserStallId()} />
-      )}
+      ) : activeTab === 'social' ? (
+        /* Social Media Tab */
+        <div className="social-tab-content">
+          <SocialMediaManager 
+            stallId={getUserStallId()} 
+            onUpdate={() => {
+              // Refresh stall data after social media update
+              fetchStallData();
+            }}
+          />
+        </div>
+      ) : null}
 
       {/* Modals */}
       <MenuItemModal

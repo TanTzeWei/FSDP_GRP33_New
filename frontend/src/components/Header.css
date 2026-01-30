@@ -209,51 +209,60 @@
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  border: 1.5px solid #e8e8e8;
-  border-radius: 24px;
+  gap: 8px;
+  padding: 4px 14px 4px 4px;
+  border: 1px solid #e5e5e5;
+  border-radius: 50px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  transition: all 0.2s ease;
+  background: #fff;
+  flex-shrink: 0;
+  height: 36px;
 }
 
 .user-profile:hover {
   border-color: #10b981;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15);
+  background: #fafafa;
+}
+
+.user-profile .avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 11px !important;
+  border: none;
 }
 
 .user-info {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #4a4a4a;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .logout-btn {
   background: none;
   border: none;
-  color: #00b14f;
+  color: #10b981;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   padding: 0;
   text-align: left;
-  transition: color 0.2s ease;
+  white-space: nowrap;
 }
 
 .logout-btn:hover {
-  color: #008c3e;
-  text-decoration: underline;
+  color: #10b981;
 }
 
 .upgrade-link {

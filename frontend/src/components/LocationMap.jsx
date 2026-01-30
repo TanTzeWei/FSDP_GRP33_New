@@ -132,8 +132,10 @@ const MapController = ({ center, zoom }) => {
 const LocationMap = ({ onHawkerSelect }) => {
   const [hawkerCentres, setHawkerCentres] = useState([]);
   const [selectedHawker, setSelectedHawker] = useState(null);
+  const [selectedHawkerStalls, setSelectedHawkerStalls] = useState([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingStalls, setLoadingStalls] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 1.3521, lng: 103.8198 }); // Singapore center
   const [zoom, setZoom] = useState(11);
   const [userLocation, setUserLocation] = useState(null);
@@ -361,9 +363,31 @@ const LocationMap = ({ onHawkerSelect }) => {
     // Don't open modal automatically - just highlight the hawker
   };
 
-  const openDetailModal = (hawker) => {
+  const openDetailModal = async (hawker) => {
     setSelectedHawker(hawker);
     setShowDetailModal(true);
+    setLoadingStalls(true);
+    setSelectedHawkerStalls([]);
+    
+    // Fetch detailed hawker centre information including stalls
+    try {
+      const response = await fetch(`http://localhost:3000/api/hawker-centres/${hawker.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const hawkerData = data.data || data;
+        setSelectedHawker(hawkerData);
+        // Extract stalls from the response
+        if (hawkerData.stalls && Array.isArray(hawkerData.stalls)) {
+          setSelectedHawkerStalls(hawkerData.stalls);
+        }
+      } else {
+        console.error('Failed to fetch hawker centre details');
+      }
+    } catch (error) {
+      console.error('Error fetching hawker centre details:', error);
+    } finally {
+      setLoadingStalls(false);
+    }
   };
 
   const handleOrderHere = (hawker) => {
@@ -477,13 +501,22 @@ const LocationMap = ({ onHawkerSelect }) => {
                         <div className="map-popup">
                           <h4>{hawker.name}</h4>
                           <div className="popup-rating">
-                            <span>{getRatingStars(hawker.rating)} {hawker.rating}</span>
+                            <span>{getRatingStars(hawker.rating || 0)} {hawker.rating || 0}</span>
                           </div>
                           <p className="popup-address">{hawker.address}</p>
                           <div className="popup-info">
-                            <span>🏪 {hawker.totalStalls} stalls</span>
-                            <span>🕐 {hawker.openingHours}</span>
+                            <span>🏪 {hawker.totalStalls || hawker.active_stalls || 0} stalls</span>
+                            <span>🕐 {hawker.openingHours || hawker.opening_hours || 'N/A'}</span>
                           </div>
+                          <button 
+                            className="popup-details-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailModal(hawker);
+                            }}
+                          >
+                            📋 View Details
+                          </button>
                           <button 
                             className="popup-order-btn"
                             onClick={(e) => {
@@ -595,10 +628,10 @@ const LocationMap = ({ onHawkerSelect }) => {
               </div>
               
               <div className="hawker-rating-large">
-                <span className="stars-large">{getRatingStars(selectedHawker.rating)}</span>
+                <span className="stars-large">{getRatingStars(selectedHawker.rating || 0)}</span>
                 <div className="rating-details">
-                  <span className="rating-number">{selectedHawker.rating}</span>
-                  <span className="review-count">({selectedHawker.totalReviews} reviews)</span>
+                  <span className="rating-number">{selectedHawker.rating || 0}</span>
+                  <span className="review-count">({selectedHawker.totalReviews || selectedHawker.total_reviews || 0} reviews)</span>
                 </div>
               </div>
             </div>
@@ -608,50 +641,118 @@ const LocationMap = ({ onHawkerSelect }) => {
                 <h3>📍 Location & Hours</h3>
                 <p className="address">{selectedHawker.address}</p>
                 <div className="hours-info">
-                  <span>🕐 Open: {selectedHawker.openingHours}</span>
-                  <span>📅 {selectedHawker.operatingDays}</span>
+                  <span>🕐 Open: {selectedHawker.openingHours || selectedHawker.opening_hours || 'N/A'}</span>
+                  <span>📅 {selectedHawker.operatingDays || selectedHawker.operating_days || 'N/A'}</span>
                 </div>
-                <div className="contact">
-                  <span>📞 {selectedHawker.phoneNumber}</span>
-                </div>
+                {(selectedHawker.phoneNumber || selectedHawker.contact_phone) && (
+                  <div className="contact">
+                    <span>📞 {selectedHawker.phoneNumber || selectedHawker.contact_phone}</span>
+                  </div>
+                )}
               </div>
 
               <div className="detail-section">
                 <h3>🍽️ What to Expect</h3>
-                <p className="description">{selectedHawker.description}</p>
+                {selectedHawker.description && (
+                  <p className="description">{selectedHawker.description}</p>
+                )}
                 <div className="stats">
-                  <span className="stat">📊 {selectedHawker.totalStalls} Stalls</span>
-                  <span className="stat">💰 {selectedHawker.priceRange} Price Range</span>
-                  <span className="stat">📍 {selectedHawker.distance} Away</span>
+                  <span className="stat">📊 {selectedHawker.totalStalls || selectedHawker.active_stalls || selectedHawker.total_stalls || 0} Stalls</span>
+                  {(selectedHawker.priceRange || selectedHawker.price_range) && (
+                    <span className="stat">💰 {selectedHawker.priceRange || selectedHawker.price_range} Price Range</span>
+                  )}
+                  {selectedHawker.distance && (
+                    <span className="stat">📍 {selectedHawker.distance} Away</span>
+                  )}
                 </div>
               </div>
 
+              {/* Stalls Section */}
               <div className="detail-section">
-                <h3>🌟 Popular Dishes</h3>
-                <div className="popular-dishes">
-                  {selectedHawker.popularDishes.map((dish, idx) => (
-                    <span key={idx} className="dish-tag">{dish}</span>
-                  ))}
-                </div>
+                <h3>🏪 Stalls ({selectedHawkerStalls.length})</h3>
+                {loadingStalls ? (
+                  <div className="loading-stalls">
+                    <p>Loading stalls...</p>
+                  </div>
+                ) : selectedHawkerStalls.length > 0 ? (
+                  <div className="stalls-list">
+                    {selectedHawkerStalls.map((stall) => (
+                      <div key={stall.id} className="stall-item">
+                        <div className="stall-header">
+                          <h4>{stall.stall_name || stall.name}</h4>
+                          {stall.rating && (
+                            <div className="stall-rating">
+                              <span>{getRatingStars(stall.rating)} {stall.rating}</span>
+                            </div>
+                          )}
+                        </div>
+                        {stall.description && (
+                          <p className="stall-description">{stall.description}</p>
+                        )}
+                        <div className="stall-meta">
+                          {stall.cuisine_types && (
+                            <span className="stall-cuisine">
+                              🍜 {stall.cuisine_types.name || stall.cuisine_type}
+                            </span>
+                          )}
+                          {stall.stall_number && (
+                            <span className="stall-number">📍 Stall {stall.stall_number}</span>
+                          )}
+                          {stall.price_range && (
+                            <span className="stall-price">💰 {stall.price_range}</span>
+                          )}
+                        </div>
+                        {stall.specialties && Array.isArray(stall.specialties) && stall.specialties.length > 0 && (
+                          <div className="stall-specialties">
+                            <strong>Specialties: </strong>
+                            {stall.specialties.map((specialty, idx) => (
+                              <span key={idx} className="specialty-tag">{specialty}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-stalls">No stalls available at this hawker centre.</p>
+                )}
               </div>
 
-              <div className="detail-section">
-                <h3>🍜 Cuisine Types</h3>
-                <div className="cuisine-types">
-                  {selectedHawker.cuisines.map((cuisine, idx) => (
-                    <span key={idx} className="cuisine-badge">{cuisine}</span>
-                  ))}
+              {selectedHawker.popularDishes && selectedHawker.popularDishes.length > 0 && (
+                <div className="detail-section">
+                  <h3>🌟 Popular Dishes</h3>
+                  <div className="popular-dishes">
+                    {selectedHawker.popularDishes.map((dish, idx) => (
+                      <span key={idx} className="dish-tag">{dish}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="detail-section">
-                <h3>🏪 Facilities</h3>
-                <div className="facilities">
-                  {selectedHawker.facilities.map((facility, idx) => (
-                    <span key={idx} className="facility-tag">✓ {facility}</span>
-                  ))}
+              {(selectedHawker.cuisines || selectedHawker.available_cuisines) && (
+                <div className="detail-section">
+                  <h3>🍜 Cuisine Types</h3>
+                  <div className="cuisine-types">
+                    {(Array.isArray(selectedHawker.cuisines) ? selectedHawker.cuisines : 
+                      Array.isArray(selectedHawker.available_cuisines) ? selectedHawker.available_cuisines :
+                      typeof selectedHawker.available_cuisines === 'string' ? selectedHawker.available_cuisines.split(', ') : []
+                    ).map((cuisine, idx) => (
+                      <span key={idx} className="cuisine-badge">{cuisine}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {selectedHawker.facilities && Array.isArray(selectedHawker.facilities) && selectedHawker.facilities.length > 0 && (
+                <div className="detail-section">
+                  <h3>🏪 Facilities</h3>
+                  <div className="facilities">
+                    {selectedHawker.facilities.map((facility, idx) => (
+                      <span key={idx} className="facility-tag">✓ {facility}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="modal-actions">

@@ -122,6 +122,35 @@ class StallModel {
             throw new Error(`Error updating stall: ${error.message}`);
         }
     }
+
+    /**
+     * Update stall social media links
+     * @param {number} stallId - The ID of the stall
+     * @param {Object} socialMedia - Object containing social media URLs
+     * @returns {Object} Updated stall data
+     */
+    static async updateStallSocialMedia(stallId, socialMedia) {
+        try {
+            const { data, error } = await supabase
+                .from('stalls')
+                .update({
+                    facebook_url: socialMedia.facebook_url,
+                    instagram_url: socialMedia.instagram_url,
+                    twitter_url: socialMedia.twitter_url,
+                    tiktok_url: socialMedia.tiktok_url,
+                    website_url: socialMedia.website_url
+                })
+                .eq('id', stallId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return { success: true, stall: data };
+        } catch (error) {
+            throw new Error(`Error updating social media: ${error.message}`);
+        }
+    }
 }
 
 module.exports = StallModel;

@@ -198,7 +198,6 @@ class MenuPhotoController {
         price: photo.price,
         category: photo.category,
         spiceLevel: photo.spice_level,
-        dietaryInfo: photo.dietary_info ? JSON.parse(photo.dietary_info) : [],
         createdAt: photo.created_at
       }));
 
@@ -241,7 +240,6 @@ class MenuPhotoController {
         price: photo.price,
         category: photo.category,
         spiceLevel: photo.spice_level,
-        dietaryInfo: photo.dietary_info ? JSON.parse(photo.dietary_info) : [],
         createdAt: photo.created_at
       }));
 
@@ -290,7 +288,6 @@ class MenuPhotoController {
         price: photo.price,
         category: photo.category,
         spiceLevel: photo.spice_level,
-        dietaryInfo: photo.dietary_info ? JSON.parse(photo.dietary_info) : [],
         stallName: photo.stall_name,
         hawkerCentreName: photo.hawker_centre_name,
         createdAt: photo.created_at,

@@ -46,7 +46,6 @@ class DishModel {
                 image_url: dish.image_url || null,
                 category: dish.category || null,
                 spice_level: dish.spice_level || null,
-                dietary_info: dish.dietary_info ? JSON.stringify(dish.dietary_info) : null,
                 calories: dish.calories || null,
                 is_available: dish.is_available === false ? false : true,
                 is_popular: dish.is_popular ? true : false
@@ -70,7 +69,6 @@ class DishModel {
                 image_url: dish.image_url || null,
                 category: dish.category || null,
                 spice_level: dish.spice_level || null,
-                dietary_info: dish.dietary_info ? JSON.stringify(dish.dietary_info) : null,
                 calories: dish.calories || null,
                 is_available: dish.is_available === false ? false : true,
                 is_popular: dish.is_popular ? true : false,

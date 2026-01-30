@@ -65,7 +65,7 @@ function MenuItemCard({
 
       {/* Card Header */}
       <div className="menu-item-header">
-        <div className="menu-item-title">
+        <div className="menu-item-info">
           <div className="title-row">
             <h3 className="menu-item-name">{dish.name}</h3>
             <StatusBadge menuItem={dish} userPhotosCount={photos.length} />
@@ -79,18 +79,12 @@ function MenuItemCard({
         </div>
         <div className="menu-item-actions">
           <button
-            className="btn-icon"
+            className="btn-pill btn-pill-edit"
             onClick={() => onEdit(dish)}
             title="Edit menu item"
           >
             <EditIcon />
-          </button>
-          <button
-            className="btn-icon"
-            onClick={() => onUpload(dish)}
-            title="Upload photo"
-          >
-            <UploadIcon />
+            <span>Edit</span>
           </button>
         </div>
       </div>

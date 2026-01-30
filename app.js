@@ -138,7 +138,9 @@ if (UserController && authMiddleware) {
     // Admin: approve owner accounts
     app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
     app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);
+    app.get('/admin/owners/all', authMiddleware, authMiddleware.requireAdmin, UserController.listAllOwners);
     app.post('/admin/owners/:userId/reject', authMiddleware, authMiddleware.requireAdmin, UserController.rejectOwner);
+    app.delete('/admin/owners/:userId', authMiddleware, authMiddleware.requireAdmin, UserController.deleteOwner);
     console.log('✅ User routes configured');
 } else {
     console.log('⚠️  User routes disabled (missing UserController or authMiddleware)');
@@ -262,7 +264,21 @@ if (StallController) {
     if (authMiddleware) {
         // Upload stall image
         app.post('/api/stalls/:id/image', authMiddleware, authMiddleware.requireStallOwner, StallController.uploadMiddleware, StallController.uploadStallImage);
- 
+        // Update stall details
+        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
+        // Update social media links
+        console.log('🔧 Registering PUT /api/stalls/:id/social-media route');
+        app.put('/api/stalls/:id/social-media', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStallSocialMedia);
+        // Delete stall (Admin only)
+        console.log('🔧 Registering DELETE /api/stalls/:id route');
+        app.delete('/api/stalls/:id', authMiddleware, authMiddleware.requireAdmin, StallController.deleteStall);
+        console.log('✅ DELETE route registered');
+    }
+    
+    console.log('✅ Stall route configured');
+} else {
+    console.log('⚠️  Stall routes disabled (missing StallController)');
+}
 
 // Stall Closure Routes (Temporary Closure / Holiday Scheduling)
 if (StallClosureController && authMiddleware) {
@@ -279,13 +295,6 @@ if (StallClosureController && authMiddleware) {
     console.log('✅ Stall closure routes configured');
 } else {
     console.log('⚠️  Stall closure routes disabled (missing StallClosureController or authMiddleware)');
-}       // Update stall details
-        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
-    }
-    
-    console.log('✅ Stall route configured');
-} else {
-    console.log('⚠️  Stall routes disabled (missing StallController)');
 }
 
 // Points System Routes (only if controller loaded successfully)

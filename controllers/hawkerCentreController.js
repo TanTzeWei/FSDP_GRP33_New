@@ -222,10 +222,7 @@ class HawkerCentreController {
             const popularDishes = await HawkerCentreModel.getPopularDishes(parseInt(id), dishLimit);
 
             // Process JSON fields
-            const processedDishes = popularDishes.map(dish => ({
-                ...dish,
-                dietary_info: dish.dietary_info ? JSON.parse(dish.dietary_info) : []
-            }));
+            const processedDishes = popularDishes;
 
             res.status(200).json({
                 success: true,
