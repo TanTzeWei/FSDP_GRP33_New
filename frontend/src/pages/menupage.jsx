@@ -31,7 +31,12 @@ const MenuPage = () => {
     image: '',
     categories: [],
     is_currently_closed: false,
-    closure_info: null
+    closure_info: null,
+    facebook_url: '',
+    instagram_url: '',
+    twitter_url: '',
+    tiktok_url: '',
+    website_url: ''
   });
 
   // Filter menu items by search term
@@ -94,7 +99,12 @@ const MenuPage = () => {
             image: s.image_url || s.image || '',
             categories: s.specialties || [],
             is_currently_closed: s.is_currently_closed || false,
-            closure_info: s.closure_info || null
+            closure_info: s.closure_info || null,
+            facebook_url: s.facebook_url || '',
+            instagram_url: s.instagram_url || '',
+            twitter_url: s.twitter_url || '',
+            tiktok_url: s.tiktok_url || '',
+            website_url: s.website_url || ''
           });
         }
       })
@@ -166,39 +176,51 @@ const MenuPage = () => {
           </div>
 
           <div className="stall-info">
-            {/* Closure Status Badge */}
-            <div style={{ marginBottom: '15px' }}>
-              <ClosureBadge
-                isClosed={stall.is_currently_closed}
-                closureInfo={stall.closure_info}
-                showDetails={true}
-                size="large"
-              />
-            </div>
+            {/* Closure Status Badge - Only show if closed */}
+            {stall.is_currently_closed && (
+              <div style={{ marginBottom: '1rem' }}>
+                <ClosureBadge
+                  isClosed={stall.is_currently_closed}
+                  closureInfo={stall.closure_info}
+                  showDetails={true}
+                  size="large"
+                />
+              </div>
+            )}
 
             <h2 className="stall-name">{stall.name}</h2>
 
             <ul className="stall-details">
-              <li className="stall-detail-item">
-                <Star className="icon icon-star" />
-                <span className="rating-value">{stall.rating}</span>
-                ({stall.reviews})
-              </li>
+              {stall.rating > 0 && (
+                <li className="stall-detail-item">
+                  <Star className="icon icon-star" />
+                  <span className="rating-value">{stall.rating.toFixed(1)}</span>
+                  <span>({stall.reviews})</span>
+                </li>
+              )}
 
-              <li className="stall-detail-item">
-                <Clock className="icon" /> {stall.deliveryTime}
-              </li>
+              {stall.deliveryTime && (
+                <li className="stall-detail-item">
+                  <Clock className="icon" /> 
+                  <span>{stall.deliveryTime}</span>
+                </li>
+              )}
 
-              <li className="stall-detail-item">
-                <MapPin className="icon" /> {stall.distance}
-              </li>
+              {stall.distance && (
+                <li className="stall-detail-item">
+                  <MapPin className="icon" /> 
+                  <span>{stall.distance}</span>
+                </li>
+              )}
             </ul>
 
-            <ul className="category-tags">
-              {stall.categories.map((c,i) => (
-                <li className="category-tag" key={i}>{c}</li>
-              ))}
-            </ul>
+            {stall.categories && stall.categories.length > 0 && (
+              <ul className="category-tags">
+                {stall.categories.map((c,i) => (
+                  <li className="category-tag" key={i}>{c}</li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </section>
@@ -237,7 +259,7 @@ const MenuPage = () => {
       </section>
 
       {/* ERROR MESSAGE */}
-      {error && (
+      {error && !loading && (
         <section className="error-section">
           <div className="error-message">{error}</div>
         </section>
@@ -289,16 +311,15 @@ const MenuPage = () => {
                         </div>
 
                         <div className="item-details">
-                          <div className="item-header">
-                            <h4 className="item-name">
-                              {item.name}
-                              {item.popular && (
-                                <span className="popular-badge">Popular</span>
-                              )}
-                            </h4>
-                          </div>
-
-                          <p className="item-description">{item.description}</p>
+                          <h4 className="item-name">
+                            {item.name}
+                            {item.popular && (
+                              <span className="popular-badge">Popular</span>
+                            )}
+                          </h4>
+                          {item.description && (
+                            <p className="item-description">{item.description}</p>
+                          )}
                           <p className="item-price">${item.price.toFixed(2)}</p>
                         </div>
 
@@ -322,7 +343,7 @@ const MenuPage = () => {
 
       {/* SOCIAL SHARE - Let visitors share this stall */}
       {!loading && stall.name !== 'Loading...' && (
-        <section className="share-section" style={{ padding: '1rem', background: '#f8f9fa', marginTop: '2rem' }}>
+        <section className="share-section">
           <div className="stall-container">
             <SocialShare 
               url={window.location.href}
