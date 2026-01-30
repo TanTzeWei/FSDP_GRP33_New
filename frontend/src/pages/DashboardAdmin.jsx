@@ -19,6 +19,7 @@ export default function DashboardAdmin() {
   const [allOwners, setAllOwners] = useState([]);
   const [stalls, setStalls] = useState([]);
   const [hawkerCentres, setHawkerCentres] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -28,33 +29,65 @@ export default function DashboardAdmin() {
 
   // Fetch all admin data
   const fetchAdminData = async () => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setError(null);
     
     try {
-      // Fetch pending owners
-      const pendingRes = await axios.get('http://localhost:3000/admin/owners/pending', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const pending = pendingRes.data?.data || [];
-      setPendingOwners(pending);
+      // Fetch pending owners - handle errors gracefully
+      let pending = [];
+      try {
+        const pendingRes = await axios.get('http://localhost:3000/admin/owners/pending', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        pending = pendingRes.data?.data || [];
+        setPendingOwners(pending);
+      } catch (err) {
+        const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch pending owners';
+        console.error('Failed to fetch pending owners:', errorMsg, err.response?.data);
+        // Continue with empty array if this fails
+        setPendingOwners([]);
+        if (!error) setError(`Warning: ${errorMsg}`);
+      }
 
-      // Fetch all stall owners (approved and rejected)
-      const allOwnersRes = await axios.get('http://localhost:3000/admin/owners/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      }).catch(() => ({ data: { data: [] } }));
-      const owners = allOwnersRes.data?.data || [];
-      setAllOwners(owners);
+      // Fetch all stall owners (approved and rejected) - handle errors gracefully
+      let owners = [];
+      try {
+        const allOwnersRes = await axios.get('http://localhost:3000/admin/owners/all', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        owners = allOwnersRes.data?.data || [];
+        setAllOwners(owners);
+      } catch (err) {
+        console.error('Failed to fetch all owners:', err.response?.data || err.message);
+        // Continue with empty array if this fails
+        setAllOwners([]);
+      }
 
-      // Fetch stalls
-      const stallsRes = await axios.get('http://localhost:3000/api/stalls');
-      const stallsData = stallsRes.data?.data || [];
-      setStalls(stallsData);
+      // Fetch stalls - handle errors gracefully
+      let stallsData = [];
+      try {
+        const stallsRes = await axios.get('http://localhost:3000/api/stalls');
+        stallsData = stallsRes.data?.data || stallsRes.data || [];
+        setStalls(stallsData);
+      } catch (err) {
+        console.error('Failed to fetch stalls:', err.response?.data || err.message);
+        setStalls([]);
+      }
 
-      // Fetch hawker centres
-      const hawkerRes = await axios.get('http://localhost:3000/api/hawker-centres');
-      const hawkerData = hawkerRes.data?.data || [];
-      setHawkerCentres(hawkerData);
+      // Fetch hawker centres - handle errors gracefully
+      let hawkerData = [];
+      try {
+        const hawkerRes = await axios.get('http://localhost:3000/api/hawker-centres');
+        hawkerData = hawkerRes.data?.data || hawkerRes.data || [];
+        setHawkerCentres(hawkerData);
+      } catch (err) {
+        console.error('Failed to fetch hawker centres:', err.response?.data || err.message);
+        setHawkerCentres([]);
+      }
 
       // Calculate stats
       setStats({
@@ -130,6 +163,35 @@ export default function DashboardAdmin() {
       </header>
 
       <main className="admin-main">
+        {error && (
+          <div style={{
+            background: '#fef3c7',
+            border: '1px solid #f59e0b',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '24px',
+            color: '#92400e',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>⚠️</span>
+            <span>{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              style={{
+                marginLeft: 'auto',
+                background: 'none',
+                border: 'none',
+                color: '#92400e',
+                cursor: 'pointer',
+                fontSize: '18px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="welcome-section">
           <h2>Welcome back, {user?.name || 'Admin'}!</h2>
           <p>Manage stall owners, hawker centres, and system settings from here.</p>
