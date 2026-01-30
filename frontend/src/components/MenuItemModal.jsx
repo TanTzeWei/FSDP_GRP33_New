@@ -9,9 +9,10 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
     name: '',
     price: '',
     category: '',
-    description: '',
-    spice_level: ''
+    description: ''
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -22,17 +23,19 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
         name: menuItem.name || '',
         price: menuItem.price || '',
         category: menuItem.category || '',
-        description: menuItem.description || '',
-        spice_level: menuItem.spice_level || ''
+        description: menuItem.description || ''
       });
+      setImagePreview(menuItem.image_url || null);
+      setImageFile(null);
     } else {
       setFormData({
         name: '',
         price: '',
         category: '',
-        description: '',
-        spice_level: ''
+        description: ''
       });
+      setImagePreview(null);
+      setImageFile(null);
     }
     setErrors({});
   }, [menuItem, isOpen]);
@@ -56,6 +59,40 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setErrors({ image: 'Please select a valid image file (JPEG, PNG, or WebP)' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ image: 'Image size must be less than 5MB' });
+      return;
+    }
+
+    setImageFile(file);
+    setErrors({ ...errors, image: null });
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setErrors({ ...errors, image: null });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -66,7 +103,8 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
       const payload = {
         ...formData,
         price: parseFloat(formData.price),
-        stall_id: stallId
+        stall_id: stallId,
+        imageFile: imageFile // Pass image file to onSave
       };
       
       await onSave(payload);
@@ -180,17 +218,11 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
               }}
             >
               <option value="">Select a category</option>
-              <option value="Rice">Rice</option>
-              <option value="Noodles">Noodles</option>
-              <option value="BBQ">BBQ</option>
+              <option value="Mains">Mains</option>
+              <option value="Sides">Sides</option>
               <option value="Drinks">Drinks</option>
               <option value="Desserts">Desserts</option>
-              <option value="Snacks">Snacks</option>
-              <option value="Soup">Soup</option>
-              <option value="Western">Western</option>
-              <option value="Indian">Indian</option>
-              <option value="Malay">Malay</option>
-              <option value="Chinese">Chinese</option>
+              <option value="Appetizers">Appetizers</option>
               <option value="Other">Other</option>
             </select>
             {errors.category && <div style={{ color: '#c53030', fontSize: '13px', marginTop: '4px' }}>{errors.category}</div>}
@@ -219,31 +251,79 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
             />
           </div>
 
-          {/* Spice Level */}
+          {/* Image Upload */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#4a5568', fontSize: '14px' }}>
-              Spice Level
+              Menu Item Image
             </label>
-            <select
-              value={formData.spice_level}
-              onChange={(e) => setFormData({ ...formData, spice_level: e.target.value })}
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                borderRadius: '8px', 
-                border: '2px solid #e2e8f0',
-                fontSize: '15px',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="">Not specified</option>
-              <option value="None">🟢 None</option>
-              <option value="Mild">🟡 Mild</option>
-              <option value="Medium">🟠 Medium</option>
-              <option value="Hot">🔴 Hot</option>
-              <option value="Extra Hot">🌶️ Extra Hot</option>
-            </select>
+            {imagePreview ? (
+              <div style={{ position: 'relative', marginBottom: '12px' }}>
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  style={{ 
+                    width: '100%', 
+                    maxHeight: '200px', 
+                    objectFit: 'cover', 
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0'
+                  }} 
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => document.getElementById('image-upload').click()}
+                style={{
+                  border: errors.image ? '2px dashed #fc8181' : '2px dashed #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '24px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: '#f9fafb',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#f9fafb'}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
+                <div style={{ color: '#4a5568', fontWeight: '500', marginBottom: '4px' }}>
+                  Click to upload image
+                </div>
+                <div style={{ color: '#9ca3af', fontSize: '13px' }}>
+                  JPEG, PNG, WebP • Max 5MB
+                </div>
+              </div>
+            )}
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+            />
+            {errors.image && <div style={{ color: '#c53030', fontSize: '13px', marginTop: '4px' }}>{errors.image}</div>}
           </div>
 
           {errors.submit && (
