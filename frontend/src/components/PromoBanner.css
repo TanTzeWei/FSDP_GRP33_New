@@ -2,6 +2,7 @@
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
   padding: 48px 16px 20px;
   border-bottom: 3px solid #00b14f;
+  margin-bottom: 4rem;
 }
 
 .promo-container {
@@ -79,12 +80,14 @@
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
 }
 
 .promo-image-actual {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -131,7 +134,7 @@
 }
 
 .promo-content {
-  padding: 20px;
+  padding: 16px 20px 20px;
   background: linear-gradient(to bottom, #ffffff 0%, #fafbfc 100%);
   position: relative;
   z-index: 2;
