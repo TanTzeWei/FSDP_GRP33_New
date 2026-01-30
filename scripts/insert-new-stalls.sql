@@ -22,7 +22,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice');
 
 -- Food items for Ah Hock Famous Chicken Rice
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular, image_url)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular, image_url)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
     'Hainanese Steamed Chicken Rice',
@@ -30,13 +30,14 @@ SELECT
     4.50,
     'Mains',
     'Mild',
+    '[]'::jsonb,
     520,
     true,
     true,
     'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&h=350&fit=crop'
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Hainanese Steamed Chicken Rice' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular, image_url)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular, image_url)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
     'Roasted Chicken Rice',
@@ -51,7 +52,7 @@ SELECT
     'https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=500&h=350&fit=crop'
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Roasted Chicken Rice' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular, image_url)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular, image_url)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
     'Soy Sauce Chicken',
@@ -66,7 +67,7 @@ SELECT
     'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=500&h=350&fit=crop'
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Soy Sauce Chicken' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular, image_url)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular, image_url)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
     'Braised Egg',
@@ -81,7 +82,7 @@ SELECT
     'https://images.unsplash.com/photo-1557935728-e6d1eaabe558?w=500&h=350&fit=crop'
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Braised Egg' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular, image_url)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular, image_url)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
     'Seasonal Soup (ABC / Lotus Root)',
@@ -118,7 +119,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang');
 
 -- Food items for Mak Cik Siti Nasi Padang
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
     'Nasi Padang (Rice with Mixed Dishes)',
@@ -126,13 +127,13 @@ SELECT
     6.50,
     'Mains',
     'Medium',
-    '[]'::jsonb,
+    '[]',
     680,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Nasi Padang (Rice with Mixed Dishes)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
     'Beef Rendang',
@@ -140,13 +141,13 @@ SELECT
     7.50,
     'Mains',
     'Medium',
-    '[]'::jsonb,
+    '[]',
     720,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Beef Rendang' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
     'Ayam Lemak Chilli Padi',
@@ -154,13 +155,13 @@ SELECT
     6.00,
     'Mains',
     'Hot',
-    '[]'::jsonb,
+    '[]',
     650,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Ayam Lemak Chilli Padi' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
     'Sambal Goreng',
@@ -168,12 +169,13 @@ SELECT
     4.50,
     'Sides',
     'Hot',
+    '["vegetarian"]',
     320,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Sambal Goreng' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
     'Sayur Lodeh',
@@ -181,6 +183,7 @@ SELECT
     4.00,
     'Sides',
     'Mild',
+    '["vegetarian"]',
     280,
     true,
     false
@@ -207,7 +210,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow');
 
 -- Food items for Uncle Lim's Char Kway Teow
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'Char Kway Teow (Cockles)',
@@ -215,13 +218,13 @@ SELECT
     5.00,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     620,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Char Kway Teow (Cockles)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'Char Kway Teow (No Cockles)',
@@ -229,13 +232,13 @@ SELECT
     4.50,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     580,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Char Kway Teow (No Cockles)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'White Char Kway Teow',
@@ -243,13 +246,13 @@ SELECT
     4.50,
     'Mains',
     'None',
-    '[]'::jsonb,
+    '[]',
     560,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'White Char Kway Teow' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'Oyster Omelette',
@@ -257,13 +260,13 @@ SELECT
     6.00,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     480,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Oyster Omelette' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'Fried Carrot Cake (Black)',
@@ -271,12 +274,13 @@ SELECT
     4.00,
     'Sides',
     'None',
+    '["vegetarian"]',
     380,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Fried Carrot Cake (Black)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
     'Fried Carrot Cake (White)',
@@ -284,6 +288,7 @@ SELECT
     4.00,
     'Sides',
     'None',
+    '["vegetarian"]',
     360,
     true,
     false
@@ -310,7 +315,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice');
 
 -- Food items for Rajah's Banana Leaf Rice
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
     'Banana Leaf Rice Set',
@@ -318,13 +323,13 @@ SELECT
     7.50,
     'Mains',
     'Medium',
-    '[]'::jsonb,
+    '[]',
     750,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Banana Leaf Rice Set' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
     'Chicken Curry',
@@ -332,13 +337,13 @@ SELECT
     8.00,
     'Mains',
     'Hot',
-    '[]'::jsonb,
+    '[]',
     680,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Chicken Curry' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
     'Mutton Masala',
@@ -346,13 +351,13 @@ SELECT
     10.00,
     'Mains',
     'Hot',
-    '[]'::jsonb,
+    '[]',
     820,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Mutton Masala' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
     'Fish Head Curry',
@@ -360,13 +365,13 @@ SELECT
     12.00,
     'Mains',
     'Hot',
-    '[]'::jsonb,
+    '[]',
     900,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Fish Head Curry' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
     'Papadum with Pickles',
@@ -374,6 +379,7 @@ SELECT
     2.50,
     'Sides',
     'Mild',
+    '["vegetarian"]',
     150,
     true,
     false
@@ -400,7 +406,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles');
 
 -- Food items for Ah Ma Handmade Fishball Noodles
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Fishball Noodle Soup (Dry)',
@@ -408,13 +414,13 @@ SELECT
     4.00,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     450,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Fishball Noodle Soup (Dry)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Fishball Noodle Soup (Soup)',
@@ -422,13 +428,13 @@ SELECT
     4.00,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     420,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Fishball Noodle Soup (Soup)' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Minced Pork Noodles',
@@ -436,13 +442,13 @@ SELECT
     4.50,
     'Mains',
     'Mild',
-    '[]'::jsonb,
+    '[]',
     500,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Minced Pork Noodles' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Handmade Fishball Soup',
@@ -450,13 +456,13 @@ SELECT
     3.50,
     'Sides',
     'None',
-    '[]'::jsonb,
+    '[]',
     280,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Handmade Fishball Soup' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Fish Dumpling Soup',
@@ -464,13 +470,13 @@ SELECT
     3.50,
     'Sides',
     'None',
-    '[]'::jsonb,
+    '[]',
     260,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Fish Dumpling Soup' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
     'Braised Mushroom Add-on',
@@ -478,6 +484,7 @@ SELECT
     1.50,
     'Sides',
     'None',
+    '["vegetarian"]',
     80,
     true,
     false
@@ -504,7 +511,7 @@ SELECT
 WHERE NOT EXISTS (SELECT 1 FROM stalls WHERE stall_name = 'Golden Wok Zi Char');
 
 -- Food items for Golden Wok Zi Char
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
     'Sweet & Sour Pork',
@@ -512,13 +519,13 @@ SELECT
     12.00,
     'Mains',
     'None',
-    '[]'::jsonb,
+    '[]',
     680,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Sweet & Sour Pork' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
     'Sambal Kang Kong',
@@ -526,12 +533,13 @@ SELECT
     8.00,
     'Sides',
     'Hot',
+    '["vegetarian"]',
     180,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Sambal Kang Kong' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
     'Cereal Prawns',
@@ -539,13 +547,13 @@ SELECT
     18.00,
     'Mains',
     'None',
-    '[]'::jsonb,
+    '[]',
     720,
     true,
     true
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Cereal Prawns' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
     'Claypot Tofu',
@@ -553,12 +561,13 @@ SELECT
     10.00,
     'Mains',
     'Mild',
+    '["vegetarian"]',
     420,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Claypot Tofu' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1));
 
-INSERT INTO food_items (stall_id, name, description, price, category, spice_level, calories, is_available, is_popular)
+INSERT INTO food_items (stall_id, name, description, price, category, spice_level, dietary_info, calories, is_available, is_popular)
 SELECT 
     (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
     'Hor Fun with Beef',
@@ -566,11 +575,98 @@ SELECT
     8.50,
     'Mains',
     'None',
-    '[]'::jsonb,
+    '[]',
     580,
     true,
     false
 WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Hor Fun with Beef' AND stall_id = (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1));
+
+
+-- =========================================
+-- CREATE STALL OWNERS AND LINK TO STALLS
+-- =========================================
+
+-- Note: All owners have default password 'password123' (bcrypt hash)
+-- Owners should change their passwords after first login
+-- Default password: password123
+
+-- 1. Owner for Ah Hock Famous Chicken Rice
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Ah Hock',
+    'ahhock@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Ah Hock Famous Chicken Rice' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ahhock@hawkerhub.com');
+
+-- 2. Owner for Mak Cik Siti Nasi Padang
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Mak Cik Siti',
+    'makciksiti@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Mak Cik Siti Nasi Padang' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'makciksiti@hawkerhub.com');
+
+-- 3. Owner for Uncle Lim's Char Kway Teow
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Uncle Lim',
+    'unclelim@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Uncle Lim''s Char Kway Teow' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'unclelim@hawkerhub.com');
+
+-- 4. Owner for Rajah's Banana Leaf Rice
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Rajah',
+    'rajah@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Rajah''s Banana Leaf Rice' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'rajah@hawkerhub.com');
+
+-- 5. Owner for Ah Ma Handmade Fishball Noodles
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Ah Ma',
+    'ahma@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Ah Ma Handmade Fishball Noodles' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ahma@hawkerhub.com');
+
+-- 6. Owner for Golden Wok Zi Char
+INSERT INTO users (name, email, password, role, is_stall_owner, stall_id, owner_verified, approval_status)
+SELECT 
+    'Chef Wong',
+    'chefwong@hawkerhub.com',
+    '$2b$10$nph.3M0F3MghH4t0OpLY5e6KI7PzovhFTTErC5b50EGtieVE9xAnG', -- password123
+    'stall_owner',
+    true,
+    (SELECT id FROM stalls WHERE stall_name = 'Golden Wok Zi Char' LIMIT 1),
+    true,
+    'approved'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'chefwong@hawkerhub.com');
 
 
 -- Verification queries (optional - run these separately to verify)
@@ -595,3 +691,17 @@ WHERE NOT EXISTS (SELECT 1 FROM food_items WHERE name = 'Hor Fun with Beef' AND 
 --     'Golden Wok Zi Char'
 -- )
 -- GROUP BY s.stall_name;
+
+-- Verify stall owners are linked correctly
+-- SELECT u.name as owner_name, u.email, s.stall_name, u.approval_status, u.owner_verified
+-- FROM users u
+-- INNER JOIN stalls s ON u.stall_id = s.id
+-- WHERE s.stall_name IN (
+--     'Ah Hock Famous Chicken Rice',
+--     'Mak Cik Siti Nasi Padang',
+--     'Uncle Lim''s Char Kway Teow',
+--     'Rajah''s Banana Leaf Rice',
+--     'Ah Ma Handmade Fishball Noodles',
+--     'Golden Wok Zi Char'
+-- )
+-- ORDER BY s.stall_name;
