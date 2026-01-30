@@ -370,3 +370,52 @@ CREATE INDEX IF NOT EXISTS idx_seats_capacity
 
 CREATE INDEX IF NOT EXISTS idx_seats_hawker_status
   ON hawker_seats(hawker_centre_id, status);
+
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+CREATE TABLE IF NOT EXISTS reservations (
+  id BIGSERIAL PRIMARY KEY,
+
+  user_id BIGINT NOT NULL
+    REFERENCES users(user_id)
+    ON DELETE CASCADE,
+
+  hawker_centre_id BIGINT NOT NULL
+    REFERENCES hawker_centres(id)
+    ON DELETE CASCADE,
+
+  seat_id BIGINT NOT NULL
+    REFERENCES hawker_seats(id)
+    ON DELETE CASCADE,
+
+  reservation_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+
+  reservation_period tsrange GENERATED ALWAYS AS (
+    tsrange(
+      reservation_date + start_time,
+      reservation_date + end_time,
+      '[)'
+    )
+  ) STORED,
+
+  status TEXT DEFAULT 'Pending'
+    CHECK (status IN ('Pending', 'Confirmed', 'Cancelled', 'Completed', 'No-Show')),
+
+  special_requests TEXT,
+  notes TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CHECK (end_time > start_time)
+);
+
+ALTER TABLE reservations
+ADD CONSTRAINT no_overlapping_reservations
+EXCLUDE USING gist (
+  seat_id WITH =,
+  reservation_period WITH &&
+)
+WHERE (status IN ('Pending', 'Confirmed'));
