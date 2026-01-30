@@ -22,6 +22,7 @@ import OrderHistory from './components/OrderHistory';
 import NetsQrSamplePage from './pages/netsQrSamplePage';
 import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
 import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
+import ReservationsPage from './pages/ReservationsPage';
 
 // Main App component with section navigation
 function MainApp() {
@@ -83,6 +84,7 @@ function App() {
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/reservations" element={<ReservationsPage />} />
         
         <Route path="/stall/dashboard" element={<StallDashboard />} />
         <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />

@@ -11,6 +11,7 @@ const Header = ({ activeSection, setActiveSection, onCartClick, selectedHawkerCe
   const navItems = [
     { key: 'menu', label: 'Food', path: '/' },
     { key: 'deals', label: 'Upload', path: '/#upload' },
+    { key: 'reservation', label: 'Reservation', path: '/reservations' },
     { key: 'rewards', label: 'Rewards', path: '/points' }
   ];
 
@@ -26,6 +27,8 @@ const Header = ({ activeSection, setActiveSection, onCartClick, selectedHawkerCe
     } else if (item.key === 'deals') {
       // Navigate to home with deals section active
       navigate('/', { state: { activeSection: 'deals' } });
+    } else if (item.key === 'reservation') {
+      navigate('/reservations');
     }
   };
 

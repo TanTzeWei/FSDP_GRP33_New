@@ -334,3 +334,39 @@ LEFT JOIN cuisine_types ct
   ON s.cuisine_type_id = ct.id
 WHERE hc.status = 'Active'
 GROUP BY hc.id;
+
+CREATE TABLE IF NOT EXISTS hawker_seats (
+  id BIGSERIAL PRIMARY KEY,
+  hawker_centre_id BIGINT NOT NULL
+    REFERENCES hawker_centres(id)
+    ON DELETE CASCADE,
+
+  table_code TEXT NOT NULL,          -- e.g. "A12", "B07"
+  capacity INT NOT NULL CHECK (capacity > 0),
+
+  zone TEXT,                         -- e.g. "North Wing", "Near Fan"
+  is_shared BOOLEAN DEFAULT FALSE,   -- shared long tables
+
+  status TEXT DEFAULT 'Available'
+    CHECK (status IN ('Available', 'Reserved', 'Occupied', 'Out of Service')),
+
+  qr_code_url TEXT,                  -- QR stuck on table
+  notes TEXT,                        -- damaged, wobbly, etc.
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE (hawker_centre_id, table_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_seats_hawker
+  ON hawker_seats(hawker_centre_id);
+
+CREATE INDEX IF NOT EXISTS idx_seats_status
+  ON hawker_seats(status);
+
+CREATE INDEX IF NOT EXISTS idx_seats_capacity
+  ON hawker_seats(capacity);
+
+CREATE INDEX IF NOT EXISTS idx_seats_hawker_status
+  ON hawker_seats(hawker_centre_id, status);
