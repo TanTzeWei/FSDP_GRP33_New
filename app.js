@@ -23,7 +23,6 @@ let DishController;
 let StallController;
 let MenuPhotoController;
 let StallClosureController;
-let ReservationController;
 
 try {
     UserController = require('./controllers/userController');
@@ -86,13 +85,6 @@ try {
     console.log('✅ StallClosureController loaded');
 } catch (error) {
     console.error('❌ Error loading StallClosureController:', error.message);
-}
-
-try {
-    ReservationController = require('./controllers/reservationController');
-    console.log('✅ ReservationController loaded');
-} catch (error) {
-    console.error('❌ Error loading ReservationController:', error.message);
 }
 
 // Create Express app
@@ -312,22 +304,7 @@ if (PointsController && authMiddleware) {
     console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
 }
 
-// Reservation Routes (Table reservations for dine-in dining)
-if (ReservationController && authMiddleware) {
-    // User reservations
-    app.post('/api/reservations', authMiddleware, ReservationController.createReservation);
-    app.get('/api/reservations', authMiddleware, ReservationController.getUserReservations);
-    app.get('/api/reservations/:id', authMiddleware, ReservationController.getReservation);
-    app.put('/api/reservations/:id', authMiddleware, ReservationController.updateReservation);
-    app.delete('/api/reservations/:id', authMiddleware, ReservationController.cancelReservation);
-    
-    // Available tables
-    app.get('/api/reservations/available-tables', ReservationController.getAvailableTables);
-    
-    // Reservation items (pre-ordering)
-    app.post('/api/reservations/:id/items', authMiddleware, ReservationController.addReservationItem);
-    app.get('/api/reservations/:id/items', authMiddleware, ReservationController.getReservationItems);
-    app.delete('/api/reservations/:id/items/:itemId', authMiddleware, ReservationController.deleteReservationItem);
+
     
     // Hawker centre specific
     app.get('/api/hawker-centres/:hawkerCentreId/tables', ReservationController.getHawkerCentreTables);
@@ -335,9 +312,7 @@ if (ReservationController && authMiddleware) {
     app.get('/api/hawker-centres/:hawkerCentreId/reservation-stats', ReservationController.getHawkerCentreReservationStats);
     
     console.log('✅ Reservation routes configured');
-} else {
-    console.log('⚠️  Reservation routes disabled (missing ReservationController or authMiddleware)');
-}
+
 // Simple health route
 app.get('/', (req, res) => {
 	res.send('Server is running');
