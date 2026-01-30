@@ -45,8 +45,8 @@ export default function AdminApprovals() {
 
   const fetchHawkerCentres = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/hawker-centres');
-      setHawkerCentres(res.data?.data || []);
+      const res = await axios.get('http://localhost:3000/api/hawker-centres');
+      setHawkerCentres(res.data?.data || res.data || []);
     } catch (err) {
       console.error('Failed to fetch hawker centres:', err);
     }
@@ -63,7 +63,7 @@ export default function AdminApprovals() {
     setActionLoading(owner.user_id);
     try {
       const payload = {
-        stall_name: approvalForm.stallName || owner.stall_name,
+        stall_name: approvalForm.stallName || owner.pending_stall_name || owner.stall_name,
         hawker_centre_id: approvalForm.hawkerCentreId ? parseInt(approvalForm.hawkerCentreId) : undefined
       };
       
@@ -118,10 +118,10 @@ export default function AdminApprovals() {
   const openConfirmModal = (type, owner) => {
     setConfirmModal({ show: true, type, owner, deleteStall: false });
     if (type === 'approve') {
-      // Pre-fill form with owner's stall name if available
+      // Pre-fill form with owner's pending stall name and hawker centre if available
       setApprovalForm({
-        stallName: owner.stall_name || '',
-        hawkerCentreId: owner.hawker_centre_id || ''
+        stallName: owner.pending_stall_name || owner.stall_name || '',
+        hawkerCentreId: owner.pending_hawker_centre_id || owner.hawker_centre_id || ''
       });
     }
   };
@@ -234,9 +234,17 @@ export default function AdminApprovals() {
                   <div className="stall-info-item">
                     <span className="label">Requested Stall Name</span>
                     <span className="value highlight">
-                      {owner.stall_name || 'Not specified - will be set during approval'}
+                      {owner.pending_stall_name || owner.stall_name || 'Not specified - will be set during approval'}
                     </span>
                   </div>
+                  <div className="stall-info-item">
+                    <span className="label">Requested Hawker Centre</span>
+                    <span className="value">
+                      {owner.pending_hawker_centre_name || (owner.pending_hawker_centre_id ? `ID: ${owner.pending_hawker_centre_id}` : 'Not specified')}
+                    </span>
+                  </div>
+                </div>
+                <div className="stall-info-row">
                   <div className="stall-info-item">
                     <span className="label">Status</span>
                     <span className="value">

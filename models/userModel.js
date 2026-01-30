@@ -16,7 +16,9 @@ class UserModel {
                 is_stall_owner: userData.is_stall_owner || false,
                 stall_id: userData.stall_id || null,
                 owner_verified: userData.owner_verified || false,
-                approval_status: userData.approval_status || 'none'
+                approval_status: userData.approval_status || 'none',
+                pending_stall_name: userData.pending_stall_name || null,
+                pending_hawker_centre_id: userData.pending_hawker_centre_id || null
             };
 
             const { data, error, status } = await supabase

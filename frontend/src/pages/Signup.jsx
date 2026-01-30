@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import "../auth.css";
@@ -11,12 +11,39 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState('customer');
   const [stallName, setStallName] = useState('');
+  const [hawkerCentreId, setHawkerCentreId] = useState('');
+  const [hawkerCentres, setHawkerCentres] = useState([]);
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingCentres, setLoadingCentres] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   const { showToast } = useContext(ToastContext);
+
+  // Fetch hawker centres when role is stall_owner
+  useEffect(() => {
+    if (role === 'stall_owner') {
+      fetchHawkerCentres();
+    } else {
+      setHawkerCentreId('');
+      setHawkerCentres([]);
+    }
+  }, [role]);
+
+  const fetchHawkerCentres = async () => {
+    setLoadingCentres(true);
+    try {
+      const response = await axios.get('http://localhost:3000/api/hawker-centres');
+      const centres = response.data?.data || response.data || [];
+      setHawkerCentres(centres);
+    } catch (err) {
+      console.error('Error fetching hawker centres:', err);
+      showToast('Failed to load hawker centres. Please try again.', { type: 'error' });
+    } finally {
+      setLoadingCentres(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +55,9 @@ function Signup() {
       const payload = { name, email, password, role };
       if (role === 'stall_owner') {
         payload.stall_name = stallName || undefined;
+        if (hawkerCentreId) {
+          payload.hawker_centre_id = hawkerCentreId;
+        }
         payload.invite_code = inviteCode || undefined;
       }
 
@@ -125,6 +155,28 @@ function Signup() {
               <div className="form-group">
                 <label htmlFor="stallName">Stall Name</label>
                 <input id="stallName" type="text" placeholder="My Stall" value={stallName} onChange={(e)=>setStallName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="hawkerCentre">Hawker Centre</label>
+                {loadingCentres ? (
+                  <select id="hawkerCentre" disabled>
+                    <option>Loading hawker centres...</option>
+                  </select>
+                ) : (
+                  <select 
+                    id="hawkerCentre" 
+                    value={hawkerCentreId} 
+                    onChange={(e) => setHawkerCentreId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a hawker centre</option>
+                    {hawkerCentres.map((centre) => (
+                      <option key={centre.id} value={centre.id}>
+                        {centre.name} {centre.address ? `- ${centre.address}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label htmlFor="inviteCode">Invite Code (optional)</label>

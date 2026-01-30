@@ -29,10 +29,11 @@ class UserController {
                 // Store pending stall information to be used when admin approves
                 // Stall will only be created upon approval to avoid orphaned stalls on rejection
                 if (stall_name) {
-                    // Store as JSON string in a temporary way (will be parsed during approval)
-                    // Note: This requires the stall_name and hawker_centre_id to be passed during approval
+                    createData.pending_stall_name = stall_name;
+                    if (hawker_centre_id) {
+                        createData.pending_hawker_centre_id = hawker_centre_id;
+                    }
                     console.log('Pending stall details - Name:', stall_name, 'Hawker Centre ID:', hawker_centre_id);
-                    // We'll pass this info through the approval process
                 } else if (stall_id) {
                     // If they're associating with an existing stall, store it
                     createData.stall_id = stall_id;
@@ -107,7 +108,7 @@ class UserController {
             // Get user details first
             const { data: userData, error: userError } = await supabase
                 .from('users')
-                .select('user_id, name, email, stall_id')
+                .select('user_id, name, email, stall_id, pending_stall_name, pending_hawker_centre_id')
                 .eq('user_id', userId)
                 .maybeSingle();
             
@@ -117,11 +118,14 @@ class UserController {
             
             let stallId = userData.stall_id;
             
-            // Create stall if stall_name is provided and user doesn't have a stall yet
-            if (stall_name && !stallId) {
-                // Get hawker_centre_id - either from request or use first available hawker centre
-                let effectiveHawkerCentreId = hawker_centre_id;
-                
+            // Determine stall_name and hawker_centre_id to use
+            // Priority: 1) Request body, 2) Pending values from signup, 3) Fallback
+            const effectiveStallName = stall_name || userData.pending_stall_name;
+            let effectiveHawkerCentreId = hawker_centre_id || userData.pending_hawker_centre_id;
+            
+            // Create stall if stall_name is available and user doesn't have a stall yet
+            if (effectiveStallName && !stallId) {
+                // Get hawker_centre_id - either from request, pending value, or use first available hawker centre
                 if (!effectiveHawkerCentreId) {
                     const { data: hawkerCentres, error: hawkerErr } = await supabase
                         .from('hawker_centres')
@@ -143,7 +147,7 @@ class UserController {
                 const { data: stallData, error: stallErr } = await supabase
                     .from('stalls')
                     .insert([{ 
-                        stall_name: stall_name, 
+                        stall_name: effectiveStallName, 
                         hawker_centre_id: effectiveHawkerCentreId, 
                         status: 'Active' // Set to active upon approval
                     }])
@@ -164,9 +168,12 @@ class UserController {
             }
             
             // Update user approval status and assign stall
+            // Clear pending fields since they've been processed
             const updateData = { 
                 approval_status: 'approved', 
-                owner_verified: true 
+                owner_verified: true,
+                pending_stall_name: null,
+                pending_hawker_centre_id: null
             };
             if (stallId) {
                 updateData.stall_id = stallId;
@@ -199,9 +206,43 @@ class UserController {
     static async listPendingOwners(req, res) {
         try {
             const supabase = require('../dbConfig');
-            const { data, error } = await supabase.from('users').select('user_id, name, email, created_at, stall_id, approval_status').eq('approval_status', 'pending').order('created_at', { ascending: true });
+            const { data, error } = await supabase
+                .from('users')
+                .select('user_id, name, email, created_at, stall_id, approval_status, pending_stall_name, pending_hawker_centre_id')
+                .eq('approval_status', 'pending')
+                .order('created_at', { ascending: true });
+            
             if (error) return res.status(400).json({ success: false, message: error.message || 'Failed to fetch pending owners' });
-            res.json({ success: true, data });
+            
+            // Fetch hawker centre names for pending_hawker_centre_id values
+            const hawkerCentreIds = data
+                .map(owner => owner.pending_hawker_centre_id)
+                .filter(Boolean);
+            
+            let hawkerCentresMap = {};
+            if (hawkerCentreIds.length > 0) {
+                const { data: hawkerCentres, error: hawkerError } = await supabase
+                    .from('hawker_centres')
+                    .select('id, name')
+                    .in('id', hawkerCentreIds);
+                
+                if (!hawkerError && hawkerCentres) {
+                    hawkerCentresMap = hawkerCentres.reduce((map, hc) => {
+                        map[hc.id] = hc.name;
+                        return map;
+                    }, {});
+                }
+            }
+            
+            // Add hawker centre name to each owner
+            const enrichedData = data.map(owner => ({
+                ...owner,
+                pending_hawker_centre_name: owner.pending_hawker_centre_id 
+                    ? hawkerCentresMap[owner.pending_hawker_centre_id] || null 
+                    : null
+            }));
+            
+            res.json({ success: true, data: enrichedData });
         } catch (err) {
             console.error(err);
             res.status(500).json({ success: false, message: 'Server error fetching pending owners' });

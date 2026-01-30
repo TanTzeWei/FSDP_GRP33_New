@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
   stall_id BIGINT REFERENCES stalls(id) ON DELETE SET NULL,
   owner_verified BOOLEAN DEFAULT FALSE,
   approval_status TEXT DEFAULT 'none', -- 'none','pending','approved','rejected'
+  pending_stall_name TEXT, -- Store requested stall name during signup
+  pending_hawker_centre_id BIGINT REFERENCES hawker_centres(id) ON DELETE SET NULL, -- Store requested hawker centre during signup
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
