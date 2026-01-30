@@ -10,8 +10,7 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
     price: '',
     category: '',
     description: '',
-    spice_level: '',
-    dietary_info: ''
+    spice_level: ''
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -24,8 +23,7 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
         price: menuItem.price || '',
         category: menuItem.category || '',
         description: menuItem.description || '',
-        spice_level: menuItem.spice_level || '',
-        dietary_info: menuItem.dietary_info || ''
+        spice_level: menuItem.spice_level || ''
       });
     } else {
       setFormData({
@@ -33,8 +31,7 @@ export default function MenuItemModal({ isOpen, onClose, onSave, menuItem = null
         price: '',
         category: '',
         description: '',
-        spice_level: '',
-        dietary_info: ''
+        spice_level: ''
       });
     }
     setErrors({});
