@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { ShoppingCart, Star, Clock, MapPin, Search, ImageOff } from 'lucide-react';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import Header from '../components/Header';
 import { CartContext } from '../context/CartContext';
 import ClosureBadge from '../components/ClosureBadge';
@@ -231,11 +231,13 @@ const MenuPage = () => {
             <h2 className="stall-name">{stall.name}</h2>
 
             <ul className="stall-details">
-              {stall.rating > 0 && (
+              {stallId && (
                 <li className="stall-detail-item">
-                  <Star className="icon icon-star" />
-                  <span className="rating-value">{stall.rating.toFixed(1)}</span>
-                  <span>({stall.reviews})</span>
+                  <Link to={`/stall/${stallId}/reviews`} state={{ entityName: stall.name }} className="stall-rating-link" aria-label="View reviews and ratings">
+                    <Star className="icon icon-star" />
+                    <span className="rating-value">{stall.rating > 0 ? stall.rating.toFixed(1) : '0.0'}</span>
+                    <span>({stall.reviews} reviews)</span>
+                  </Link>
                 </li>
               )}
 

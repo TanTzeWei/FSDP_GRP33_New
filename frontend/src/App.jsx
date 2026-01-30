@@ -23,6 +23,22 @@ import OrderHistory from './components/OrderHistory';
 import NetsQrSamplePage from './pages/netsQrSamplePage';
 import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
 import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
+import ReviewsPage from './pages/ReviewsPage';
+import { useParams } from 'react-router-dom';
+
+// Wrapper for stall reviews route (reads stallId from URL)
+function StallReviewsPage() {
+  const { stallId } = useParams();
+  const location = useLocation();
+  const entityName = location.state?.entityName || '';
+  return (
+    <ReviewsPage
+      entityType="stall"
+      entityId={stallId ? parseInt(stallId, 10) : null}
+      entityName={entityName}
+    />
+  );
+}
 
 // Main App component with section navigation
 function MainApp() {
@@ -84,7 +100,8 @@ function App() {
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
-        
+        <Route path="/stall/:stallId/reviews" element={<StallReviewsPage />} />
+
         <Route path="/stall/dashboard" element={<StallDashboard />} />
         <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />
         <Route path="/dashboard/admin" element={<DashboardAdmin />} />
