@@ -359,6 +359,7 @@ const MenuPage = () => {
                           </h4>
                           {item.description && (
                             <p className="item-description">{item.description}</p>
+                          )}
                           <div className="item-price-container">
                             {promos[item.id] ? (
                               <>
@@ -368,8 +369,7 @@ const MenuPage = () => {
                                 </p>
                               </>
                             ) : (
-                              )}
-                          <p className="item-price">${item.price.toFixed(2)}</p>
+                              <p className="item-price">${item.price.toFixed(2)}</p>
                             )}
                           </div>
                         </div>
