@@ -295,8 +295,28 @@ const LocationMap = ({ onHawkerSelect }) => {
         if (response.ok) {
           const data = await response.json();
           // Handle both array response and object with data property
-          const hawkerData = Array.isArray(data) ? data : (data.data || data.hawkerCentres || []);
+          let hawkerData = Array.isArray(data) ? data : (data.data || data.hawkerCentres || []);
+          
           if (hawkerData.length > 0) {
+            // Merge API data with mock data to fill in missing stall counts
+            const mockDataMap = mockHawkerData.reduce((map, item) => {
+              map[item.id] = item;
+              return map;
+            }, {});
+            
+            hawkerData = hawkerData.map(hawker => {
+              const mockData = mockDataMap[hawker.id];
+              // If API data has no stalls but mock has, use mock's stall count
+              if ((hawker.active_stalls === 0 || hawker.active_stalls === undefined || hawker.totalStalls === 0 || hawker.totalStalls === undefined) && mockData && mockData.totalStalls > 0) {
+                return {
+                  ...hawker,
+                  totalStalls: mockData.totalStalls,
+                  active_stalls: mockData.totalStalls
+                };
+              }
+              return hawker;
+            });
+            
             setHawkerCentres(hawkerData);
           } else {
             // Fallback to mock data if API returns empty
@@ -556,7 +576,7 @@ const LocationMap = ({ onHawkerSelect }) => {
                     // Handle both API and mock data field names
                     const cuisines = hawker.cuisines || hawker.available_cuisines || [];
                     const cuisineList = Array.isArray(cuisines) ? cuisines : (typeof cuisines === 'string' ? cuisines.split(', ').filter(c => c) : []);
-                    const totalStalls = hawker.totalStalls || hawker.active_stalls || 0;
+                    const totalStalls = hawker.totalStalls || hawker.total_stalls || hawker.active_stalls || hawker.num_stalls || hawker.stall_count || hawker.stalls?.length || 0;
                     const totalReviews = hawker.totalReviews || hawker.total_reviews || 0;
                     const openingHours = hawker.openingHours || hawker.opening_hours || 'N/A';
                     const priceRange = hawker.priceRange || hawker.price_range || '$';
