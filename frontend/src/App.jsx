@@ -23,6 +23,7 @@ import OrderHistory from './components/OrderHistory';
 import NetsQrSamplePage from './pages/netsQrSamplePage';
 import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
 import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
+import CommunityPhotosPage from './pages/CommunityPhotosPage';
 
 // Main App component with section navigation
 function MainApp() {
@@ -83,6 +84,7 @@ function App() {
         {/* /home route removed. Main app is available at / and /main */}
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
+        <Route path="/community-photos" element={<CommunityPhotosPage />} />
         <Route path="/cart" element={<Cart />} />
         
         <Route path="/stall/dashboard" element={<StallDashboard />} />

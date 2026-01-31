@@ -455,7 +455,10 @@ const Menu = () => {
         
         {filteredCommunityPhotos.length > 0 && (
           <div className="view-more-container">
-            <button className="view-more-btn">
+            <button 
+              className="view-more-btn"
+              onClick={() => window.location.href = '/community-photos'}
+            >
               📱 View All Community Photos
             </button>
           </div>
