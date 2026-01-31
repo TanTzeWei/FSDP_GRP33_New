@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
   stall_id BIGINT REFERENCES stalls(id) ON DELETE SET NULL,
   owner_verified BOOLEAN DEFAULT FALSE,
   approval_status TEXT DEFAULT 'none', -- 'none','pending','approved','rejected'
+  pending_stall_name TEXT, -- Store requested stall name during signup
+  pending_hawker_centre_id BIGINT REFERENCES hawker_centres(id) ON DELETE SET NULL, -- Store requested hawker centre during signup
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -317,6 +319,38 @@ CREATE INDEX IF NOT EXISTS idx_stall_closures_type ON stall_closures(closure_typ
 
 COMMENT ON TABLE stall_closures IS 
   'Stores temporary closure schedules for stalls including off days, maintenance periods, and public holidays';
+
+-- =========================================
+-- PROMOTIONS/DISCOUNTS TABLE
+-- =========================================
+CREATE TABLE IF NOT EXISTS promotions (
+  id BIGSERIAL PRIMARY KEY,
+  stall_id BIGINT NOT NULL REFERENCES stalls(id) ON DELETE CASCADE,
+  food_item_id BIGINT NOT NULL REFERENCES food_items(id) ON DELETE CASCADE,
+  promo_name TEXT NOT NULL,
+  description TEXT,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage', 'fixed_amount')),
+  discount_value DECIMAL(10,2) NOT NULL CHECK (discount_value > 0),
+  start_date TIMESTAMPTZ NOT NULL,
+  end_date TIMESTAMPTZ NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  CONSTRAINT chk_promo_end_after_start CHECK (end_date > start_date),
+  CONSTRAINT unique_active_promo_per_item UNIQUE (food_item_id, is_active) WHERE is_active = TRUE
+);
+
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_promotions_stall ON promotions(stall_id);
+CREATE INDEX IF NOT EXISTS idx_promotions_food_item ON promotions(food_item_id);
+CREATE INDEX IF NOT EXISTS idx_promotions_dates ON promotions(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_promotions_active ON promotions(is_active);
+CREATE INDEX IF NOT EXISTS idx_promotions_created_by ON promotions(created_by);
+
+-- Add table comment
+COMMENT ON TABLE promotions IS 'Stores promotional discounts for food items under stalls with validity periods';
 
 -- =========================================
 -- VIEW: HAWKER CENTRE SUMMARY

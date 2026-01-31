@@ -530,5 +530,83 @@ PRINT 'Cloudinary Photo storage tables created successfully!';
 
 
 
+-- Reservation System Tables
+
+-- Table inventory for hawker centres
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'table_inventory')
+BEGIN
+    CREATE TABLE table_inventory (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        hawker_centre_id INT NOT NULL,
+        table_number INT NOT NULL,
+        seating_capacity INT DEFAULT 4,
+        location_description NVARCHAR(255), -- e.g., "Near entrance", "Corner booth"
+        is_available BIT DEFAULT 1,
+        created_at DATETIME2 DEFAULT GETDATE(),
+        updated_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_table_inventory_hawker FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE CASCADE,
+        CONSTRAINT UQ_hawker_table UNIQUE (hawker_centre_id, table_number)
+    );
+    
+    CREATE INDEX idx_table_hawker ON table_inventory (hawker_centre_id);
+    CREATE INDEX idx_table_available ON table_inventory (is_available);
+END;
+
+-- Reservations
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'reservations')
+BEGIN
+    CREATE TABLE reservations (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        hawker_centre_id INT NOT NULL,
+        table_id INT NOT NULL,
+        table_number INT NOT NULL,
+        reservation_date DATE NOT NULL,
+        reservation_time TIME NOT NULL,
+        duration_minutes INT DEFAULT 120, -- Expected duration of reservation
+        party_size INT NOT NULL,
+        status NVARCHAR(50) DEFAULT 'Confirmed' CHECK (status IN ('Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled')),
+        special_requests NVARCHAR(MAX), -- e.g., "Near window", "Quiet corner"
+        contact_phone NVARCHAR(20),
+        notes NVARCHAR(MAX), -- Admin notes
+        created_at DATETIME2 DEFAULT GETDATE(),
+        updated_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_reservations_user FOREIGN KEY (user_id) REFERENCES users(userId) ON DELETE CASCADE,
+        CONSTRAINT FK_reservations_hawker FOREIGN KEY (hawker_centre_id) REFERENCES hawker_centres(id) ON DELETE NO ACTION,
+        CONSTRAINT FK_reservations_table FOREIGN KEY (table_id) REFERENCES table_inventory(id) ON DELETE NO ACTION
+    );
+    
+    CREATE INDEX idx_reservation_user ON reservations (user_id);
+    CREATE INDEX idx_reservation_hawker ON reservations (hawker_centre_id);
+    CREATE INDEX idx_reservation_table ON reservations (table_id);
+    CREATE INDEX idx_reservation_date ON reservations (reservation_date, reservation_time);
+    CREATE INDEX idx_reservation_status ON reservations (status);
+END;
+
+-- Reservation items (which stalls/dishes are ordered for this reservation)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'reservation_items')
+BEGIN
+    CREATE TABLE reservation_items (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        reservation_id INT NOT NULL,
+        stall_id INT NOT NULL,
+        food_item_id INT,
+        quantity INT DEFAULT 1,
+        notes NVARCHAR(MAX), -- Special requests for this item
+        created_at DATETIME2 DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_reservation_items_reservation FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
+        CONSTRAINT FK_reservation_items_stall FOREIGN KEY (stall_id) REFERENCES stalls(id) ON DELETE NO ACTION,
+        CONSTRAINT FK_reservation_items_food FOREIGN KEY (food_item_id) REFERENCES food_items(id) ON DELETE SET NULL
+    );
+    
+    CREATE INDEX idx_reservation_items_reservation ON reservation_items (reservation_id);
+    CREATE INDEX idx_reservation_items_stall ON reservation_items (stall_id);
+END;
+
+PRINT 'Reservation system tables created successfully!';
+
 PRINT 'Database schema created successfully!';
 

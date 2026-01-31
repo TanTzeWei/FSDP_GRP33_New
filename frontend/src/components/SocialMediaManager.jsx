@@ -1,0 +1,295 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './SocialMediaManager.css';
+
+/**
+ * Social Media Manager Component for Stall Dashboard
+ * Allows stall owners to manage their social media links
+ */
+
+const SocialMediaManager = ({ stallId, onUpdate }) => {
+  const [socialMedia, setSocialMedia] = useState({
+    facebook_url: '',
+    instagram_url: '',
+    twitter_url: '',
+    tiktok_url: '',
+    website_url: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Load existing social media links
+  useEffect(() => {
+    const fetchStallData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/api/stalls/${stallId}`);
+        const stall = response.data.data;
+        
+        setSocialMedia({
+          facebook_url: stall.facebook_url || '',
+          instagram_url: stall.instagram_url || '',
+          twitter_url: stall.twitter_url || '',
+          tiktok_url: stall.tiktok_url || '',
+          website_url: stall.website_url || ''
+        });
+      } catch (err) {
+        console.error('Error fetching stall data:', err);
+      }
+    };
+
+    if (stallId) {
+      fetchStallData();
+    }
+  }, [stallId]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setSocialMedia(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      const token = localStorage.getItem('authUser');
+      const authData = token ? JSON.parse(token) : null;
+
+      await axios.put(
+        `http://localhost:3000/api/stalls/${stallId}/social-media`,
+        socialMedia,
+        {
+          headers: {
+            'Authorization': `Bearer ${authData?.token}`
+          }
+        }
+      );
+
+      setSuccess(true);
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update social media links');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if any social media links are set
+  const hasSocialLinks = Object.values(socialMedia).some(url => url);
+
+  if (!isEditing && !hasSocialLinks) {
+    return (
+      <div className="social-media-manager-empty">
+        <h3>Social Media</h3>
+        <p>Add your social media profiles to help customers find you online.</p>
+        <button className="btn-primary" onClick={() => setIsEditing(true)}>
+          Add Social Media Links
+        </button>
+      </div>
+    );
+  }
+
+  if (!isEditing) {
+    return (
+      <div className="social-media-manager-view">
+        <div className="section-header">
+          <h3>Social Media</h3>
+          <button className="btn-secondary" onClick={() => setIsEditing(true)}>
+            Edit Links
+          </button>
+        </div>
+        
+        <div className="social-links-display">
+          {socialMedia.facebook_url && (
+            <div className="social-link-item">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#1877f2">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              <a href={socialMedia.facebook_url} target="_blank" rel="noopener noreferrer">
+                Facebook
+              </a>
+            </div>
+          )}
+          
+          {socialMedia.instagram_url && (
+            <div className="social-link-item">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#E4405F">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+              <a href={socialMedia.instagram_url} target="_blank" rel="noopener noreferrer">
+                Instagram
+              </a>
+            </div>
+          )}
+
+          {socialMedia.twitter_url && (
+            <div className="social-link-item">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#1DA1F2">
+                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+              </svg>
+              <a href={socialMedia.twitter_url} target="_blank" rel="noopener noreferrer">
+                Twitter
+              </a>
+            </div>
+          )}
+
+          {socialMedia.tiktok_url && (
+            <div className="social-link-item">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="#000000">
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+              </svg>
+              <a href={socialMedia.tiktok_url} target="_blank" rel="noopener noreferrer">
+                TikTok
+              </a>
+            </div>
+          )}
+
+          {socialMedia.website_url && (
+            <div className="social-link-item">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#6c757d" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <a href={socialMedia.website_url} target="_blank" rel="noopener noreferrer">
+                Website
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="social-media-manager-form">
+      <h3>Edit Social Media Links</h3>
+      
+      {success && (
+        <div className="alert alert-success">
+          Social media links updated successfully!
+        </div>
+      )}
+
+      {error && (
+        <div className="alert alert-error">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="facebook_url">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#1877f2">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            Facebook Page URL
+          </label>
+          <input
+            id="facebook_url"
+            name="facebook_url"
+            type="url"
+            value={socialMedia.facebook_url}
+            onChange={handleChange}
+            placeholder="https://facebook.com/your-page"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="instagram_url">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#E4405F">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            Instagram Profile
+          </label>
+          <input
+            id="instagram_url"
+            name="instagram_url"
+            type="url"
+            value={socialMedia.instagram_url}
+            onChange={handleChange}
+            placeholder="https://instagram.com/your-profile"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="twitter_url">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#1DA1F2">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+            Twitter Profile
+          </label>
+          <input
+            id="twitter_url"
+            name="twitter_url"
+            type="url"
+            value={socialMedia.twitter_url}
+            onChange={handleChange}
+            placeholder="https://twitter.com/your-profile"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="tiktok_url">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#000000">
+              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+            </svg>
+            TikTok Profile
+          </label>
+          <input
+            id="tiktok_url"
+            name="tiktok_url"
+            type="url"
+            value={socialMedia.tiktok_url}
+            onChange={handleChange}
+            placeholder="https://tiktok.com/@your-profile"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="website_url">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6c757d" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            Website URL
+          </label>
+          <input
+            id="website_url"
+            name="website_url"
+            type="url"
+            value={socialMedia.website_url}
+            onChange={handleChange}
+            placeholder="https://your-website.com"
+          />
+        </div>
+
+        <div className="button-group">
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button 
+            type="button" 
+            className="btn-secondary" 
+            onClick={() => setIsEditing(false)}
+            disabled={loading}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default SocialMediaManager;

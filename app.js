@@ -23,6 +23,9 @@ let DishController;
 let StallController;
 let MenuPhotoController;
 let StallClosureController;
+let PromoController;
+let PointsController;
+let ReviewController;
 
 try {
     UserController = require('./controllers/userController');
@@ -87,6 +90,21 @@ try {
     console.error('❌ Error loading StallClosureController:', error.message);
 }
 
+try {
+    PromoController = require('./controllers/promoController');
+    console.log('✅ PromoController loaded');
+} catch (error) {
+    console.error('❌ Error loading PromoController:', error.message);
+    console.error('Full error:', error);
+}
+
+try {
+    ReviewController = require('./controllers/reviewController');
+    console.log('✅ ReviewController loaded');
+} catch (error) {
+    console.error('❌ Error loading ReviewController:', error.message);
+}
+
 // Create Express app
 const app = express();
 
@@ -128,7 +146,9 @@ if (UserController && authMiddleware) {
     // Admin: approve owner accounts
     app.post('/admin/owners/:userId/approve', authMiddleware, authMiddleware.requireAdmin, UserController.approveOwner);
     app.get('/admin/owners/pending', authMiddleware, authMiddleware.requireAdmin, UserController.listPendingOwners);
+    app.get('/admin/owners/all', authMiddleware, authMiddleware.requireAdmin, UserController.listAllOwners);
     app.post('/admin/owners/:userId/reject', authMiddleware, authMiddleware.requireAdmin, UserController.rejectOwner);
+    app.delete('/admin/owners/:userId', authMiddleware, authMiddleware.requireAdmin, UserController.deleteOwner);
     console.log('✅ User routes configured');
 } else {
     console.log('⚠️  User routes disabled (missing UserController or authMiddleware)');
@@ -252,7 +272,21 @@ if (StallController) {
     if (authMiddleware) {
         // Upload stall image
         app.post('/api/stalls/:id/image', authMiddleware, authMiddleware.requireStallOwner, StallController.uploadMiddleware, StallController.uploadStallImage);
- 
+        // Update stall details
+        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
+        // Update social media links
+        console.log('🔧 Registering PUT /api/stalls/:id/social-media route');
+        app.put('/api/stalls/:id/social-media', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStallSocialMedia);
+        // Delete stall (Admin only)
+        console.log('🔧 Registering DELETE /api/stalls/:id route');
+        app.delete('/api/stalls/:id', authMiddleware, authMiddleware.requireAdmin, StallController.deleteStall);
+        console.log('✅ DELETE route registered');
+    }
+    
+    console.log('✅ Stall route configured');
+} else {
+    console.log('⚠️  Stall routes disabled (missing StallController)');
+}
 
 // Stall Closure Routes (Temporary Closure / Holiday Scheduling)
 if (StallClosureController && authMiddleware) {
@@ -269,13 +303,6 @@ if (StallClosureController && authMiddleware) {
     console.log('✅ Stall closure routes configured');
 } else {
     console.log('⚠️  Stall closure routes disabled (missing StallClosureController or authMiddleware)');
-}       // Update stall details
-        app.put('/api/stalls/:id', authMiddleware, authMiddleware.requireStallOwner, StallController.updateStall);
-    }
-    
-    console.log('✅ Stall route configured');
-} else {
-    console.log('⚠️  Stall routes disabled (missing StallController)');
 }
 
 // Points System Routes (only if controller loaded successfully)
@@ -303,6 +330,68 @@ if (PointsController && authMiddleware) {
 } else {
     console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
 }
+
+// Reviews Routes
+if (ReviewController) {
+    // Public: get reviews by hawker centre
+    app.get('/api/reviews/hawker/:hawkerCentreId', ReviewController.getReviewsByHawkerCentre);
+    
+    // Public: get reviews by stall
+    app.get('/api/reviews/stall/:stallId', ReviewController.getReviewsByStall);
+    
+    // Public: get reviews by food item
+    app.get('/api/reviews/food/:foodItemId', ReviewController.getReviewsByFoodItem);
+    
+    // Public: get rating stats for hawker centre
+    app.get('/api/reviews/stats/hawker/:hawkerCentreId', ReviewController.getHawkerCentreRatingStats);
+    
+    // Public: get rating stats for stall
+    app.get('/api/reviews/stats/stall/:stallId', ReviewController.getStallRatingStats);
+    
+    // Public: get rating stats for food item
+    app.get('/api/reviews/stats/food/:foodItemId', ReviewController.getFoodItemRatingStats);
+    
+    // Public: get single review
+    app.get('/api/reviews/:reviewId', ReviewController.getReview);
+    
+    // Protected: create review
+    app.post('/api/reviews', authMiddleware, ReviewController.createReview);
+    
+    // Protected: get user's reviews
+    app.get('/api/reviews/user/my-reviews', authMiddleware, ReviewController.getUserReviews);
+    
+    // Protected: update review
+    app.put('/api/reviews/:reviewId', authMiddleware, ReviewController.updateReview);
+    
+    // Protected: delete review
+    app.delete('/api/reviews/:reviewId', authMiddleware, ReviewController.deleteReview);
+    
+    console.log('✅ Review routes configured');
+} else {
+    console.log('⚠️  Review routes disabled (missing ReviewController)');
+}
+
+
+// Promotion Routes (Discount/Promo Management)
+if (PromoController) {
+    // Public: get promotions
+    app.get('/api/promos/stall/:stallId', PromoController.getPromosByStall);
+    app.get('/api/promos/stall/:stallId/active', PromoController.getActivePromosByStall);
+    app.get('/api/promos/food-item/:foodItemId', PromoController.getActivePromoByFoodItem);
+    app.get('/api/promos/hawker-centre/:hawkerCentreId', PromoController.getPromosForHawkerCentre);
+    app.get('/api/promos/:promoId', PromoController.getPromoById);
+    
+    // Protected: manage promotions (stall owners only)
+    app.post('/api/promos', authMiddleware, PromoController.createPromo);
+    app.put('/api/promos/:promoId', authMiddleware, PromoController.updatePromo);
+    app.delete('/api/promos/:promoId', authMiddleware, PromoController.deletePromo);
+    app.post('/api/promos/:promoId/deactivate', authMiddleware, PromoController.deactivatePromo);
+    
+    console.log('✅ Promotion routes configured');
+} else {
+    console.log('⚠️  Promotion routes disabled (missing PromoController)');
+}
+
 // Simple health route
 app.get('/', (req, res) => {
 	res.send('Server is running');

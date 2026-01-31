@@ -1,0 +1,105 @@
+.social-media-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.social-icon svg {
+  color: #6c757d;
+  transition: color 0.3s ease;
+}
+
+.social-link:hover .social-icon {
+  background: var(--icon-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.social-link:hover .social-icon svg {
+  color: white;
+}
+
+.social-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057;
+  transition: color 0.3s ease;
+}
+
+.social-link:hover .social-label {
+  color: var(--icon-color);
+}
+
+/* Size variations */
+.social-media-links.small .social-icon {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+}
+
+.social-media-links.small .social-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.social-media-links.medium .social-icon {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+}
+
+.social-media-links.medium .social-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.social-media-links.large .social-icon {
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+}
+
+.social-media-links.large .social-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .social-media-links {
+    gap: 0.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .social-icon {
+    background: #2d3748;
+  }
+
+  .social-icon svg {
+    color: #a0aec0;
+  }
+
+  .social-label {
+    color: #e2e8f0;
+  }
+}

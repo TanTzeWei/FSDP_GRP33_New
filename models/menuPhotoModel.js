@@ -26,7 +26,6 @@ class MenuPhotoModel {
           public_id: photoData.publicId,
           category: photoData.category,
           spice_level: photoData.spiceLevel,
-          dietary_info: photoData.dietaryInfo ? JSON.stringify(photoData.dietaryInfo) : null,
           updated_at: new Date().toISOString()
         };
 
@@ -43,7 +42,6 @@ class MenuPhotoModel {
           public_id: photoData.publicId,
           category: photoData.category,
           spice_level: photoData.spiceLevel,
-          dietary_info: photoData.dietaryInfo ? JSON.stringify(photoData.dietaryInfo) : null,
           is_available: true
         };
 
@@ -61,7 +59,7 @@ class MenuPhotoModel {
     try {
       const { data, error } = await supabase
         .from('food_items')
-        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name)')
+        .select('id, name, description, price, image_url, category, spice_level, created_at, updated_at, stalls(stall_name)')
         .eq('stall_id', stallId)
         .eq('is_available', true)
         .order('created_at', { ascending: false });
@@ -81,7 +79,7 @@ class MenuPhotoModel {
 
       const { data, error } = await supabase
         .from('food_items')
-        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
+        .select('id, name, description, price, image_url, category, spice_level, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
         .in('stall_id', stallIds)
         .eq('is_available', true)
         .order('created_at', { ascending: false })
@@ -98,7 +96,7 @@ class MenuPhotoModel {
     try {
       const { data, error } = await supabase
         .from('food_items')
-        .select('id, name, description, price, image_url, category, spice_level, dietary_info, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
+        .select('id, name, description, price, image_url, category, spice_level, created_at, updated_at, stalls(stall_name), hawker_centres(name)')
         .eq('id', dishId)
         .maybeSingle();
       if (error) throw error;

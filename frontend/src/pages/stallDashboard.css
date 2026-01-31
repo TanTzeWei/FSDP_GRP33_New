@@ -410,17 +410,21 @@
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 20px;
   margin-bottom: 24px;
+  width: 100%; /* Ensure grid takes full width */
+  box-sizing: border-box;
 }
 
 /* Menu Item Card */
 .menu-item-card {
   background: #fff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: hidden; /* Keep all content within card */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
   border: 2px solid transparent;
   position: relative;
+  width: 100%; /* Ensure full width of grid cell */
+  box-sizing: border-box; /* Include padding/border in width */
 }
 
 .menu-item-card:hover {
@@ -451,16 +455,17 @@
 
 .menu-item-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column; /* Stack title and buttons vertically */
   padding: 16px 16px 12px;
   padding-left: 44px; /* Space for checkbox */
   border-bottom: 1px solid #f3f4f6;
+  gap: 12px; /* Gap between title and actions */
+  width: 100%;
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
-.menu-item-title {
-  flex: 1;
-  min-width: 0; /* Allow text truncation */
+.menu-item-info {
+  width: 100%;
 }
 
 .title-row {
@@ -469,6 +474,7 @@
   gap: 8px;
   margin-bottom: 6px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .menu-item-name {
@@ -476,6 +482,7 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0;
+  line-height: 1.4;
 }
 
 .menu-item-price {
@@ -499,6 +506,9 @@
 .menu-item-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  align-items: center;
+  width: 100%;
 }
 
 .btn-icon {
@@ -524,6 +534,81 @@
 .btn-icon svg {
   width: 16px;
   height: 16px;
+}
+
+/* Pill Buttons */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-pill:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-pill:active {
+  transform: translateY(0);
+}
+
+.btn-pill svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.btn-pill-edit {
+  color: #059669;
+  border-color: #059669;
+}
+
+.btn-pill-edit:hover {
+  background: #ecfdf5;
+  border-color: #047857;
+  color: #047857;
+}
+
+.btn-pill-upload {
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn-pill-upload:hover {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}
+
+/* Responsive adjustments for menu item header */
+@media (max-width: 480px) {
+  .menu-item-header {
+    padding-left: 40px;
+    padding-right: 12px;
+    gap: 10px;
+  }
+
+  .btn-pill {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .btn-pill svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 /* Official Photo Section */
@@ -647,6 +732,13 @@
   gap: 8px;
 }
 
+.top-liked-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .user-photo-item {
   position: relative;
   aspect-ratio: 1;
@@ -700,6 +792,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .official-indicator svg {
@@ -707,6 +800,33 @@
   height: 14px;
   fill: #fff;
   stroke: #fff;
+}
+
+/* Photo Likes Badge */
+.photo-likes-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+
+.photo-likes-badge .likes-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.photo-likes-badge .likes-count {
+  line-height: 1;
 }
 
 /* Photo Actions Overlay */
