@@ -1,10 +1,11 @@
 import React, { useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import './ReviewsPage.css';
 
-function ReviewsPage({ entityType = 'stall', entityId, entityName = '' }) {
+function ReviewsPage({ entityType = 'stall', entityId, entityName = '', backUrl = '', backLabel = 'Back to menu' }) {
   const { user } = useContext(AuthContext);
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -17,6 +18,13 @@ function ReviewsPage({ entityType = 'stall', entityId, entityName = '' }) {
 
   return (
     <div className="reviews-page">
+      {backUrl && (
+        <nav className="reviews-back-nav" aria-label="Breadcrumb">
+          <Link to={backUrl} className="reviews-back-link">
+            ← {backLabel}
+          </Link>
+        </nav>
+      )}
       <div className="reviews-header">
         <div>
           <h1>Reviews & Ratings</h1>

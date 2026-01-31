@@ -20,6 +20,11 @@ body {
   min-height: calc(100vh - 64px);
 }
 
+.reviews-route-main {
+  min-height: calc(100vh - 64px);
+  padding: 0 1rem 2rem;
+}
+
 /* GrabFood color variables */
 :root {
   --grab-green: #00b14f;

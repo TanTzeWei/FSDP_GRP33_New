@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
 import './App.css';
 // Home removed: MainApp (default `/`) provides the main UI
 import Login from "./pages/login";
@@ -24,19 +24,32 @@ import NetsQrSamplePage from './pages/netsQrSamplePage';
 import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
 import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
 import ReviewsPage from './pages/ReviewsPage';
-import { useParams } from 'react-router-dom';
 
-// Wrapper for stall reviews route (reads stallId from URL)
+// Wrapper for stall reviews route (reads stallId from URL, shows Header + back nav)
 function StallReviewsPage() {
   const { stallId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const entityName = location.state?.entityName || '';
+  const backUrl = stallId ? `/menu?stall=${stallId}` : '/';
+  const backLabel = entityName ? `Back to ${entityName} menu` : 'Back to menu';
   return (
-    <ReviewsPage
-      entityType="stall"
-      entityId={stallId ? parseInt(stallId, 10) : null}
-      entityName={entityName}
-    />
+    <>
+      <Header
+        activeSection="menu"
+        setActiveSection={() => {}}
+        onCartClick={() => navigate('/cart')}
+      />
+      <main className="reviews-route-main">
+        <ReviewsPage
+          entityType="stall"
+          entityId={stallId ? parseInt(stallId, 10) : null}
+          entityName={entityName}
+          backUrl={backUrl}
+          backLabel={backLabel}
+        />
+      </main>
+    </>
   );
 }
 
