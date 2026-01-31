@@ -291,50 +291,6 @@ const Menu = () => {
           <h2>🏆 Hall of Flavor Fame</h2>
           <p className="section-subtitle">Most loved dishes captured by our community</p>
         </div>
-
-        {/* Stall and Dish Filters */}
-        <div className="photo-filters">
-          <div className="filter-group">
-            <label className="filter-label">Filter by Stall:</label>
-            <div className="filter-buttons">
-              {loadingStalls ? (
-                <span className="filter-loading">Loading stalls...</span>
-              ) : stallFilterOptions.length > 1 ? (
-                stallFilterOptions.map(stall => (
-                  <button
-                    key={stall}
-                    className={`filter-btn stall-filter-btn ${selectedStallFilter === stall ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedStallFilter(stall);
-                      setSelectedDishFilter('All');
-                    }}
-                  >
-                    {stall}
-                  </button>
-                ))
-              ) : (
-                <span className="filter-empty">No stalls available</span>
-              )}
-            </div>
-          </div>
-
-          {uniqueDishes.length > 1 && (
-              <div className="filter-group">
-                <label className="filter-label">Filter by Dish:</label>
-                <div className="filter-buttons">
-                  {uniqueDishes.map(dish => (
-                    <button
-                      key={dish}
-                      className={`filter-btn dish-filter-btn ${selectedDishFilter === dish ? 'active' : ''}`}
-                      onClick={() => setSelectedDishFilter(dish)}
-                    >
-                      {dish}
-                    </button>
-                  ))}
-                </div>
-              </div>
-          )}
-        </div>
         
         {loadingPhotos ? (
           <div className="photos-loading">
@@ -455,7 +411,10 @@ const Menu = () => {
         
         {filteredCommunityPhotos.length > 0 && (
           <div className="view-more-container">
-            <button className="view-more-btn">
+            <button 
+              className="view-more-btn"
+              onClick={() => window.location.href = '/community-photos'}
+            >
               📱 View All Community Photos
             </button>
           </div>
