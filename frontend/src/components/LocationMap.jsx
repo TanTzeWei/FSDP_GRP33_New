@@ -142,6 +142,17 @@ const LocationMap = ({ onHawkerSelect }) => {
   const [locationError, setLocationError] = useState(null);
   const [mapKey, setMapKey] = useState(Date.now()); // Key to force map remount
   const navigate = useNavigate();
+  
+  // Table reservation states
+  const [showReservationModal, setShowReservationModal] = useState(false);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [reservationDate, setReservationDate] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  const [tables, setTables] = useState([]);
+  const [tableReservations, setTableReservations] = useState({});
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [reservationError, setReservationError] = useState('');
+  const [reservationSuccess, setReservationSuccess] = useState('');
 
   // Mock hawker centre data (in real app, this would come from API)
   const mockHawkerData = [
@@ -356,6 +367,62 @@ const LocationMap = ({ onHawkerSelect }) => {
     getUserLocation();
   }, []);
 
+  // Update occupancy status every 10 seconds when modal is open
+  useEffect(() => {
+    if (!showReservationModal || tables.length === 0) return;
+
+    const updateOccupancy = () => {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      console.log('🕐 Checking occupancy at:', currentTime);
+
+      // Use the current tableReservations state by reading from the callback
+      setTableReservations(prevReservations => {
+        const updatedReservations = {};
+        
+        Object.keys(prevReservations).forEach(tableId => {
+          const resData = prevReservations[tableId];
+          if (resData && resData.reservations && Array.isArray(resData.reservations)) {
+            const wasOccupied = resData.isOccupied;
+            
+            // Check if any reservation covers the current time
+            const isCurrentlyOccupied = resData.reservations.some(res => {
+              const occupied = res.status !== 'Cancelled' && res.start_time <= currentTime && res.end_time > currentTime;
+              if (occupied) {
+                console.log(`✓ Table ${tableId}: Reservation from ${res.start_time} to ${res.end_time} covers ${currentTime}`);
+              }
+              return occupied;
+            });
+            
+            if (wasOccupied !== isCurrentlyOccupied) {
+              console.log(`🔄 Table ${tableId}: Status changed to ${isCurrentlyOccupied ? 'Occupied' : 'Available'}`);
+            }
+            
+            // Create new object to trigger React update
+            updatedReservations[tableId] = {
+              ...resData,
+              isOccupied: isCurrentlyOccupied
+            };
+          } else {
+            updatedReservations[tableId] = resData;
+          }
+        });
+
+        console.log('📊 Updated occupancy:', updatedReservations);
+        return updatedReservations;
+      });
+    };
+
+    // Check immediately
+    updateOccupancy();
+
+    // Then check every 10 seconds (10000 ms)
+    const interval = setInterval(updateOccupancy, 10000);
+
+    return () => clearInterval(interval);
+  }, [showReservationModal, tables]);
+
   const handleMarkerClick = (hawker) => {
     setSelectedHawker(hawker);
     setMapCenter({ lat: hawker.latitude, lng: hawker.longitude });
@@ -405,6 +472,207 @@ const LocationMap = ({ onHawkerSelect }) => {
 
   const closeDetails = () => {
     setShowDetailModal(false);
+  };
+
+  const openReservationModal = async () => {
+    setShowReservationModal(true);
+    setSelectedTable(null);
+    setReservationDate('');
+    setReservationTime('');
+    setReservationError('');
+    setReservationSuccess('');
+    setLoadingTables(true);
+    
+    // Fetch tables from database
+    try {
+      const response = await fetch(`http://localhost:3000/api/hawker-centres/${selectedHawker.id}/tables`);
+      if (response.ok) {
+        const data = await response.json();
+        const tablesData = Array.isArray(data) ? data : (data.data || []);
+        setTables(tablesData);
+        
+        // Fetch today's reservations for all tables to check current occupancy
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        // Fetch reservations for each table
+        const allReservations = {};
+        for (const table of tablesData) {
+          try {
+            const resResponse = await fetch(`http://localhost:3000/api/tables/${table.id}/reservations?date=${today}`);
+            if (resResponse.ok) {
+              const resData = await resResponse.json();
+              const reservations = Array.isArray(resData) ? resData : (resData.data || []);
+              
+              // Check if any reservation covers the current time
+              const isCurrentlyOccupied = reservations.some(res => {
+                return res.status !== 'Cancelled' && res.start_time <= currentTime && res.end_time > currentTime;
+              });
+              
+              allReservations[table.id] = {
+                reservations: reservations,
+                isOccupied: isCurrentlyOccupied
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching reservations for table ${table.id}:`, error);
+          }
+        }
+        
+        setTableReservations(allReservations);
+      } else {
+        setReservationError('Failed to load tables');
+      }
+    } catch (error) {
+      console.error('Error fetching tables:', error);
+      setReservationError('Error loading tables');
+    } finally {
+      setLoadingTables(false);
+    }
+  };
+
+  const closeReservationModal = () => {
+    setShowReservationModal(false);
+    setSelectedTable(null);
+    setReservationError('');
+    setReservationSuccess('');
+  };
+
+  const handleTableSelect = async (table) => {
+    if (table.status === 'Available') {
+      setSelectedTable(table);
+      
+      // Fetch existing reservations for this table on the selected date
+      if (reservationDate) {
+        try {
+          const response = await fetch(`http://localhost:3000/api/tables/${table.id}/reservations?date=${reservationDate}`);
+          if (response.ok) {
+            const data = await response.json();
+            setTableReservations(prev => ({
+              ...prev,
+              [table.id]: Array.isArray(data) ? data : (data.data || [])
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching table reservations:', error);
+        }
+      }
+    }
+  };
+
+  const handleReservationSubmit = async () => {
+    if (!selectedTable || !reservationDate || !reservationTime) {
+      setReservationError('Please select a table, date, and time for your reservation.');
+      return;
+    }
+    
+    // Calculate end time (1 hour after start time)
+    const [hours, minutes] = reservationTime.split(':');
+    const endHours = String(parseInt(hours) + 1).padStart(2, '0');
+    const endTime = `${endHours}:${minutes}`;
+    
+    // Get token from localStorage - check both possible locations
+    let token = localStorage.getItem('token');
+    if (!token) {
+      const authData = localStorage.getItem('authUser');
+      if (authData) {
+        try {
+          const parsed = JSON.parse(authData);
+          token = parsed.token;
+        } catch (e) {
+          // ignore parse error
+        }
+      }
+    }
+    
+    if (!token) {
+      setReservationError('Please log in to make a reservation');
+      return;
+    }
+    
+    try {
+      const requestBody = {
+        hawkerCentreId: selectedHawker.id,
+        seatId: selectedTable.id,
+        reservationDate: reservationDate,
+        startTime: reservationTime,
+        endTime: endTime,
+        specialRequests: ''
+      };
+      
+      console.log('Creating reservation with:', requestBody);
+      console.log('Token present:', !!token);
+      
+      const response = await fetch('http://localhost:3000/api/reservations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      console.log('Reservation response:', { status: response.status, data });
+      
+      if (response.ok) {
+        setReservationSuccess(`🎉 Reservation Confirmed!\n\nTable: ${selectedTable.table_code}\nCapacity: ${selectedTable.capacity} seats\nZone: ${selectedTable.zone}\nDate: ${reservationDate}\nTime: ${reservationTime} - ${endTime}`);
+        setTimeout(() => {
+          closeReservationModal();
+        }, 2000);
+      } else {
+        setReservationError(data.error || data.message || 'Failed to create reservation');
+      }
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      setReservationError('Error creating reservation. Please try again.');
+    }
+  };
+
+  const getTableStatusColor = (status) => {
+    switch (status) {
+      case 'Available': return '#00b14f';
+      case 'Reserved': return '#ffa500';
+      case 'Occupied': return '#ff6b6b';
+      case 'Out of Service': return '#999';
+      default: return '#ccc';
+    }
+  };
+
+  const getTableStatusIcon = (status) => {
+    switch (status) {
+      case 'Available': return '✓';
+      case 'Reserved': return '📅';
+      case 'Occupied': return '👥';
+      case 'Out of Service': return '🔧';
+      default: return '?';
+    }
+  };
+
+  const getTableReservations = (tableId) => {
+    return tableReservations[tableId] || [];
+  };
+
+  const handleDateChange = async (e) => {
+    const newDate = e.target.value;
+    setReservationDate(newDate);
+    
+    // Fetch reservations for selected table on new date
+    if (selectedTable) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/tables/${selectedTable.id}/reservations?date=${newDate}`);
+        if (response.ok) {
+          const data = await response.json();
+          setTableReservations(prev => ({
+            ...prev,
+            [selectedTable.id]: Array.isArray(data) ? data : (data.data || [])
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching reservations:', error);
+      }
+    }
   };
 
   const getRatingStars = (rating) => {
@@ -771,8 +1039,156 @@ const LocationMap = ({ onHawkerSelect }) => {
               >
                 📋 View Menu
               </button>
+              <button className="action-btn reserve" onClick={openReservationModal}>
+                🪑 Reserve Table
+              </button>
               <button className="action-btn secondary" onClick={() => alert('Call hawker centre...')}>
                 📞 Call
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table Reservation Modal */}
+      {showReservationModal && selectedHawker && (
+        <div className="reservation-overlay" onClick={closeReservationModal}>
+          <div className="reservation-modal" onClick={e => e.stopPropagation()}>
+            <div className="reservation-header">
+              <div className="reservation-title">
+                <h2>🪑 Reserve a Table</h2>
+                <p>{selectedHawker.name}</p>
+              </div>
+              <button className="close-btn" onClick={closeReservationModal}>×</button>
+            </div>
+
+            <div className="reservation-content">
+              {/* Error and Success Messages */}
+              {reservationError && (
+                <div className="reservation-message error">
+                  ❌ {reservationError}
+                </div>
+              )}
+              {reservationSuccess && (
+                <div className="reservation-message success">
+                  {reservationSuccess}
+                </div>
+              )}
+              
+              {/* Date and Time Selection */}
+              <div className="reservation-datetime">
+                <div className="datetime-field">
+                  <label>📅 Date</label>
+                  <input 
+                    type="date" 
+                    value={reservationDate}
+                    onChange={handleDateChange}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="datetime-field">
+                  <label>🕐 Time</label>
+                  <input 
+                    type="time" 
+                    value={reservationTime}
+                    onChange={(e) => setReservationTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Table Grid by Zone */}
+              {loadingTables ? (
+                <div className="loading-tables">
+                  <div className="loading-spinner"></div>
+                  <p>Loading tables...</p>
+                </div>
+              ) : tables.length > 0 ? (
+                <div className="table-zones">
+                  {Array.from(new Set(tables.map(t => t.zone))).sort().map(zone => (
+                    <div key={zone} className="table-zone">
+                      <h4 className="zone-title">📍 {zone || 'Unassigned'}</h4>
+                      <div className="table-grid">
+                        {tables
+                          .filter(table => table.zone === zone)
+                          .map(table => {
+                            // Determine if table is currently occupied
+                            const tableStatus = tableReservations[table.id]?.isOccupied ? 'Occupied' : table.status;
+                            return (
+                              <div 
+                                key={table.id}
+                                className={`table-card ${tableStatus === 'Available' ? 'clickable' : 'disabled'} ${selectedTable?.id === table.id ? 'selected' : ''}`}
+                                onClick={() => handleTableSelect(table)}
+                              >
+                                <div className="table-code">{table.table_code}</div>
+                                <div className="table-capacity">
+                                  <span className="capacity-icon">👥</span>
+                                  <span>{table.capacity} seats</span>
+                                </div>
+                                {table.is_shared && (
+                                  <div className="table-shared">🤝 Shared</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-tables">
+                  <p>No tables available for this hawker centre.</p>
+                </div>
+              )}
+
+              {/* Selected Table Details */}
+              {selectedTable && (
+                <div className="selected-table-details">
+                  <h4>✅ Selected Table</h4>
+                  <div className="selected-table-info">
+                    <div className="info-row">
+                      <span className="info-label">Table:</span>
+                      <span className="info-value">{selectedTable.table_code}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Capacity:</span>
+                      <span className="info-value">{selectedTable.capacity} seats</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Zone:</span>
+                      <span className="info-value">{selectedTable.zone}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Type:</span>
+                      <span className="info-value">{selectedTable.is_shared ? 'Shared Table' : 'Private Table'}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Show existing reservations for this table */}
+                  {getTableReservations(selectedTable.id).length > 0 && (
+                    <div className="table-reservations">
+                      <h5>📅 Reservations on {reservationDate}</h5>
+                      {getTableReservations(selectedTable.id).map(res => (
+                        <div key={res.id} className="reservation-slot">
+                          <span className="slot-time">{res.start_time} - {res.end_time}</span>
+                          <span className={`slot-status ${res.status.toLowerCase()}`}>{res.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="reservation-actions">
+              <button className="cancel-btn" onClick={closeReservationModal}>
+                Cancel
+              </button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleReservationSubmit}
+                disabled={!selectedTable || !reservationDate || !reservationTime}
+              >
+                ✓ Confirm Reservation
               </button>
             </div>
           </div>

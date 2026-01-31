@@ -368,3 +368,102 @@ LEFT JOIN cuisine_types ct
   ON s.cuisine_type_id = ct.id
 WHERE hc.status = 'Active'
 GROUP BY hc.id;
+
+CREATE OR REPLACE VIEW hawker_centre_summary AS
+SELECT
+  hc.*,
+  COUNT(DISTINCT s.id) AS active_stalls,
+  STRING_AGG(DISTINCT ct.name, ', ') AS available_cuisines,
+  AVG(s.rating)::DECIMAL(3,2) AS average_stall_rating
+FROM hawker_centres hc
+LEFT JOIN stalls s
+  ON hc.id = s.hawker_centre_id AND s.status = 'Active'
+LEFT JOIN cuisine_types ct
+  ON s.cuisine_type_id = ct.id
+WHERE hc.status = 'Active'
+GROUP BY hc.id;
+
+CREATE TABLE IF NOT EXISTS hawker_seats (
+  id BIGSERIAL PRIMARY KEY,
+  hawker_centre_id BIGINT NOT NULL
+    REFERENCES hawker_centres(id)
+    ON DELETE CASCADE,
+
+  table_code TEXT NOT NULL,          -- e.g. "A12", "B07"
+  capacity INT NOT NULL CHECK (capacity > 0),
+
+  zone TEXT,                         -- e.g. "North Wing", "Near Fan"
+  is_shared BOOLEAN DEFAULT FALSE,   -- shared long tables
+
+  status TEXT DEFAULT 'Available'
+    CHECK (status IN ('Available', 'Reserved', 'Occupied', 'Out of Service')),
+
+  qr_code_url TEXT,                  -- QR stuck on table
+  notes TEXT,                        -- damaged, wobbly, etc.
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE (hawker_centre_id, table_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_seats_hawker
+  ON hawker_seats(hawker_centre_id);
+
+CREATE INDEX IF NOT EXISTS idx_seats_status
+  ON hawker_seats(status);
+
+CREATE INDEX IF NOT EXISTS idx_seats_capacity
+  ON hawker_seats(capacity);
+
+CREATE INDEX IF NOT EXISTS idx_seats_hawker_status
+  ON hawker_seats(hawker_centre_id, status);
+
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+CREATE TABLE IF NOT EXISTS reservations (
+  id BIGSERIAL PRIMARY KEY,
+
+  user_id BIGINT NOT NULL
+    REFERENCES users(user_id)
+    ON DELETE CASCADE,
+
+  hawker_centre_id BIGINT NOT NULL
+    REFERENCES hawker_centres(id)
+    ON DELETE CASCADE,
+
+  seat_id BIGINT NOT NULL
+    REFERENCES hawker_seats(id)
+    ON DELETE CASCADE,
+
+  reservation_date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+
+  reservation_period tsrange GENERATED ALWAYS AS (
+    tsrange(
+      reservation_date + start_time,
+      reservation_date + end_time,
+      '[)'
+    )
+  ) STORED,
+
+  status TEXT DEFAULT 'Pending'
+    CHECK (status IN ('Pending', 'Confirmed', 'Cancelled', 'Completed', 'No-Show')),
+
+  special_requests TEXT,
+  notes TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CHECK (end_time > start_time)
+);
+
+ALTER TABLE reservations
+ADD CONSTRAINT no_overlapping_reservations
+EXCLUDE USING gist (
+  seat_id WITH =,
+  reservation_period WITH &&
+)
+WHERE (status IN ('Pending', 'Confirmed'));
