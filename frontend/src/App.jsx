@@ -16,7 +16,7 @@ import Menu from './components/Menu';
 import MenuPage from './pages/menupage';
 import Cart from './pages/CartPage';
 import Deals from './components/Deals';
-import PointsSystem from './pages/PointsSystem';
+import PointsSystemNew from './pages/PointsSystemNew';  // Updated to new rewards UI
 import Profile from './components/Profile';
 import LocationMap from './components/LocationMap';
 import OrderHistory from './components/OrderHistory';
@@ -55,6 +55,7 @@ function StallReviewsPage() {
     </>
   );
 }
+import CommunityPhotosPage from './pages/CommunityPhotosPage';
 
 // Main App component with section navigation
 function MainApp() {
@@ -77,7 +78,7 @@ function MainApp() {
       case 'deals':
         return <Deals />;
       case 'rewards':
-        return <PointsSystem />;
+        return <PointsSystemNew />;
       case 'profile':
         return <OrderHistory />;
       case 'location':
@@ -115,6 +116,7 @@ function App() {
         {/* /home route removed. Main app is available at / and /main */}
         <Route path="/main" element={<MainApp />} />
         <Route path="/menu" element={<MenuPage />} />
+        <Route path="/community-photos" element={<CommunityPhotosPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/stall/:stallId/reviews" element={<StallReviewsPage />} />
         <Route path="/centres/:id" element={<CentreDetailPage />} />
@@ -129,7 +131,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/points" element={<PointsSystem />} />
+        <Route path="/points" element={<PointsSystemNew />} />
         <Route path="/nets-qr" element={<NetsQrSamplePage />} />
         <Route path="/nets-qr/success" element={<TxnNetsSuccessStatusLayout />} />
         <Route path="/nets-qr/fail" element={<TxnNetsFailStatusLayout />} />

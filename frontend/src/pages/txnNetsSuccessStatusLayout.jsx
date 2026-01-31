@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useContext, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import { CartContext } from '../context/CartContext';
+import { PointsContext } from '../context/PointsContext';
 import txnSuccess from '../assets/greenTick.png';
 
 class TxnNetsSuccessStatus extends Component {
@@ -42,11 +43,29 @@ class TxnNetsSuccessStatus extends Component {
 function TxnNetsSuccessStatusLayout() {
   const navigate = useNavigate();
   const { clearCart } = useContext(CartContext);
+  const { useVoucher } = useContext(PointsContext);
 
   useEffect(() => {
     // Clear cart when user arrives at success page
     clearCart();
-  }, [clearCart]);
+
+    // Mark voucher as used if one was selected
+    const markVoucherAsUsed = async () => {
+      const voucherCode = localStorage.getItem('selectedVoucherCode');
+      if (voucherCode) {
+        try {
+          await useVoucher(voucherCode);
+          console.log('Voucher marked as used:', voucherCode);
+          // Clear the voucher code from localStorage
+          localStorage.removeItem('selectedVoucherCode');
+        } catch (error) {
+          console.error('Error marking voucher as used:', error);
+        }
+      }
+    };
+
+    markVoucherAsUsed();
+  }, [clearCart, useVoucher]);
 
   const handleBackToHome = () => {
     navigate('/');

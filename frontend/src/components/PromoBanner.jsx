@@ -173,6 +173,7 @@ const PromoBanner = () => {
                       }}
                     />
                     <div className="promo-image-overlay"></div>
+                    <div className="promo-offer-badge">{promo.offer}</div>
                   </div>
                   <div className="promo-content">
                     <h3>{promo.title}</h3>
@@ -193,7 +194,6 @@ const PromoBanner = () => {
                     )}
                     
                     <div className="promo-footer">
-                      <div className="promo-offer">{promo.offer}</div>
                       <div className="promo-end-date">Ends: {formatEndDate(promo.endDate)}</div>
                     </div>
                   </div>

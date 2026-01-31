@@ -199,7 +199,28 @@ class PointsModel {
         try {
             const { data, error } = await supabase.from('redeemed_vouchers').select('*, vouchers(*)').eq('user_id', userId).order('redeemed_date', { ascending: false });
             if (error) throw error;
-            const vouchers = (data || []).map(v => ({ ...v, terms_conditions: v.vouchers && v.vouchers.terms_conditions ? JSON.parse(v.vouchers.terms_conditions) : [], is_expired: new Date(v.expiry_date) < new Date() }));
+            
+            const vouchers = (data || []).map(v => {
+                let terms = [];
+                if (v.vouchers && v.vouchers.terms_conditions) {
+                    try {
+                        terms = JSON.parse(v.vouchers.terms_conditions);
+                    } catch (parseError) {
+                        // If it's not valid JSON, treat it as a single string item
+                        terms = [v.vouchers.terms_conditions];
+                    }
+                }
+                
+                return {
+                    ...v,
+                    vouchers: v.vouchers ? {
+                        ...v.vouchers,
+                        terms_conditions: terms
+                    } : null,
+                    is_expired: new Date(v.expiry_date) < new Date()
+                };
+            });
+            
             return { success: true, data: vouchers };
         } catch (error) {
             console.error("Error getting redeemed vouchers:", error);

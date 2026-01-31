@@ -110,11 +110,14 @@ const Menu = () => {
     return stallMatch && dishMatch;
   });
 
-  const filteredFeaturedPhotos = featuredPhotos.filter(photo => {
-    const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
-    const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
-    return stallMatch && dishMatch;
-  });
+  const filteredFeaturedPhotos = featuredPhotos
+    .filter(photo => {
+      const stallMatch = selectedStallFilter === 'All' || photo.stallName === selectedStallFilter;
+      const dishMatch = selectedDishFilter === 'All' || photo.dishName === selectedDishFilter;
+      return stallMatch && dishMatch;
+    })
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 9);
 
   // Update likes count for a photo across featured/community lists
   const updatePhotoLikes = (photoId, newCount) => {
@@ -147,43 +150,40 @@ const Menu = () => {
 
   // Toggle like/unlike for a photo
   const toggleLike = async (photoId) => {
-    const isLiked = likedPhotos.includes(photoId);
-    // Prevent duplicate requests
+    // Don't allow actions if still pending
     if (pendingLikes[photoId]) return;
 
     try {
       setPendingLikes(prev => ({ ...prev, [photoId]: true }));
 
-      // Optimistic UI update
-      if (!isLiked) {
-        setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
-        updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
-      } else {
-        setLikedPhotos(prev => prev.filter(id => id !== photoId));
-        updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
-      }
-
-      const method = isLiked ? 'DELETE' : 'POST';
+      const method = likedPhotos.includes(photoId) ? 'DELETE' : 'POST';
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { method, headers, credentials: 'include' });
-      const json = await res.json().catch(() => ({}));
+      
+      const res = await fetch(`http://localhost:3000/api/photos/${photoId}/like`, { 
+        method, 
+        headers, 
+        credentials: 'include' 
+      });
+      
+      if (!res.ok) {
+        console.error('Like/Unlike failed:', res.status);
+        return;
+      }
 
-      if (res.ok && json.data) {
-        updatePhotoLikes(photoId, json.data.likesCount);
-        // ensure likedPhotos matches server authoritative state
-        setLikedPhotos(prev => isLiked ? prev.filter(id => id !== photoId) : Array.from(new Set([...prev, photoId])));
-      } else {
-        console.warn('Like/Unlike failed', res.status, json);
-        // rollback optimistic update on failure
-        if (!isLiked) {
-          setLikedPhotos(prev => prev.filter(id => id !== photoId));
-          // decrement rollback
-          updatePhotoLikes(photoId, Math.max(0, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 1) - 1));
-        } else {
+      const json = await res.json();
+      if (json.success && json.data) {
+        // Update liked photos list based on the action
+        if (method === 'POST') {
+          // User just liked - add to likedPhotos
           setLikedPhotos(prev => Array.from(new Set([...prev, photoId])));
-          updatePhotoLikes(photoId, (featuredPhotos.find(p => p.id === photoId)?.likes || communityPhotos.find(p => p.id === photoId)?.likes || 0) + 1);
+        } else {
+          // User just unliked - remove from likedPhotos
+          setLikedPhotos(prev => prev.filter(id => id !== photoId));
         }
+        
+        // Update the like count from server
+        updatePhotoLikes(photoId, json.data.likesCount || 0);
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -243,43 +243,36 @@ const Menu = () => {
           console.log('Community photos set:', communityData.data);
         }
 
-        // Fetch liked photo ids for current user (optional - will fallback to empty)
-        try {
-          if (token) {
-            const likedRes = await fetch('http://localhost:3000/api/photos/liked', { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` }, credentials: 'include' });
+        // Fetch liked photo ids for current user
+        if (token) {
+          try {
+            const likedRes = await fetch('http://localhost:3000/api/photos/liked', { 
+              headers: { 
+                Accept: 'application/json', 
+                Authorization: `Bearer ${token}` 
+              }, 
+              credentials: 'include' 
+            });
             const likedJson = await likedRes.json();
             if (likedRes.ok && likedJson.success) {
               setLikedPhotos(likedJson.data || []);
             }
-          } else {
-            setLikedPhotos([]);
+          } catch (e) {
+            console.warn('Could not fetch liked photo ids:', e);
           }
-        
-        } catch (e) {
-          console.warn('Could not fetch liked photo ids:', e);
+        } else {
+          setLikedPhotos([]);
         }
       } catch (error) {
         console.error('Error fetching photos:', error);
-        // Set fallback mock data if API fails
-        setFeaturedPhotos([
-          { id: 1, imageUrl: "/api/placeholder/200/200", dishName: "Signature Laksa", stallName: "Peranakan Kitchen", likes: 247, username: "foodie_anna" },
-          { id: 2, imageUrl: "/api/placeholder/200/200", dishName: "Char Siu Rice", stallName: "Ah Lim's Chinese Stall", likes: 189, username: "hungry_tom" },
-          { id: 3, imageUrl: "/api/placeholder/200/200", dishName: "Rendang Beef", stallName: "Warung Pak Hasan", likes: 203, username: "spice_lover" },
-          { id: 4, imageUrl: "/api/placeholder/200/200", dishName: "Masala Dosa", stallName: "Mumbai Spice Corner", likes: 156, username: "curry_king" }
-        ]);
-        setCommunityPhotos([
-          { id: 5, imageUrl: "/api/placeholder/150/150", dishName: "Wonton Noodles", stallName: "Ah Lim's Chinese Stall", likes: 42, username: "noodle_ninja" },
-          { id: 6, imageUrl: "/api/placeholder/150/150", dishName: "Nasi Lemak", stallName: "Warung Pak Hasan", likes: 38, username: "coconut_rice" },
-          { id: 7, imageUrl: "/api/placeholder/150/150", dishName: "Fish & Chips", stallName: "Western Grill House", likes: 31, username: "crispy_fish" },
-          { id: 8, imageUrl: "/api/placeholder/150/150", dishName: "Bubble Tea", stallName: "Fresh Drinks Bar", likes: 67, username: "boba_boss" }
-        ]);
+        setLikedPhotos([]);
       } finally {
         setLoadingPhotos(false);
       }
     };
 
     fetchPhotos();
-  }, []);
+  }, [token]);
 
   // Filter stalls by selected category
   const filteredStalls = selectedCategory === 'All' 
@@ -297,50 +290,6 @@ const Menu = () => {
         <div className="section-header">
           <h2>🏆 Hall of Flavor Fame</h2>
           <p className="section-subtitle">Most loved dishes captured by our community</p>
-        </div>
-
-        {/* Stall and Dish Filters */}
-        <div className="photo-filters">
-          <div className="filter-group">
-            <label className="filter-label">Filter by Stall:</label>
-            <div className="filter-buttons">
-              {loadingStalls ? (
-                <span className="filter-loading">Loading stalls...</span>
-              ) : stallFilterOptions.length > 1 ? (
-                stallFilterOptions.map(stall => (
-                  <button
-                    key={stall}
-                    className={`filter-btn stall-filter-btn ${selectedStallFilter === stall ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedStallFilter(stall);
-                      setSelectedDishFilter('All');
-                    }}
-                  >
-                    {stall}
-                  </button>
-                ))
-              ) : (
-                <span className="filter-empty">No stalls available</span>
-              )}
-            </div>
-          </div>
-
-          {uniqueDishes.length > 1 && (
-              <div className="filter-group">
-                <label className="filter-label">Filter by Dish:</label>
-                <div className="filter-buttons">
-                  {uniqueDishes.map(dish => (
-                    <button
-                      key={dish}
-                      className={`filter-btn dish-filter-btn ${selectedDishFilter === dish ? 'active' : ''}`}
-                      onClick={() => setSelectedDishFilter(dish)}
-                    >
-                      {dish}
-                    </button>
-                  ))}
-                </div>
-              </div>
-          )}
         </div>
         
         {loadingPhotos ? (
@@ -462,15 +411,21 @@ const Menu = () => {
         
         {filteredCommunityPhotos.length > 0 && (
           <div className="view-more-container">
-            <button className="view-more-btn">
+            <button 
+              className="view-more-btn"
+              onClick={() => window.location.href = '/community-photos'}
+            >
               📱 View All Community Photos
             </button>
           </div>
         )}
       </div>
       
-      <div className="menu-section">
-        <h2>Popular near you</h2>
+      <div className="popular-section">
+        <div className="popular-header">
+          <h2>🔥 Popular near you</h2>
+          <p className="popular-subtitle">Discover trending stalls in your area</p>
+        </div>
 
       <div className="category-filter">
         {categories.map(category => (
