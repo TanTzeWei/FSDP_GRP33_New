@@ -11,6 +11,7 @@ import StallClosureSchedule from '../components/StallClosureSchedule';
 import ClosureBadge from '../components/ClosureBadge';
 import PromoManagement from '../components/PromoManagement';
 import SocialMediaManager from '../components/SocialMediaManager';
+import ReviewList from '../components/ReviewList';
 import './stallDashboard.css';
 
 /**
@@ -106,7 +107,7 @@ function StallDashboard() {
   const [actionErrors, setActionErrors] = useState({});
   const [sortBy, setSortBy] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu', 'community', 'closures', 'promos'
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu', 'community', 'closures', 'promos', 'reviews', 'social'
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedItems, setSelectedItems] = useState(new Set());
 
@@ -715,6 +716,12 @@ function StallDashboard() {
           🏷️ Promotions
         </button>
         <button
+          className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reviews')}
+        >
+          ⭐ Reviews
+        </button>
+        <button
           className={`tab-btn ${activeTab === 'social' ? 'active' : ''}`}
           onClick={() => setActiveTab('social')}
         >
@@ -849,6 +856,17 @@ function StallDashboard() {
       ) : activeTab === 'promos' ? (
         /* Promotions Tab */
         <PromoManagement stallId={getUserStallId()} />
+      ) : activeTab === 'reviews' ? (
+        /* Customer Reviews Tab */
+        <div className="reviews-tab-content">
+          <h3 className="reviews-tab-title">Customer Reviews & Ratings</h3>
+          <p className="reviews-tab-subtitle">See what customers are saying about your stall.</p>
+          <ReviewList
+            entityType="stall"
+            entityId={getUserStallId()}
+            limit={20}
+          />
+        </div>
       ) : activeTab === 'social' ? (
         /* Social Media Tab */
         <div className="social-tab-content">

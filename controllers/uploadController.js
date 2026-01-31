@@ -34,6 +34,9 @@ class UploadController {
   // Middleware for handling single photo upload
   static uploadMiddleware = upload.single('photo');
 
+  // Middleware for review image upload (single file, field name 'image')
+  static uploadReviewImageMiddleware = upload.single('image');
+
   // Upload a new photo to Cloudinary
   static async uploadPhoto(req, res) {
     console.log('=== UPLOAD REQUEST RECEIVED ===');
@@ -253,6 +256,32 @@ class UploadController {
       res.status(500).json({
         success: false,
         message: 'Failed to upload photo',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // Upload a single image for review (returns URL only; no DB record)
+  static async uploadReviewImage(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No image file uploaded' });
+      }
+      if (!CloudinaryUpload.isConfigured()) {
+        return res.status(500).json({ success: false, message: 'Upload service not configured' });
+      }
+      const result = await CloudinaryUpload.uploadFile(
+        req.file.buffer,
+        `${uuidv4()}-${req.file.originalname}`,
+        'hawker-hub/reviews',
+        { quality: 'auto', fetch_format: 'auto' }
+      );
+      return res.status(200).json({ success: true, url: result.secure_url });
+    } catch (error) {
+      console.error('Review image upload error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload image',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }

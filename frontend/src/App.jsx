@@ -24,6 +24,9 @@ import NetsQrSamplePage from './pages/netsQrSamplePage';
 import TxnNetsSuccessStatusLayout from './pages/txnNetsSuccessStatusLayout';
 import TxnNetsFailStatusLayout from './pages/txnNetsFailStatusLayout';
 import ReviewsPage from './pages/ReviewsPage';
+import CentreDetailPage from './pages/CentreDetailPage';
+import StallDetailPage from './pages/StallDetailPage';
+import DishDetailPage from './pages/DishDetailPage';
 
 // Wrapper for stall reviews route (reads stallId from URL, shows Header + back nav)
 function StallReviewsPage() {
@@ -114,6 +117,9 @@ function App() {
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/stall/:stallId/reviews" element={<StallReviewsPage />} />
+        <Route path="/centres/:id" element={<CentreDetailPage />} />
+        <Route path="/stalls/:id" element={<StallDetailPage />} />
+        <Route path="/dishes/:id" element={<DishDetailPage />} />
 
         <Route path="/stall/dashboard" element={<StallDashboard />} />
         <Route path="/dashboard/stall-owner" element={<DashboardStallOwner />} />

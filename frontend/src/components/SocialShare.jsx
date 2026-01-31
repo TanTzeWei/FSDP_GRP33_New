@@ -14,20 +14,19 @@ import './SocialShare.css';
  * />
  */
 
-const SocialShare = ({ url, title, description, imageUrl }) => {
+const SocialShare = ({ url, title, description, imageUrl, shareText, onShare, compact }) => {
   const encodedUrl = encodeURIComponent(url);
-  const encodedTitle = encodeURIComponent(title);
-  const encodedDescription = encodeURIComponent(description || '');
-  const encodedImage = encodeURIComponent(imageUrl || '');
+  const message = shareText || title;
+  const encodedMessage = encodeURIComponent(`${message} ${url}`);
 
   const shareLinks = {
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-    whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
-    telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodeURIComponent(message)}`,
+    whatsapp: `https://wa.me/?text=${encodedMessage}`,
+    telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(message)}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     // Email share
-    email: `mailto:?subject=${encodedTitle}&body=${encodedDescription}%0A%0A${encodedUrl}`
+    email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description || message)}%0A%0A${encodedUrl}`
   };
 
   const handleShare = (platform) => {
@@ -41,6 +40,7 @@ const SocialShare = ({ url, title, description, imageUrl }) => {
       'share',
       `width=${width},height=${height},left=${left},top=${top}`
     );
+    onShare?.(platform);
   };
 
   // Native Web Share API for mobile devices
@@ -49,23 +49,27 @@ const SocialShare = ({ url, title, description, imageUrl }) => {
       try {
         await navigator.share({
           title: title,
-          text: description,
+          text: message,
           url: url,
         });
+        onShare?.('native');
       } catch (err) {
-        console.log('Error sharing:', err);
+        if (err.name !== 'AbortError') console.log('Error sharing:', err);
       }
     }
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard!');
+    navigator.clipboard.writeText(`${message} ${url}`);
+    onShare?.('copy');
+    if (typeof document !== 'undefined' && !document.hasFocus()) {
+      alert('Link copied to clipboard!');
+    }
   };
 
   return (
-    <div className="social-share">
-      <h4 className="social-share-title">Share this:</h4>
+    <div className={`social-share ${compact ? 'compact' : ''}`}>
+      {!compact && <h4 className="social-share-title">Share this:</h4>}
       <div className="social-share-buttons">
         <button 
           className="share-btn facebook"

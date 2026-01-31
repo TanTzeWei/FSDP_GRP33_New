@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import ShareButton from './ShareButton';
 import './LocationMap.css';
 
 // Fix for default markers in react-leaflet
@@ -508,15 +509,13 @@ const LocationMap = ({ onHawkerSelect }) => {
                             <span>🏪 {hawker.totalStalls || hawker.active_stalls || 0} stalls</span>
                             <span>🕐 {hawker.openingHours || hawker.opening_hours || 'N/A'}</span>
                           </div>
-                          <button 
+                          <Link 
+                            to={`/centres/${hawker.id}`}
                             className="popup-details-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDetailModal(hawker);
-                            }}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             📋 View Details
-                          </button>
+                          </Link>
                           <button 
                             className="popup-order-btn"
                             onClick={(e) => {
@@ -624,7 +623,15 @@ const LocationMap = ({ onHawkerSelect }) => {
             <div className="modal-header">
               <div className="hawker-title">
                 <h2>{selectedHawker.name}</h2>
-                <button className="close-btn" onClick={closeDetails}>×</button>
+                <div className="modal-header-actions">
+                  <ShareButton
+                    type="centre"
+                    id={selectedHawker.id}
+                    meta={{ name: selectedHawker.name, rating: selectedHawker.rating, description: selectedHawker.description, image: selectedHawker.image_url }}
+                    variant="button"
+                  />
+                  <button className="close-btn" onClick={closeDetails}>×</button>
+                </div>
               </div>
               
               <div className="hawker-rating-large">
@@ -679,7 +686,9 @@ const LocationMap = ({ onHawkerSelect }) => {
                     {selectedHawkerStalls.map((stall) => (
                       <div key={stall.id} className="stall-item">
                         <div className="stall-header">
-                          <h4>{stall.stall_name || stall.name}</h4>
+                          <Link to={`/stalls/${stall.id}`} className="stall-link">
+                            {stall.stall_name || stall.name}
+                          </Link>
                           {stall.rating && (
                             <div className="stall-rating">
                               <span>{getRatingStars(stall.rating)} {stall.rating}</span>

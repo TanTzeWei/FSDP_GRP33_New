@@ -105,6 +105,14 @@ try {
     console.error('❌ Error loading ReviewController:', error.message);
 }
 
+let ShareController;
+try {
+    ShareController = require('./controllers/shareController');
+    console.log('✅ ShareController loaded');
+} catch (error) {
+    console.error('❌ Error loading ShareController:', error.message);
+}
+
 // Create Express app
 const app = express();
 
@@ -357,6 +365,11 @@ if (ReviewController) {
     // Protected: create review
     app.post('/api/reviews', authMiddleware, ReviewController.createReview);
     
+    // Protected: upload image for review (create or edit) - must be before :reviewId
+    if (UploadController) {
+      app.post('/api/reviews/upload-image', authMiddleware, UploadController.uploadReviewImageMiddleware, UploadController.uploadReviewImage);
+    }
+    
     // Protected: get user's reviews
     app.get('/api/reviews/user/my-reviews', authMiddleware, ReviewController.getUserReviews);
     
@@ -371,6 +384,15 @@ if (ReviewController) {
     console.log('⚠️  Review routes disabled (missing ReviewController)');
 }
 
+
+// Share / Deep link meta routes (for OG tags & share preview)
+if (ShareController) {
+    app.get('/api/share-meta/centre/:id', ShareController.getShareMetaCentre);
+    app.get('/api/share-meta/stall/:id', ShareController.getShareMetaStall);
+    app.get('/api/share-meta/dish/:id', ShareController.getShareMetaDish);
+    app.post('/api/share-events', authMiddleware.optional, ShareController.recordShareEvent);
+    console.log('✅ Share routes configured');
+}
 
 // Promotion Routes (Discount/Promo Management)
 if (PromoController) {

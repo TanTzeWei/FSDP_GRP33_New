@@ -353,6 +353,23 @@ CREATE INDEX IF NOT EXISTS idx_promotions_created_by ON promotions(created_by);
 COMMENT ON TABLE promotions IS 'Stores promotional discounts for food items under stalls with validity periods';
 
 -- =========================================
+-- SHARE EVENTS (analytics + rewards)
+-- =========================================
+CREATE TABLE IF NOT EXISTS share_events (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  share_type TEXT NOT NULL CHECK (share_type IN ('centre', 'stall', 'dish')),
+  reference_id BIGINT NOT NULL,
+  platform TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_share_events_type ON share_events(share_type);
+CREATE INDEX IF NOT EXISTS idx_share_events_reference ON share_events(share_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_share_events_created ON share_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_share_events_user ON share_events(user_id);
+
+-- =========================================
 -- VIEW: HAWKER CENTRE SUMMARY
 -- =========================================
 CREATE OR REPLACE VIEW hawker_centre_summary AS

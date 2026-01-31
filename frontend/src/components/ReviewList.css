@@ -10,7 +10,7 @@
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #fff8f0 0%, #fff5eb 100%);
+  background: linear-gradient(135deg, #f0f8f4 0%, #e8f5ee 100%);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -43,7 +43,7 @@
 
 .rating-number {
   font-size: 1.3rem;
-  color: #ff6b35;
+  color: #00b14f;
 }
 
 .review-error {
@@ -92,9 +92,203 @@
 .review-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0.75rem;
   gap: 1rem;
+}
+
+.review-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.review-action-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Edit/Delete always visible (no hover-only visibility) */
+.review-action-btn.edit-btn {
+  border-color: #00b14f;
+  color: #00b14f;
+  background: #f0f8f4;
+}
+
+.review-action-btn.edit-btn:hover {
+  background: #e0f4eb;
+  border-color: #00a045;
+  color: #00a045;
+}
+
+.review-action-btn.delete-btn {
+  border-color: #c33;
+  color: #c33;
+  background: #fff5f5;
+}
+
+.review-action-btn.delete-btn:hover {
+  background: #ffe8e8;
+  border-color: #a00;
+  color: #a00;
+}
+
+.review-action-btn.save-btn {
+  background: #00b14f;
+  border-color: #00b14f;
+  color: white;
+}
+
+.review-action-btn.save-btn:hover:not(:disabled) {
+  background: #00a045;
+  border-color: #00a045;
+}
+
+.review-action-btn.cancel-btn {
+  background: #fff;
+  border: 1px solid #888;
+  color: #444;
+  font-weight: 500;
+}
+
+.review-action-btn.cancel-btn:hover {
+  background: #e8e8e8;
+  border-color: #666;
+  color: #222;
+}
+
+.review-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.review-edit-form {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.review-edit-form .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.review-edit-form .form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.review-edit-form textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.review-edit-form small {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.review-edit-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.review-edit-image-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.review-edit-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review-edit-image-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-edit-image-remove:hover {
+  background: #c33;
+}
+
+.review-edit-image-add {
+  display: inline-block;
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.review-edit-image-add-btn {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px dashed #888;
+  border-radius: 4px;
+  color: #555;
+  background: #f5f5f5;
+  transition: all 0.2s;
+}
+
+.review-edit-image-add-btn:hover {
+  background: #e0f4eb;
+  border-color: #00b14f;
+  color: #00b14f;
+}
+
+.review-edit-form .form-group small {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.review-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .reviewer-info {
@@ -153,9 +347,9 @@
   width: 100%;
   margin-top: 1.5rem;
   padding: 0.75rem 1.5rem;
-  border: 1px solid #ff6b35;
+  border: 1px solid #00b14f;
   background: white;
-  color: #ff6b35;
+  color: #00b14f;
   border-radius: 4px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -164,7 +358,7 @@
 }
 
 .load-more-btn:hover:not(:disabled) {
-  background: #ff6b35;
+  background: #00b14f;
   color: white;
 }
 

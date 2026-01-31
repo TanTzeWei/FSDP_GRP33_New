@@ -19,7 +19,7 @@
 }
 
 .reviews-back-link:hover {
-  color: #ff6b35;
+  color: #00b14f;
   text-decoration: underline;
 }
 
@@ -29,7 +29,7 @@
   align-items: center;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #fff8f0 0%, #fff5eb 100%);
+  background: linear-gradient(135deg, #f0f8f4 0%, #e8f5ee 100%);
   border-radius: 8px;
   gap: 1rem;
 }
@@ -37,7 +37,7 @@
 .reviews-header h1 {
   margin: 0;
   font-size: 2rem;
-  color: #333;
+  color: #00b14f;
 }
 
 .reviews-header .entity-name {
@@ -50,7 +50,7 @@
 .review-btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  background: #ff6b35;
+  background: #00b14f;
   color: white;
   border-radius: 4px;
   font-size: 0.95rem;
@@ -58,16 +58,16 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 177, 79, 0.3);
 }
 
 .review-btn:hover {
-  background: #e55a24;
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+  background: #00a045;
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.4);
 }
 
 .review-btn.active {
-  background: #e55a24;
+  background: #00a045;
   transform: scale(1.02);
 }
 
