@@ -309,8 +309,28 @@ const LocationMap = ({ onHawkerSelect }) => {
         if (response.ok) {
           const data = await response.json();
           // Handle both array response and object with data property
-          const hawkerData = Array.isArray(data) ? data : (data.data || data.hawkerCentres || []);
+          let hawkerData = Array.isArray(data) ? data : (data.data || data.hawkerCentres || []);
+          
           if (hawkerData.length > 0) {
+            // Merge API data with mock data to fill in missing stall counts
+            const mockDataMap = mockHawkerData.reduce((map, item) => {
+              map[item.id] = item;
+              return map;
+            }, {});
+            
+            hawkerData = hawkerData.map(hawker => {
+              const mockData = mockDataMap[hawker.id];
+              // If API data has no stalls but mock has, use mock's stall count
+              if ((hawker.active_stalls === 0 || hawker.active_stalls === undefined || hawker.totalStalls === 0 || hawker.totalStalls === undefined) && mockData && mockData.totalStalls > 0) {
+                return {
+                  ...hawker,
+                  totalStalls: mockData.totalStalls,
+                  active_stalls: mockData.totalStalls
+                };
+              }
+              return hawker;
+            });
+            
             setHawkerCentres(hawkerData);
           } else {
             // Fallback to mock data if API returns empty
@@ -369,6 +389,19 @@ const LocationMap = ({ onHawkerSelect }) => {
 
     getUserLocation();
   }, []);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   const handleMarkerClick = (hawker) => {
     setSelectedHawker(hawker);
@@ -557,14 +590,11 @@ const LocationMap = ({ onHawkerSelect }) => {
                     // Handle both API and mock data field names
                     const cuisines = hawker.cuisines || hawker.available_cuisines || [];
                     const cuisineList = Array.isArray(cuisines) ? cuisines : (typeof cuisines === 'string' ? cuisines.split(', ').filter(c => c) : []);
-                    const totalStalls = hawker.totalStalls || hawker.active_stalls || 0;
+                    const totalStalls = hawker.totalStalls || hawker.total_stalls || hawker.active_stalls || hawker.num_stalls || hawker.stall_count || hawker.stalls?.length || 0;
                     const totalReviews = hawker.totalReviews || hawker.total_reviews || 0;
                     const openingHours = hawker.openingHours || hawker.opening_hours || 'N/A';
                     const priceRange = hawker.priceRange || hawker.price_range || '$';
-                    // Calculate distance from user location
-                    const distance = userLocation 
-                      ? `${calculateDistance(userLocation.lat, userLocation.lng, hawker.latitude, hawker.longitude)} km`
-                      : 'N/A';
+                    const distance = userLocation ? `${calculateDistance(userLocation.lat, userLocation.lng, hawker.latitude, hawker.longitude).toFixed(1)} km` : 'N/A';
                     
                     return (
                     <div 
@@ -585,28 +615,51 @@ const LocationMap = ({ onHawkerSelect }) => {
 
                       <div className="hawker-card-meta">
                         <div className="meta-item">
-                          <span className="meta-icon">🏪</span>
+                          <span className="meta-icon">📊</span>
                           <span className="meta-text">{totalStalls} stalls</span>
                         </div>
                         <div className="meta-item">
-                          <span className="meta-icon">💲</span>
+                          <span className="meta-icon">💰</span>
                           <span className="meta-text">{priceRange}</span>
                         </div>
                         <div className="meta-item">
-                          <span className="meta-icon">👍</span>
-                          <span className="meta-text">Open</span>
+                          <span className="meta-icon">🕐</span>
+                          <span className="meta-text">{openingHours}</span>
                         </div>
                       </div>
+
+                      {cuisineList.length > 0 && (
+                      <div className="hawker-cuisines">
+                        {cuisineList.slice(0, 3).map((cuisine, idx) => (
+                          <span key={idx} className="cuisine-tag">{cuisine}</span>
+                        ))}
+                        {cuisineList.length > 3 && (
+                          <span className="cuisine-more">+{cuisineList.length - 3} more</span>
+                        )}
+                      </div>
+                      )}
+
+                      {/* Manually-entered menu preview shown on the bottom of the stall card */}
+                      {hawker.menu && hawker.menu.length > 0 && (
+                        <div className="hawker-menu">
+                          {hawker.menu.slice(0,3).map((m, idx) => (
+                            <div key={idx} className="menu-item-chip">
+                              <span className="menu-item-name">{m.name}</span>
+                              <span className="menu-item-price">${m.price.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       <button 
                         className="hawker-view-btn"
                         onClick={(e) => {
                           e.stopPropagation();
                           openDetailModal(hawker);
-                          }}
-                        >
-                          View Details
-                        </button>
+                        }}
+                      >
+                        View Details <span className="hawker-arrow">→</span>
+                      </button>
                     </div>
                   );
                   })}
