@@ -113,6 +113,14 @@ try {
     console.error('❌ Error loading ShareController:', error.message);
 }
 
+let ReferralController;
+try {
+    ReferralController = require('./controllers/referralController');
+    console.log('✅ ReferralController loaded');
+} catch (error) {
+    console.error('❌ Error loading ReferralController:', error.message);
+}
+
 // Create Express app
 const app = express();
 
@@ -337,6 +345,15 @@ if (PointsController && authMiddleware) {
     console.log('✅ Points system routes configured');
 } else {
     console.log('⚠️  Points system routes disabled (missing PointsController or authMiddleware)');
+}
+
+// Referral routes (viral loop: invite friends → both get points)
+if (ReferralController && authMiddleware) {
+    app.get('/api/referrals/me', authMiddleware, ReferralController.getMyReferral);
+    app.get('/api/referrals/list', authMiddleware, ReferralController.getReferralsList);
+    console.log('✅ Referral routes configured');
+} else {
+    console.log('⚠️  Referral routes disabled (missing ReferralController or authMiddleware)');
 }
 
 // Reviews Routes

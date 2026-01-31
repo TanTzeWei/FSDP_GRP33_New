@@ -188,6 +188,21 @@ export const getVoucherByCode = async (voucherCode) => {
   }
 };
 
+/**
+ * Get current user's referral code and stats (for viral loop)
+ */
+export const getReferralInfo = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/referrals/me`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching referral info:', error);
+    throw error;
+  }
+};
+
 export default {
   getUserPoints,
   getPointsDashboard,
@@ -198,5 +213,6 @@ export default {
   redeemVoucher,
   getRedeemedVouchers,
   useVoucher,
-  getVoucherByCode
+  getVoucherByCode,
+  getReferralInfo
 };
