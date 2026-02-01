@@ -17,6 +17,8 @@ const HawkerPointsSystem = () => {
   const [myVouchers, setMyVouchers] = useState([]);
   const [loadingMyVouchers, setLoadingMyVouchers] = useState(false);
   const [referralInfo, setReferralInfo] = useState(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
   const { userPoints, pointsHistory, redeemVoucher, fetchPointsData } = useContext(PointsContext);
 
@@ -31,11 +33,16 @@ const HawkerPointsSystem = () => {
   }, [currentScreen]);
 
   const fetchReferralInfo = async () => {
+    setReferralLoading(true);
+    setReferralError(false);
     try {
       const result = await pointsService.getReferralInfo();
       if (result.success) setReferralInfo(result);
     } catch (error) {
       console.error('Error fetching referral info:', error);
+      setReferralError(true);
+    } finally {
+      setReferralLoading(false);
     }
   };
 
@@ -146,35 +153,47 @@ const HawkerPointsSystem = () => {
             </div>
           </div>
 
-          {/* Referral code & link */}
-          {referralInfo?.referralCode && (
-            <div className="referral-section">
-              <h2 className="section-heading">
-                <UserPlus className="heading-icon" />
-                Your Referral Code
-              </h2>
-              <div className="referral-code-box">
-                <div className="referral-code-value">{referralInfo.referralCode}</div>
-                <button
-                  type="button"
-                  className="referral-copy-btn"
-                  onClick={() => {
-                    const text = referralInfo.referralLink || referralInfo.referralCode;
-                    navigator.clipboard?.writeText(text).then(() => {
-                      setReferralCopied(true);
-                      setTimeout(() => setReferralCopied(false), 2000);
-                    });
-                  }}
-                >
-                  {referralCopied ? <Check size={18} /> : <Copy size={18} />}
-                  {referralCopied ? ' Copied!' : ' Copy link'}
+          {/* Referral code & link - always show section */}
+          <div className="referral-section">
+            <h2 className="section-heading">
+              <UserPlus className="heading-icon" />
+              Your Referral Code
+            </h2>
+            {referralLoading ? (
+              <p className="referral-loading">Loading your referral code...</p>
+            ) : referralError ? (
+              <div className="referral-error-box">
+                <p>Couldn&apos;t load your referral code.</p>
+                <button type="button" className="referral-retry-btn" onClick={fetchReferralInfo}>
+                  Try again
                 </button>
               </div>
-              {referralInfo.totalReferrals > 0 && (
-                <p className="referral-stats">You&apos;ve referred {referralInfo.totalReferrals} friend{referralInfo.totalReferrals !== 1 ? 's' : ''}</p>
-              )}
-            </div>
-          )}
+            ) : referralInfo?.referralCode ? (
+              <>
+                <div className="referral-code-box">
+                  <div className="referral-code-value">{referralInfo.referralCode}</div>
+                  <button
+                    type="button"
+                    className="referral-copy-btn"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(referralInfo.referralCode).then(() => {
+                        setReferralCopied(true);
+                        setTimeout(() => setReferralCopied(false), 2000);
+                      });
+                    }}
+                  >
+                    {referralCopied ? <Check size={18} /> : <Copy size={18} />}
+                    {referralCopied ? ' Copied!' : ' Copy code'}
+                  </button>
+                </div>
+                {referralInfo.totalReferrals > 0 && (
+                  <p className="referral-stats">You&apos;ve referred {referralInfo.totalReferrals} friend{referralInfo.totalReferrals !== 1 ? 's' : ''}</p>
+                )}
+              </>
+            ) : (
+              <p className="referral-loading">No referral code available.</p>
+            )}
+          </div>
         </div>
 
         {/* Recent Activity */}

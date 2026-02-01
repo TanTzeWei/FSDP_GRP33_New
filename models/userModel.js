@@ -251,7 +251,7 @@ class UserModel {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('user_id, name, email, role, is_stall_owner, stall_id, owner_verified, approval_status, avatar_url, email_verified, referral_code')
+                .select('user_id, name, email, role, is_stall_owner, stall_id, owner_verified, approval_status, referral_code')
                 .eq('user_id', userId)
                 .maybeSingle();
 

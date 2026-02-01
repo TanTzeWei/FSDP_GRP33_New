@@ -326,6 +326,35 @@
   font-size: 0.95rem;
 }
 
+.referral-loading {
+  color: #6b7280;
+  font-size: 0.95rem;
+  padding: 1rem;
+}
+
+.referral-error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 1rem;
+  color: #991b1b;
+}
+
+.referral-retry-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.referral-retry-btn:hover {
+  background: #b91c1c;
+}
+
 /* Activity List */
 .activity-list {
   background: white;
