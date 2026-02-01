@@ -187,7 +187,7 @@ class ReservationController {
   // Get all reservations for the logged-in user
   static async getUserReservations(req, res) {
     try {
-      const userId = req.user?.id || req.query.userId;
+      const userId = req.user?.userId || req.user?.user_id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User ID is required' });

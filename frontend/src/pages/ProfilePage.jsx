@@ -30,6 +30,9 @@ function ProfilePage() {
     confirmPassword: '',
   });
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [reservations, setReservations] = useState([]);
+  const [reservationsLoading, setReservationsLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null);
 
   // Fetch user stats on component mount
   useEffect(() => {
@@ -53,6 +56,67 @@ function ProfilePage() {
 
     fetchUserStats();
   }, [token]);
+
+  // Fetch user reservations
+  const fetchReservations = async () => {
+    if (!token) return;
+    setReservationsLoading(true);
+    try {
+      const res = await axios.get('http://localhost:3000/api/reservations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setReservations(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error('Failed to fetch reservations:', error);
+      setReservations([]);
+    } finally {
+      setReservationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReservations();
+  }, [token]);
+
+  const handleCancelReservation = async (reservationId) => {
+    if (!window.confirm('Cancel this reservation?')) return;
+    setCancellingId(reservationId);
+    try {
+      await axios.delete(`http://localhost:3000/api/reservations/${reservationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast('Reservation cancelled', { type: 'success' });
+      fetchReservations();
+    } catch (error) {
+      showToast(error.response?.data?.error || 'Failed to cancel reservation', { type: 'error' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const formatReservationDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const isUpcoming = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return false;
+    const d = new Date(`${dateStr}T${timeStr}`);
+    return d > new Date();
+  };
+
+  const getHawkerName = (r) => {
+    const h = r.hawker_centres ?? r.hawker_centre_id;
+    if (typeof h === 'object' && h?.name) return h.name;
+    return 'Hawker Centre';
+  };
+
+  const getTableInfo = (r) => {
+    const s = r.hawker_seats ?? r.seat_id;
+    if (typeof s === 'object' && s?.table_code) return `Table ${s.table_code}`;
+    return 'Seat';
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -358,6 +422,50 @@ function ProfilePage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* My Reservations */}
+          <div className="profile-reservations-section">
+            <h3>My Reservations</h3>
+            {reservationsLoading ? (
+              <p className="reservations-loading">Loading reservations…</p>
+            ) : reservations.length === 0 ? (
+              <p className="reservations-empty">You have no upcoming or recent reservations.</p>
+            ) : (
+              <ul className="reservations-list">
+                {reservations.map((r) => {
+                  const upcoming = isUpcoming(r.reservation_date, r.start_time);
+                  return (
+                    <li key={r.id} className={`reservation-card ${upcoming ? 'upcoming' : 'past'}`}>
+                      <div className="reservation-info">
+                        <span className="reservation-hawker">{getHawkerName(r)}</span>
+                        <span className="reservation-table">{getTableInfo(r)}</span>
+                        <span className="reservation-date">{formatReservationDate(r.reservation_date)}</span>
+                        <span className="reservation-time">
+                          {r.start_time} – {r.end_time || '—'}
+                        </span>
+                        {r.special_requests && (
+                          <span className="reservation-notes">{r.special_requests}</span>
+                        )}
+                        <span className={`reservation-status status-${(r.status || 'confirmed').toLowerCase().replace(/\s+/g, '-')}`}>
+                          {r.status || 'Confirmed'}
+                        </span>
+                      </div>
+                      {upcoming && r.status !== 'Cancelled' && (
+                        <button
+                          type="button"
+                          className="reservation-cancel-btn"
+                          onClick={() => handleCancelReservation(r.id)}
+                          disabled={cancellingId === r.id}
+                        >
+                          {cancellingId === r.id ? 'Cancelling…' : 'Cancel'}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           {/* Danger Zone */}
