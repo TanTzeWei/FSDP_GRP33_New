@@ -163,6 +163,24 @@
   font-size: 1rem;
   color: #64748b;
   margin: 0;
+}
+
+.clear-centre-filter {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  color: #059669;
+  background: transparent;
+  border: 1px solid #059669;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.clear-centre-filter:hover {
+  background: #059669;
+  color: white;
   font-weight: 500;
 }
 

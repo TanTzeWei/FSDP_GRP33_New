@@ -74,7 +74,12 @@ function MainApp() {
   const renderSection = () => {
     switch (activeSection) {
       case 'menu':
-        return <Menu />;
+        return (
+          <Menu
+            selectedHawkerCenter={selectedHawkerCenter}
+            onClearHawkerCentre={() => setSelectedHawkerCenter(null)}
+          />
+        );
       case 'deals':
         return <Deals />;
       case 'rewards':

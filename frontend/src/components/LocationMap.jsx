@@ -827,7 +827,7 @@ const LocationMap = ({ onHawkerSelect }) => {
                   if (onHawkerSelect) {
                     onHawkerSelect(selectedHawker);
                   }
-                  navigate('/');
+                  navigate('/', { state: { activeSection: 'menu' } });
                   closeDetails();
                 }}
               >

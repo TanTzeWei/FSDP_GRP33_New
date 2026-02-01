@@ -9,7 +9,7 @@ class StallModel {
         try {
             const { data, error } = await supabase
                 .from('stalls')
-                .select('id, stall_name, description, image_url, cuisine_types(name), hawker_centres(name)')
+                .select('id, stall_name, description, image_url, hawker_centre_id, cuisine_types(name), hawker_centres(name)')
                 .order('stall_name', { ascending: true });
             
             if (error) throw error;

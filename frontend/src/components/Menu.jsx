@@ -7,7 +7,7 @@ import PhotoModal from './PhotoModal';
 import './Menu.css';
 import { AuthContext } from '../context/AuthContext';
 
-const Menu = () => {
+const Menu = ({ selectedHawkerCenter, onClearHawkerCentre }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [featuredPhotos, setFeaturedPhotos] = useState([]);
   const [communityPhotos, setCommunityPhotos] = useState([]);
@@ -87,14 +87,23 @@ const Menu = () => {
     fetchStalls();
   }, []);
 
-  // Get unique categories from database stalls
-  const categories = ['All', ...new Set(dbStalls
+  // Filter stalls by selected hawker centre (when user clicked a centre on the map)
+  const stallsAtCentre = selectedHawkerCenter
+    ? dbStalls.filter(
+        stall =>
+          stall.hawker_centre_id === selectedHawkerCenter.id ||
+          (stall.hawker_centres?.name && stall.hawker_centres.name === selectedHawkerCenter.name)
+      )
+    : dbStalls;
+
+  // Get unique categories from stalls (at selected centre or all)
+  const categories = ['All', ...new Set(stallsAtCentre
     .map(stall => stall.cuisine_types?.name)
     .filter(Boolean)
   )];
 
   // Get stalls from database for filtering (with "All" option)
-  const stallFilterOptions = ['All', ...dbStalls.map(s => s.name || s.stall_name)];
+  const stallFilterOptions = ['All', ...stallsAtCentre.map(s => s.name || s.stall_name)];
 
   // Get unique dishes from community photos (for selected stall)
   const filteredByStall = selectedStallFilter === 'All' 
@@ -274,10 +283,10 @@ const Menu = () => {
     fetchPhotos();
   }, [token]);
 
-  // Filter stalls by selected category
-  const filteredStalls = selectedCategory === 'All' 
-    ? dbStalls 
-    : dbStalls.filter(stall => 
+  // Filter stalls by selected category (within stalls at selected centre)
+  const filteredStalls = selectedCategory === 'All'
+    ? stallsAtCentre
+    : stallsAtCentre.filter(stall =>
         stall.cuisine_types?.name?.toLowerCase() === selectedCategory.toLowerCase()
       );
 
@@ -424,7 +433,21 @@ const Menu = () => {
       <div className="popular-section">
         <div className="popular-header">
           <h2>🔥 Popular near you</h2>
-          <p className="popular-subtitle">Discover trending stalls in your area</p>
+          <p className="popular-subtitle">
+            {selectedHawkerCenter
+              ? `Stalls at ${selectedHawkerCenter.name}`
+              : 'Discover trending stalls in your area'}
+          </p>
+          {selectedHawkerCenter && onClearHawkerCentre && (
+            <button
+              type="button"
+              className="clear-centre-filter"
+              onClick={onClearHawkerCentre}
+              aria-label="Show all stalls"
+            >
+              Show all stalls
+            </button>
+          )}
         </div>
 
       <div className="category-filter">
