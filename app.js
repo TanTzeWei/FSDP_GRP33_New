@@ -26,6 +26,7 @@ let StallClosureController;
 let PromoController;
 let PointsController;
 let ReviewController;
+let ReservationController;
 
 try {
     UserController = require('./controllers/userController');
@@ -119,6 +120,13 @@ try {
     console.log('✅ ReferralController loaded');
 } catch (error) {
     console.error('❌ Error loading ReferralController:', error.message);
+}
+
+try {
+    ReservationController = require('./controllers/reservationController');
+    console.log('✅ ReservationController loaded');
+} catch (error) {
+    console.error('❌ Error loading ReservationController:', error.message);
 }
 
 // Create Express app
@@ -429,6 +437,31 @@ if (PromoController) {
     console.log('✅ Promotion routes configured');
 } else {
     console.log('⚠️  Promotion routes disabled (missing PromoController)');
+}
+
+// Reservation Routes (Table Reservations)
+if (ReservationController) {
+    // Public: get tables for a hawker centre
+    app.get('/api/hawker-centres/:hawkerCentreId/tables', ReservationController.getTablesByHawkerCentre);
+    
+    // Public: get reservations for a specific table on a date
+    app.get('/api/tables/:tableId/reservations', ReservationController.getTableReservations);
+    
+    // Public: get available time slots for a table
+    app.get('/api/tables/available-slots', ReservationController.getAvailableSlots);
+    
+    // Protected: create a reservation
+    app.post('/api/reservations', authMiddleware, ReservationController.createReservation);
+    
+    // Protected: get user's reservations
+    app.get('/api/reservations', authMiddleware, ReservationController.getUserReservations);
+    
+    // Protected: cancel a reservation
+    app.delete('/api/reservations/:reservationId', authMiddleware, ReservationController.cancelReservation);
+    
+    console.log('✅ Reservation routes configured');
+} else {
+    console.log('⚠️  Reservation routes disabled (missing ReservationController)');
 }
 
 // Simple health route
