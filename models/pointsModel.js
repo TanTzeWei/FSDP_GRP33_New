@@ -259,6 +259,44 @@ class PointsModel {
         }
     }
 
+    // Add points for referral (referrer or referee bonus)
+    static async addReferralPoints(userId, points, description, itemDetails = null) {
+        try {
+            const { data: history, error: histErr } = await supabase.from('points_history').insert([{
+                user_id: userId,
+                transaction_type: 'referral',
+                points,
+                description: description || 'Referral reward',
+                reference_type: 'referral',
+                item_details: itemDetails || {}
+            }]).select().single();
+            if (histErr) throw histErr;
+
+            const { data: userPoints, error: upErr } = await supabase.from('user_points').select('total_points').eq('user_id', userId).maybeSingle();
+            if (upErr) throw upErr;
+
+            let newTotal;
+            let updated;
+
+            if (!userPoints) {
+                newTotal = points;
+                const { data: insertedPoints, error: insertErr } = await supabase.from('user_points').insert([{ user_id: userId, total_points: newTotal }]).select().single();
+                if (insertErr) throw insertErr;
+                updated = insertedPoints;
+            } else {
+                newTotal = userPoints.total_points + points;
+                const { data: updatedPoints, error: updErr } = await supabase.from('user_points').update({ total_points: newTotal, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single();
+                if (updErr) throw updErr;
+                updated = updatedPoints;
+            }
+
+            return { success: true, pointsEarned: points, newBalance: updated.total_points, transaction: history };
+        } catch (error) {
+            console.error('Error adding referral points:', error);
+            throw error;
+        }
+    }
+
     // Admin: Adjust user points (manual adjustment)
     static async adjustPoints(userId, points, description) {
         try {

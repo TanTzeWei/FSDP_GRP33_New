@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Trophy, Gift, Camera, ThumbsUp, ChevronRight, CheckCircle, Sparkles, Ticket, Clock } from 'lucide-react';
+import { Trophy, Gift, Camera, ThumbsUp, ChevronRight, CheckCircle, Sparkles, Ticket, Clock, UserPlus, Copy, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PointsContext } from '../context/PointsContext';
 import Header from '../components/Header';
@@ -16,16 +16,35 @@ const HawkerPointsSystem = () => {
   const [loadingVouchers, setLoadingVouchers] = useState(false);
   const [myVouchers, setMyVouchers] = useState([]);
   const [loadingMyVouchers, setLoadingMyVouchers] = useState(false);
+  const [referralInfo, setReferralInfo] = useState(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralError, setReferralError] = useState(false);
+  const [referralCopied, setReferralCopied] = useState(false);
   const { userPoints, pointsHistory, redeemVoucher, fetchPointsData } = useContext(PointsContext);
 
   // Fetch data on mount and screen changes
   useEffect(() => {
     fetchVouchers();
     fetchMyVouchers();
+    fetchReferralInfo();
     if (fetchPointsData) {
       fetchPointsData();
     }
   }, [currentScreen]);
+
+  const fetchReferralInfo = async () => {
+    setReferralLoading(true);
+    setReferralError(false);
+    try {
+      const result = await pointsService.getReferralInfo();
+      if (result.success) setReferralInfo(result);
+    } catch (error) {
+      console.error('Error fetching referral info:', error);
+      setReferralError(true);
+    } finally {
+      setReferralLoading(false);
+    }
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -121,6 +140,59 @@ const HawkerPointsSystem = () => {
                 <div className="earn-card-points">+5 points</div>
               </div>
             </div>
+
+            <div className="earn-card">
+              <div className="earn-card-icon earn-card-icon-referral">
+                <UserPlus />
+              </div>
+              <div className="earn-card-content">
+                <h3 className="earn-card-title">Invite Friends</h3>
+                <p className="earn-card-description">Share your code — you both get points</p>
+                <div className="earn-card-points">+25 pts each</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Referral code & link - always show section */}
+          <div className="referral-section">
+            <h2 className="section-heading">
+              <UserPlus className="heading-icon" />
+              Your Referral Code
+            </h2>
+            {referralLoading ? (
+              <p className="referral-loading">Loading your referral code...</p>
+            ) : referralError ? (
+              <div className="referral-error-box">
+                <p>Couldn&apos;t load your referral code.</p>
+                <button type="button" className="referral-retry-btn" onClick={fetchReferralInfo}>
+                  Try again
+                </button>
+              </div>
+            ) : referralInfo?.referralCode ? (
+              <>
+                <div className="referral-code-box">
+                  <div className="referral-code-value">{referralInfo.referralCode}</div>
+                  <button
+                    type="button"
+                    className="referral-copy-btn"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(referralInfo.referralCode).then(() => {
+                        setReferralCopied(true);
+                        setTimeout(() => setReferralCopied(false), 2000);
+                      });
+                    }}
+                  >
+                    {referralCopied ? <Check size={18} /> : <Copy size={18} />}
+                    {referralCopied ? ' Copied!' : ' Copy code'}
+                  </button>
+                </div>
+                {referralInfo.totalReferrals > 0 && (
+                  <p className="referral-stats">You&apos;ve referred {referralInfo.totalReferrals} friend{referralInfo.totalReferrals !== 1 ? 's' : ''}</p>
+                )}
+              </>
+            ) : (
+              <p className="referral-loading">No referral code available.</p>
+            )}
           </div>
         </div>
 
@@ -140,6 +212,8 @@ const HawkerPointsSystem = () => {
                       <Camera className="activity-icon" />
                     ) : activity.type === 'upvote' ? (
                       <ThumbsUp className="activity-icon" />
+                    ) : activity.type === 'referral' ? (
+                      <UserPlus className="activity-icon" />
                     ) : (
                       <Gift className="activity-icon" />
                     )}

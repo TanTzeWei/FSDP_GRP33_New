@@ -1,11 +1,12 @@
 import { useState, useContext, useEffect } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import "../auth.css";
 import { AuthContext } from "../context/AuthContext";
 import { ToastContext } from "../context/ToastContext";
 
 function Signup() {
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,12 +15,19 @@ function Signup() {
   const [hawkerCentreId, setHawkerCentreId] = useState('');
   const [hawkerCentres, setHawkerCentres] = useState([]);
   const [inviteCode, setInviteCode] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingCentres, setLoadingCentres] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   const { showToast } = useContext(ToastContext);
+
+  // Pre-fill referral code from URL ?ref=CODE
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) setReferralCode(ref.trim().toUpperCase());
+  }, [searchParams]);
 
   // Fetch hawker centres when role is stall_owner
   useEffect(() => {
@@ -60,6 +68,7 @@ function Signup() {
         }
         payload.invite_code = inviteCode || undefined;
       }
+      if (referralCode) payload.referral_code = referralCode;
 
       const res = await axios.post("http://localhost:3000/signup", payload);
       setLoading(false);
@@ -148,6 +157,18 @@ function Signup() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="referralCode">Referral code (optional)</label>
+            <input
+              id="referralCode"
+              type="text"
+              placeholder="e.g. REF123"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+            />
+            <small className="form-hint">Enter a friend&apos;s code — you both get points when you sign up!</small>
           </div>
 
           {role === 'stall_owner' && (

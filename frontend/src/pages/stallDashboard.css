@@ -1288,6 +1288,23 @@
   margin-left: 4px;
 }
 
+.reviews-tab-content {
+  padding: 0 0 24px;
+}
+
+.reviews-tab-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.reviews-tab-subtitle {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
 @media (max-width: 768px) {
   .dashboard-tabs {
     flex-direction: column;

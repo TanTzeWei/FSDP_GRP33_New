@@ -132,14 +132,22 @@
 }
 
 .social-share.compact {
-  padding: 0.5rem;
+  padding: 0;
+  margin: 0;
   background: transparent;
 }
 
 .social-share.compact .share-btn {
-  padding: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
 }
 
 .social-share.compact .share-btn span {
   display: none;
+}
+
+.social-share.compact .social-share-buttons {
+  gap: 0.65rem;
 }

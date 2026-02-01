@@ -93,4 +93,33 @@ authMiddleware.requireAdmin = (req, res, next) => {
     next();
 };
 
+// Optional auth: attach user if token present, never block (req.user may be null)
+authMiddleware.optional = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        req.user = null;
+        return next();
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        if (req.user.stallId && !req.user.stall_id) req.user.stall_id = req.user.stallId;
+        const userId = req.user.userId || req.user.user_id || null;
+        if (userId) {
+            const { data: dbUser, error } = await supabase.from('users').select('user_id, name, email, role, is_stall_owner, stall_id, approval_status, owner_verified').eq('user_id', userId).maybeSingle();
+            if (!error && dbUser) {
+                req.user.role = dbUser.role;
+                req.user.is_stall_owner = dbUser.is_stall_owner;
+                req.user.stall_id = dbUser.stall_id;
+                req.user.approval_status = dbUser.approval_status;
+                req.user.owner_verified = dbUser.owner_verified;
+            }
+        }
+    } catch (err) {
+        req.user = null;
+    }
+    next();
+};
+
 module.exports = authMiddleware;

@@ -3,19 +3,20 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import StallClosureSchedule from '../components/StallClosureSchedule';
 import ClosureBadge from '../components/ClosureBadge';
+import ReviewList from '../components/ReviewList';
 
 export default function DashboardStallOwner(){
   const { user } = useContext(AuthContext);
   const [stall, setStall] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'closures'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'closures', 'reviews'
 
   useEffect(()=>{ 
     async function load(){
       if (!user?.stall_id) return;
       setLoading(true);
       try{
-        const res = await axios.get(`http://localhost:3000/api/stalls/${user.stall_id}`);
+        const res = await axios.get(`/api/stalls/${user.stall_id}`);
         setStall(res.data?.data || res.data);
       }catch(e){
         console.warn('Failed to fetch stall', e.message);
@@ -86,6 +87,21 @@ export default function DashboardStallOwner(){
             >
               Closure Schedule
             </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              style={{
+                padding: '12px 20px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                fontSize: 15,
+                color: activeTab === 'reviews' ? '#ff6b6b' : '#666',
+                borderBottom: activeTab === 'reviews' ? '3px solid #ff6b6b' : '3px solid transparent',
+                fontWeight: activeTab === 'reviews' ? 600 : 400
+              }}
+            >
+              Reviews
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -101,6 +117,18 @@ export default function DashboardStallOwner(){
 
           {activeTab === 'closures' && (
             <StallClosureSchedule stallId={user.stall_id} />
+          )}
+
+          {activeTab === 'reviews' && (
+            <div>
+              <h4>Customer Reviews & Ratings</h4>
+              <p style={{ color: '#666', marginBottom: 16 }}>See what customers are saying about your stall.</p>
+              <ReviewList
+                entityType="stall"
+                entityId={user.stall_id}
+                limit={20}
+              />
+            </div>
           )}
         </div>
       )}

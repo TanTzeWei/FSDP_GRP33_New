@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { ShoppingCart, Star, Clock, MapPin, Search, ImageOff } from 'lucide-react';
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import Header from '../components/Header';
 import { CartContext } from '../context/CartContext';
 import ClosureBadge from '../components/ClosureBadge';
-import SocialShare from '../components/SocialShare';
+import ShareButton from '../components/ShareButton';
+import { getDishEmoji } from '../utils/shareUtils';
 import SocialMediaLinks from '../components/SocialMediaLinks';
 import './menupage.css';
 
@@ -144,7 +145,8 @@ const MenuPage = () => {
             price: d.price !== undefined ? parseFloat(d.price) : 0,
             image: d.image_url || d.image || '',
             category: d.category || 'Main Dishes',
-            popular: d.is_popular === 1 || d.is_popular === true
+            popular: d.is_popular === 1 || d.is_popular === true,
+            spice_level: d.spice_level
           }));
           setMenuItems(formatted);
         } else {
@@ -231,11 +233,13 @@ const MenuPage = () => {
             <h2 className="stall-name">{stall.name}</h2>
 
             <ul className="stall-details">
-              {stall.rating > 0 && (
+              {stallId && (
                 <li className="stall-detail-item">
-                  <Star className="icon icon-star" />
-                  <span className="rating-value">{stall.rating.toFixed(1)}</span>
-                  <span>({stall.reviews})</span>
+                  <Link to={`/stall/${stallId}/reviews`} state={{ entityName: stall.name }} className="stall-rating-link" aria-label="View reviews and ratings">
+                    <Star className="icon icon-star" />
+                    <span className="rating-value">{stall.rating > 0 ? stall.rating.toFixed(1) : '0.0'}</span>
+                    <span>({stall.reviews} reviews)</span>
+                  </Link>
                 </li>
               )}
 
@@ -352,10 +356,18 @@ const MenuPage = () => {
 
                         <div className="item-details">
                           <h4 className="item-name">
-                            {item.name}
+                            <span>{item.name}</span>
                             {item.popular && (
                               <span className="popular-badge">Popular</span>
                             )}
+                            <span className="item-share-wrap">
+                              <ShareButton
+                                type="dish"
+                                id={item.id}
+                                meta={{ name: item.name, stall_name: stall.name, image: item.image, spice_emoji: getDishEmoji(item.spice_level) }}
+                                variant="icon"
+                              />
+                            </span>
                           </h4>
                           {item.description && (
                             <p className="item-description">{item.description}</p>
@@ -399,15 +411,15 @@ const MenuPage = () => {
         </section>
       )}
 
-      {/* SOCIAL SHARE - Let visitors share this stall */}
-      {!loading && stall.name !== 'Loading...' && (
+      {/* SHARE - Share stall with deep link /stalls/:id */}
+      {!loading && stall.name !== 'Loading...' && stallId && (
         <section className="share-section">
           <div className="stall-container">
-            <SocialShare 
-              url={window.location.href}
-              title={`Check out ${stall.name}!`}
-              description={`Delicious food at ${stall.name}. Order now!`}
-              imageUrl={stall.image}
+            <ShareButton
+              type="stall"
+              id={stallId}
+              meta={{ name: stall.name, rating: stall.rating, description: stall.categories?.join?.(', ') || stall.name, image: stall.image }}
+              variant="button"
             />
           </div>
         </section>

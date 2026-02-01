@@ -21,17 +21,30 @@ class HawkerCentreModel {
             const { data: centres, error } = await query;
             if (error) throw error;
 
-            // Optionally filter by cuisine by fetching stalls and mapping
-            let centresWithMeta = centres.map(c => ({ ...c, active_stalls: 0, available_cuisines: [], average_stall_rating: null }));
+            // Fetch all stalls to get active stall counts per centre
+            const { data: stalls, error: stallsError } = await supabase.from('stalls').select('hawker_centre_id, cuisine_type_id').eq('status', 'Active');
+            if (stallsError) console.error('Error fetching stalls:', stallsError);
+            
+            const { data: cuisines } = await supabase.from('cuisine_types').select('id, name');
+            const cuisineMap = (cuisines || []).reduce((m, c) => (m[c.id] = c.name, m), {});
+            
+            // Map stalls to hawker centres
+            let centresWithMeta = centres.map(c => {
+                const related = (stalls || []).filter(s => s.hawker_centre_id === c.id);
+                const cuisineNames = Array.from(new Set(related.map(r => cuisineMap[r.cuisine_type_id]).filter(Boolean)));
+                // Always use the count of active stalls from the query result
+                const stallCount = related.length > 0 ? related.length : (c.total_stalls || 0);
+                return { 
+                    ...c, 
+                    active_stalls: stallCount,
+                    totalStalls: stallCount,
+                    available_cuisines: cuisineNames.join(', ')
+                };
+            });
+
+            // Apply cuisine filter if specified
             if (filters.cuisine) {
-                const { data: stalls } = await supabase.from('stalls').select('hawker_centre_id, cuisine_type_id').eq('status', 'Active');
-                const { data: cuisines } = await supabase.from('cuisine_types').select('id, name');
-                const cuisineMap = (cuisines || []).reduce((m, c) => (m[c.id] = c.name, m), {});
-                centresWithMeta = centresWithMeta.map(c => {
-                    const related = (stalls || []).filter(s => s.hawker_centre_id === c.id);
-                    const cuisineNames = Array.from(new Set(related.map(r => cuisineMap[r.cuisine_type_id]).filter(Boolean)));
-                    return { ...c, active_stalls: related.length, available_cuisines: cuisineNames.join(', ')};
-                }).filter(c => c.available_cuisines.includes(filters.cuisine));
+                centresWithMeta = centresWithMeta.filter(c => c.available_cuisines.includes(filters.cuisine));
             }
 
             // Sort by rating and reviews

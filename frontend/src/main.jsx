@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
@@ -12,14 +13,16 @@ const root = createRoot(container);
 
 root.render(
 	<React.StrictMode>
-				<ToastProvider>
-					<AuthProvider>
-						<PointsProvider>
-							<CartProvider>
-								<App />
-							</CartProvider>
-						</PointsProvider>
-					</AuthProvider>
-				</ToastProvider>
+		<HelmetProvider>
+			<ToastProvider>
+				<AuthProvider>
+					<PointsProvider>
+						<CartProvider>
+							<App />
+						</CartProvider>
+					</PointsProvider>
+				</AuthProvider>
+			</ToastProvider>
+		</HelmetProvider>
 	</React.StrictMode>
 );

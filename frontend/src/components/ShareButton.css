@@ -1,0 +1,66 @@
+.share-button-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.share-button--icon {
+  padding: 0.5rem;
+  min-height: 36px;
+}
+
+.share-button--copy {
+  border-color: #d1d5db;
+}
+
+.share-button-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 220px;
+}
+
+.share-button-panel .social-share-buttons {
+  gap: 0.65rem;
+}
+
+.share-button-panel .share-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  justify-content: center;
+}
+
+/* When used as icon (e.g. in menu items), align panel under the button */
+.share-button-panel--icon {
+  left: auto;
+  right: 0;
+}

@@ -20,8 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
   approval_status TEXT DEFAULT 'none', -- 'none','pending','approved','rejected'
   pending_stall_name TEXT, -- Store requested stall name during signup
   pending_hawker_centre_id BIGINT REFERENCES hawker_centres(id) ON DELETE SET NULL, -- Store requested hawker centre during signup
+  referral_code TEXT UNIQUE, -- Per-user referral code (e.g. REF123) for viral loop
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code) WHERE referral_code IS NOT NULL;
 
 -- =========================================
 -- CUISINE TYPES
@@ -200,7 +203,7 @@ CREATE TABLE IF NOT EXISTS points_history (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   transaction_type TEXT NOT NULL
-    CHECK (transaction_type IN ('upload','upvote','redeem','adjust')),
+    CHECK (transaction_type IN ('upload','upvote','redeem','adjust','referral')),
   points INT NOT NULL,
   description TEXT,
   reference_type TEXT,
@@ -212,6 +215,21 @@ CREATE TABLE IF NOT EXISTS points_history (
 CREATE INDEX IF NOT EXISTS idx_points_user ON points_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_points_type ON points_history(transaction_type);
 CREATE INDEX IF NOT EXISTS idx_points_date ON points_history(created_at DESC);
+
+-- =========================================
+-- REFERRALS (viral loop: referrer_id, referee_id, created_at)
+-- =========================================
+CREATE TABLE IF NOT EXISTS referrals (
+  id BIGSERIAL PRIMARY KEY,
+  referrer_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  referee_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(referee_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referee ON referrals(referee_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_created ON referrals(created_at DESC);
 
 -- =========================================
 -- VOUCHERS
@@ -351,6 +369,23 @@ CREATE INDEX IF NOT EXISTS idx_promotions_created_by ON promotions(created_by);
 
 -- Add table comment
 COMMENT ON TABLE promotions IS 'Stores promotional discounts for food items under stalls with validity periods';
+
+-- =========================================
+-- SHARE EVENTS (analytics + rewards)
+-- =========================================
+CREATE TABLE IF NOT EXISTS share_events (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  share_type TEXT NOT NULL CHECK (share_type IN ('centre', 'stall', 'dish')),
+  reference_id BIGINT NOT NULL,
+  platform TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_share_events_type ON share_events(share_type);
+CREATE INDEX IF NOT EXISTS idx_share_events_reference ON share_events(share_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_share_events_created ON share_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_share_events_user ON share_events(user_id);
 
 -- =========================================
 -- VIEW: HAWKER CENTRE SUMMARY

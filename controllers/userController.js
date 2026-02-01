@@ -1,15 +1,21 @@
 // controllers/userController.js
 const UserModel = require('../models/userModel');
+const ReferralModel = require('../models/referralModel');
+const PointsModel = require('../models/pointsModel');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
+// Points awarded for referral (both referrer and referee get this)
+const REFERRAL_POINTS_REFERRER = 25;
+const REFERRAL_POINTS_REFEREE = 25;
+
 class UserController {
     static async signup(req, res) {
         try {
             console.log('Signup payload:', req.body);
-            const { name, email, password, role, stall_id, stall_name, hawker_centre_id, invite_code } = req.body;
+            const { name, email, password, role, stall_id, stall_name, hawker_centre_id, invite_code, referral_code } = req.body;
             if (!name || !email || !password) {
                 return res.status(400).json({ success: false, message: 'All fields are required' });
             }
@@ -49,6 +55,24 @@ class UserController {
             // For stall owners, do not auto-approve; return pending message without token
             if (result.user.role === 'stall_owner' || result.user.is_stall_owner) {
                 return res.status(201).json({ success: true, message: 'Owner signup received - pending approval', user: result.user, token: null });
+            }
+
+            const newUserId = result.user.userId ?? result.user.user_id;
+
+            // Referral: if new signup entered a referral code, reward both users
+            if (referral_code && typeof referral_code === 'string' && referral_code.trim()) {
+                const referrer = await UserModel.findUserByReferralCode(referral_code.trim());
+                if (referrer && referrer.user_id !== newUserId) {
+                    const refResult = await ReferralModel.create(referrer.user_id, newUserId);
+                    if (refResult.success) {
+                        try {
+                            await PointsModel.addReferralPoints(referrer.user_id, REFERRAL_POINTS_REFERRER, 'Friend signed up with your code', { referee_id: newUserId });
+                            await PointsModel.addReferralPoints(newUserId, REFERRAL_POINTS_REFEREE, 'Signed up with a friend\'s code', { referrer_id: referrer.user_id });
+                        } catch (pointsErr) {
+                            console.error('Referral points error:', pointsErr);
+                        }
+                    }
+                }
             }
 
             // Generate token for normal users
