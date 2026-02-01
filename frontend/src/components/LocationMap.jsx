@@ -859,8 +859,6 @@ const LocationMap = ({ onHawkerSelect }) => {
                     const cuisineList = Array.isArray(cuisines) ? cuisines : (typeof cuisines === 'string' ? cuisines.split(', ').filter(c => c) : []);
                     const totalStalls = hawker.totalStalls || hawker.total_stalls || hawker.active_stalls || hawker.num_stalls || hawker.stall_count || hawker.stalls?.length || 0;
                     const totalReviews = hawker.totalReviews || hawker.total_reviews || 0;
-                    const openingHours = hawker.openingHours || hawker.opening_hours || 'N/A';
-                    const priceRange = hawker.priceRange || hawker.price_range || '$';
                     const distance = userLocation ? `${calculateDistance(userLocation.lat, userLocation.lng, hawker.latitude, hawker.longitude).toFixed(1)} km` : 'N/A';
                     
                     return (
@@ -884,14 +882,6 @@ const LocationMap = ({ onHawkerSelect }) => {
                         <div className="meta-item">
                           <span className="meta-icon">📊</span>
                           <span className="meta-text">{totalStalls} stalls</span>
-                        </div>
-                        <div className="meta-item">
-                          <span className="meta-icon">💰</span>
-                          <span className="meta-text">{priceRange}</span>
-                        </div>
-                        <div className="meta-item">
-                          <span className="meta-icon">🕐</span>
-                          <span className="meta-text">{openingHours}</span>
                         </div>
                       </div>
 
@@ -937,13 +927,15 @@ const LocationMap = ({ onHawkerSelect }) => {
         )}
       </div>
 
-      {/* Hawker Details Modal */}
+      {/* Hawker Details Modal - Grab-inspired layout */}
       {showDetailModal && selectedHawker && (
         <div className="hawker-details-overlay" onClick={closeDetails}>
-          <div className="hawker-details-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="hawker-title">
-                <h2>{selectedHawker.name}</h2>
+          <div className="modal-wrapper" onClick={e => e.stopPropagation()}>
+            <button type="button" className="modal-close-outside" onClick={closeDetails} aria-label="Close">×</button>
+            <div className="hawker-details-modal">
+            <header className="modal-header">
+              <div className="modal-header-top">
+                <h1 className="hawker-detail-title">{selectedHawker.name}</h1>
                 <div className="modal-header-actions">
                   <ShareButton
                     type="centre"
@@ -951,53 +943,37 @@ const LocationMap = ({ onHawkerSelect }) => {
                     meta={{ name: selectedHawker.name, rating: selectedHawker.rating, description: selectedHawker.description, image: selectedHawker.image_url }}
                     variant="button"
                   />
-                  <button className="close-btn" onClick={closeDetails}>×</button>
                 </div>
               </div>
-              
-              <div className="hawker-rating-large">
-                <span className="stars-large">{getRatingStars(selectedHawker.rating || 0)}</span>
-                <div className="rating-details">
-                  <span className="rating-number">{selectedHawker.rating || 0}</span>
-                  <span className="review-count">({selectedHawker.totalReviews || selectedHawker.total_reviews || 0} reviews)</span>
-                </div>
+              <div className="hawker-rating-block">
+                <span className="stars-large" aria-hidden="true">{getRatingStars(selectedHawker.rating || 0)}</span>
+                <span className="rating-number">{selectedHawker.rating ?? '—'}</span>
+                <span className="review-count">({selectedHawker.totalReviews ?? selectedHawker.total_reviews ?? 0} reviews)</span>
               </div>
-            </div>
+            </header>
 
             <div className="modal-content">
-              <div className="detail-section">
-                <h3>📍 Location & Hours</h3>
+              <section className="detail-section">
+                <h2 className="detail-section-title">Location</h2>
                 <p className="address">{selectedHawker.address}</p>
-                <div className="hours-info">
-                  <span>🕐 Open: {selectedHawker.openingHours || selectedHawker.opening_hours || 'N/A'}</span>
-                  <span>📅 {selectedHawker.operatingDays || selectedHawker.operating_days || 'N/A'}</span>
-                </div>
-                {(selectedHawker.phoneNumber || selectedHawker.contact_phone) && (
-                  <div className="contact">
-                    <span>📞 {selectedHawker.phoneNumber || selectedHawker.contact_phone}</span>
-                  </div>
-                )}
-              </div>
+              </section>
 
-              <div className="detail-section">
-                <h3>🍽️ What to Expect</h3>
+              <section className="detail-section">
+                <h2 className="detail-section-title">What to Expect</h2>
                 {selectedHawker.description && (
                   <p className="description">{selectedHawker.description}</p>
                 )}
-                <div className="stats">
-                  <span className="stat">📊 {selectedHawker.totalStalls || selectedHawker.active_stalls || selectedHawker.total_stalls || 0} Stalls</span>
-                  {(selectedHawker.priceRange || selectedHawker.price_range) && (
-                    <span className="stat">💰 {selectedHawker.priceRange || selectedHawker.price_range} Price Range</span>
-                  )}
+                <div className="stats-row">
+                  <span className="stat-pill">{selectedHawker.totalStalls ?? selectedHawker.active_stalls ?? selectedHawker.total_stalls ?? 0} Stalls</span>
                   {selectedHawker.distance && (
-                    <span className="stat">📍 {selectedHawker.distance} Away</span>
+                    <span className="stat-pill">{selectedHawker.distance} away</span>
                   )}
                 </div>
-              </div>
+              </section>
 
               {/* Stalls Section */}
-              <div className="detail-section">
-                <h3>🏪 Stalls ({selectedHawkerStalls.length})</h3>
+              <section className="detail-section stalls-section">
+                <h2 className="detail-section-title">Stalls ({selectedHawkerStalls.length})</h2>
                 {loadingStalls ? (
                   <div className="loading-stalls">
                     <p>Loading stalls...</p>
@@ -1028,9 +1004,6 @@ const LocationMap = ({ onHawkerSelect }) => {
                           {stall.stall_number && (
                             <span className="stall-number">📍 Stall {stall.stall_number}</span>
                           )}
-                          {stall.price_range && (
-                            <span className="stall-price">💰 {stall.price_range}</span>
-                          )}
                         </div>
                         {stall.specialties && Array.isArray(stall.specialties) && stall.specialties.length > 0 && (
                           <div className="stall-specialties">
@@ -1046,51 +1019,53 @@ const LocationMap = ({ onHawkerSelect }) => {
                 ) : (
                   <p className="no-stalls">No stalls available at this hawker centre.</p>
                 )}
-              </div>
+              </section>
 
               {selectedHawker.popularDishes && selectedHawker.popularDishes.length > 0 && (
-                <div className="detail-section">
-                  <h3>🌟 Popular Dishes</h3>
-                  <div className="popular-dishes">
+                <section className="detail-section">
+                  <h2 className="detail-section-title">Popular Dishes</h2>
+                  <div className="tag-list">
                     {selectedHawker.popularDishes.map((dish, idx) => (
-                      <span key={idx} className="dish-tag">{dish}</span>
+                      <span key={idx} className="tag tag-green">{dish}</span>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {(selectedHawker.cuisines || selectedHawker.available_cuisines) && (
-                <div className="detail-section">
-                  <h3>🍜 Cuisine Types</h3>
-                  <div className="cuisine-types">
+                <section className="detail-section">
+                  <h2 className="detail-section-title">Cuisine Types</h2>
+                  <div className="tag-list">
                     {(Array.isArray(selectedHawker.cuisines) ? selectedHawker.cuisines : 
                       Array.isArray(selectedHawker.available_cuisines) ? selectedHawker.available_cuisines :
                       typeof selectedHawker.available_cuisines === 'string' ? selectedHawker.available_cuisines.split(', ') : []
                     ).map((cuisine, idx) => (
-                      <span key={idx} className="cuisine-badge">{cuisine}</span>
+                      <span key={idx} className="tag tag-solid">{cuisine}</span>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {selectedHawker.facilities && Array.isArray(selectedHawker.facilities) && selectedHawker.facilities.length > 0 && (
-                <div className="detail-section">
-                  <h3>🏪 Facilities</h3>
-                  <div className="facilities">
+                <section className="detail-section">
+                  <h2 className="detail-section-title">Facilities</h2>
+                  <div className="tag-list">
                     {selectedHawker.facilities.map((facility, idx) => (
-                      <span key={idx} className="facility-tag">✓ {facility}</span>
+                      <span key={idx} className="tag tag-outline">✓ {facility}</span>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
             </div>
 
-            <div className="modal-actions">
-              <button className="action-btn primary" onClick={() => alert('Getting directions...')}>
-                🧭 Get Directions
+            <footer className="modal-actions">
+              <button type="button" className="action-btn action-btn-primary" onClick={() => alert('Getting directions...')}>
+                <span className="action-icon" aria-hidden="true">🧭</span>
+                Get Directions
               </button>
               <button 
-                className="action-btn secondary" 
+                type="button"
+                className="action-btn action-btn-secondary" 
                 onClick={() => {
                   if (onHawkerSelect) {
                     onHawkerSelect(selectedHawker);
@@ -1099,160 +1074,159 @@ const LocationMap = ({ onHawkerSelect }) => {
                   closeDetails();
                 }}
               >
-                📋 View Menu
+                <span className="action-icon" aria-hidden="true">📋</span>
+                View Menu
               </button>
-              <button className="action-btn reserve" onClick={openReservationModal}>
-                🪑 Reserve Table
+              <button type="button" className="action-btn action-btn-secondary action-btn-reserve" onClick={openReservationModal}>
+                <span className="action-icon" aria-hidden="true">🪑</span>
+                Reserve Table
               </button>
-              <button className="action-btn secondary" onClick={() => alert('Call hawker centre...')}>
-                📞 Call
-              </button>
+            </footer>
             </div>
           </div>
         </div>
       )}
 
-      {/* Table Reservation Modal */}
+      {/* Table Reservation Modal - Grab-inspired */}
       {showReservationModal && selectedHawker && (
         <div className="reservation-overlay" onClick={closeReservationModal}>
           <div className="reservation-modal" onClick={e => e.stopPropagation()}>
-            <div className="reservation-header">
-              <div className="reservation-title">
-                <h2>🪑 Reserve a Table</h2>
-                <p>{selectedHawker.name}</p>
+            <header className="reservation-header">
+              <div className="reservation-header-content">
+                <h1 className="reservation-modal-title">Reserve a Table</h1>
+                <p className="reservation-venue">{selectedHawker.name}</p>
               </div>
-              <button className="close-btn" onClick={closeReservationModal}>×</button>
-            </div>
+              <button type="button" className="reservation-close-btn" onClick={closeReservationModal} aria-label="Close">×</button>
+            </header>
 
-            <div className="reservation-content">
-              {/* Error and Success Messages */}
+            <div className="reservation-body">
+              {/* Messages */}
               {reservationError && (
-                <div className="reservation-message error">
-                  ❌ {reservationError}
-                </div>
+                <div className="res-alert res-alert-error">{reservationError}</div>
               )}
               {reservationSuccess && (
-                <div className="reservation-message success">
-                  {reservationSuccess}
-                </div>
+                <div className="res-alert res-alert-success">{reservationSuccess}</div>
               )}
-              
-              {/* Date and Time Selection */}
-              <div className="reservation-datetime">
-                <div className="datetime-field">
-                  <label>📅 Date</label>
-                  <input 
-                    type="date" 
-                    value={reservationDate}
-                    onChange={handleDateChange}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                <div className="datetime-field">
-                  <label>🕐 Time</label>
-                  <input 
-                    type="time" 
-                    value={reservationTime}
-                    onChange={(e) => setReservationTime(e.target.value)}
-                  />
-                </div>
-              </div>
 
-              {/* Table Grid by Zone */}
-              {loadingTables ? (
-                <div className="loading-tables">
-                  <div className="loading-spinner"></div>
-                  <p>Loading tables...</p>
+              {/* Date & Time Picker */}
+              <section className="res-section">
+                <h2 className="res-section-title">When</h2>
+                <div className="res-datetime-row">
+                  <label className="res-input-group">
+                    <span className="res-input-label">Date</span>
+                    <input 
+                      type="date" 
+                      className="res-input"
+                      value={reservationDate}
+                      onChange={handleDateChange}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </label>
+                  <label className="res-input-group">
+                    <span className="res-input-label">Time</span>
+                    <input 
+                      type="time"
+                      className="res-input"
+                      value={reservationTime}
+                      onChange={(e) => setReservationTime(e.target.value)}
+                    />
+                  </label>
                 </div>
-              ) : tables.length > 0 ? (
-                <div className="table-zones">
-                  {Array.from(new Set(tables.map(t => t.zone))).sort().map(zone => (
-                    <div key={zone} className="table-zone">
-                      <h4 className="zone-title">📍 {zone || 'Unassigned'}</h4>
-                      <div className="table-grid">
-                        {tables
-                          .filter(table => table.zone === zone)
-                          .map(table => {
-                            // Determine if table is currently occupied
-                            const tableStatus = tableReservations[table.id]?.isOccupied ? 'Occupied' : table.status;
-                            return (
-                              <div 
-                                key={table.id}
-                                className={`table-card ${tableStatus === 'Available' ? 'clickable' : 'disabled'} ${selectedTable?.id === table.id ? 'selected' : ''}`}
-                                onClick={() => handleTableSelect(table)}
-                              >
-                                <div className="table-code">{table.table_code}</div>
-                                <div className="table-capacity">
-                                  <span className="capacity-icon">👥</span>
-                                  <span>{table.capacity} seats</span>
-                                </div>
-                                {table.is_shared && (
-                                  <div className="table-shared">🤝 Shared</div>
-                                )}
-                              </div>
-                            );
-                          })}
+              </section>
+
+              {/* Table Selection */}
+              <section className="res-section">
+                <h2 className="res-section-title">Select a Table</h2>
+                {loadingTables ? (
+                  <div className="res-loading">
+                    <div className="res-spinner"></div>
+                    <span>Loading tables...</span>
+                  </div>
+                ) : tables.length > 0 ? (
+                  <div className="res-zones">
+                    {Array.from(new Set(tables.map(t => t.zone))).sort().map(zone => (
+                      <div key={zone} className="res-zone">
+                        <h3 className="res-zone-label">{zone || 'General'}</h3>
+                        <div className="res-table-grid">
+                          {tables
+                            .filter(table => table.zone === zone)
+                            .map(table => {
+                              const tableStatus = tableReservations[table.id]?.isOccupied ? 'Occupied' : table.status;
+                              const isAvailable = tableStatus === 'Available';
+                              const isSelected = selectedTable?.id === table.id;
+                              return (
+                                <button 
+                                  type="button"
+                                  key={table.id}
+                                  className={`res-table-card ${isAvailable ? '' : 'unavailable'} ${isSelected ? 'selected' : ''}`}
+                                  onClick={() => handleTableSelect(table)}
+                                  disabled={!isAvailable}
+                                >
+                                  <span className="res-table-code">{table.table_code}</span>
+                                  <span className="res-table-seats">{table.capacity} seats</span>
+                                  {table.is_shared && <span className="res-table-shared">Shared</span>}
+                                </button>
+                              );
+                            })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-tables">
-                  <p>No tables available for this hawker centre.</p>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="res-empty">No tables available for this hawker centre.</p>
+                )}
+              </section>
 
-              {/* Selected Table Details */}
+              {/* Selection Summary */}
               {selectedTable && (
-                <div className="selected-table-details">
-                  <h4>✅ Selected Table</h4>
-                  <div className="selected-table-info">
-                    <div className="info-row">
-                      <span className="info-label">Table:</span>
-                      <span className="info-value">{selectedTable.table_code}</span>
+                <section className="res-section res-summary">
+                  <h2 className="res-section-title">Your Selection</h2>
+                  <div className="res-summary-card">
+                    <div className="res-summary-row">
+                      <span>Table</span>
+                      <strong>{selectedTable.table_code}</strong>
                     </div>
-                    <div className="info-row">
-                      <span className="info-label">Capacity:</span>
-                      <span className="info-value">{selectedTable.capacity} seats</span>
+                    <div className="res-summary-row">
+                      <span>Seats</span>
+                      <strong>{selectedTable.capacity}</strong>
                     </div>
-                    <div className="info-row">
-                      <span className="info-label">Zone:</span>
-                      <span className="info-value">{selectedTable.zone}</span>
+                    <div className="res-summary-row">
+                      <span>Zone</span>
+                      <strong>{selectedTable.zone}</strong>
                     </div>
-                    <div className="info-row">
-                      <span className="info-label">Type:</span>
-                      <span className="info-value">{selectedTable.is_shared ? 'Shared Table' : 'Private Table'}</span>
+                    <div className="res-summary-row">
+                      <span>Type</span>
+                      <strong>{selectedTable.is_shared ? 'Shared' : 'Private'}</strong>
                     </div>
                   </div>
-                  
-                  {/* Show existing reservations for this table */}
                   {getTableReservations(selectedTable.id).length > 0 && (
-                    <div className="table-reservations">
-                      <h5>📅 Reservations on {reservationDate}</h5>
+                    <div className="res-existing">
+                      <p className="res-existing-label">Existing reservations on {reservationDate}:</p>
                       {getTableReservations(selectedTable.id).map(res => (
-                        <div key={res.id} className="reservation-slot">
-                          <span className="slot-time">{res.start_time} - {res.end_time}</span>
-                          <span className={`slot-status ${res.status.toLowerCase()}`}>{res.status}</span>
+                        <div key={res.id} className="res-existing-slot">
+                          <span>{res.start_time} – {res.end_time}</span>
+                          <span className={`res-slot-status res-slot-${res.status.toLowerCase()}`}>{res.status}</span>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
+                </section>
               )}
             </div>
 
-            <div className="reservation-actions">
-              <button className="cancel-btn" onClick={closeReservationModal}>
+            <footer className="reservation-footer">
+              <button type="button" className="res-btn res-btn-cancel" onClick={closeReservationModal}>
                 Cancel
               </button>
               <button 
-                className="confirm-btn" 
+                type="button"
+                className="res-btn res-btn-confirm" 
                 onClick={handleReservationSubmit}
                 disabled={!selectedTable || !reservationDate || !reservationTime}
               >
-                ✓ Confirm Reservation
+                Confirm Reservation
               </button>
-            </div>
+            </footer>
           </div>
         </div>
       )}
